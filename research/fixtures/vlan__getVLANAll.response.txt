@@ -1,0 +1,2 @@
+1~DEFAULT_VLAN (Primary)~STATIC~None~None~7-8,11-14,17-24, Dyn1-Dyn3~None~None
+
