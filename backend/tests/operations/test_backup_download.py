@@ -1,4 +1,6 @@
 """Unit tests for download_config (exemplar read)."""
+from pathlib import Path
+
 import pytest
 import respx
 from httpx import Response
@@ -10,12 +12,23 @@ from procurve_client.operations.backup import download_config
 from procurve_client.transport import ProcurveTransport
 
 
+def _reference_backup_bytes() -> bytes:
+    fixture = (
+        Path(__file__).resolve().parents[3]
+        / "research"
+        / "fixtures"
+        / "download_config.response.txt"
+    )
+    return fixture.read_bytes()
+
+
 @respx.mock
-async def test_download_config_default_slot(reference_backup_text):
+async def test_download_config_default_slot():
+    raw = _reference_backup_bytes()
     respx.get("http://192.168.178.3/cgi/configfile").mock(
         return_value=Response(
             200,
-            text=reference_backup_text,
+            content=raw,
             headers={"Content-Type": 'application/octet-stream; file="CONFIG.pcc"'},
         )
     )
@@ -29,11 +42,12 @@ async def test_download_config_default_slot(reference_backup_text):
 
 
 @respx.mock
-async def test_download_config_sends_expected_query(reference_backup_text):
+async def test_download_config_sends_expected_query():
+    raw = _reference_backup_bytes()
     route = respx.get("http://192.168.178.3/cgi/configfile").mock(
         return_value=Response(
             200,
-            text=reference_backup_text,
+            content=raw,
             headers={"Content-Type": "application/octet-stream"},
         )
     )
