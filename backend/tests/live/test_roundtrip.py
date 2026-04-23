@@ -40,9 +40,8 @@ def _reference_backup() -> ConfigBackup:
         / "CONFIG.pcc"
     )
     # Read as bytes to preserve CRLF exactly (the SHA was computed over raw
-    # bytes from the switch), then decode as ASCII for the text field.
-    raw = path.read_bytes()
-    return ConfigBackup.from_text(raw.decode("ascii"))
+    # bytes from the switch). ConfigBackup now stores bytes natively.
+    return ConfigBackup.from_bytes(path.read_bytes())
 
 
 async def test_roundtrip_port18_name(monkeypatch):

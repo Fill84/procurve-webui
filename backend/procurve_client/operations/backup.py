@@ -47,14 +47,13 @@ async def download_config(
         raise ProtocolError(
             f"expected octet-stream config download, got Content-Type={ctype!r}"
         )
-    text = r.text
-    if not text:
+    data = r.content
+    if not data:
         raise ProtocolError("empty config body")
-    raw = text.encode("ascii")
     return ConfigBackup(
-        text=text,
-        size=len(raw),
-        sha256=hashlib.sha256(raw).hexdigest(),
+        data=data,
+        size=len(data),
+        sha256=hashlib.sha256(data).hexdigest(),
     )
 
 
@@ -89,11 +88,11 @@ async def upload_config(
     # changes the downloaded SHA256 even though the operational config is
     # semantically unchanged. Stripping \r before upload lets the switch insert
     # its own \r\n and round-trip byte-identically.
-    upload_text = backup.text.replace("\r\n", "\n").replace("\r", "\n")
+    upload_data = backup.data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
     files = {
         UPLOAD_CONFIGFILE_FIELD: (
             "CONFIG.pcc",
-            upload_text.encode("ascii"),
+            upload_data,
             "application/octet-stream",
         ),
     }

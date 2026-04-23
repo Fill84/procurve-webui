@@ -33,7 +33,7 @@ def _reference_backup() -> ConfigBackup:
         / "2026-04-23"
         / "CONFIG.pcc"
     )
-    return ConfigBackup.from_text(fixture.read_text(encoding="ascii", newline=""))
+    return ConfigBackup.from_bytes(fixture.read_bytes())
 
 
 def test_upload_constants_match_phase0_contract():
@@ -124,7 +124,7 @@ async def test_upload_config_strips_cr_before_upload(monkeypatch):
     assert b"\n" in file_bytes
 
     # Content is the baseline with all \r\n normalized to \n
-    expected = backup.text.replace("\r\n", "\n").replace("\r", "\n").encode("ascii")
+    expected = backup.data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
     assert file_bytes == expected
 
 
