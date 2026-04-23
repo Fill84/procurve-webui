@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Node
+node_modules/
+frontend/dist/
+npm-debug.log*
+
+# Env & secrets
+.env
+.env.local
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Research intermediates that are large or reproducible
+research/tools/*.jar
+research/decompiled/
+
+# Keep backups and mirror in git? YES — they are source-of-truth for Phase 0+
+# (so no rule here to exclude them)
