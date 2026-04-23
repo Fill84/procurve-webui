@@ -1,0 +1,46 @@
+<html>
+<script language="javascript"> 
+function setToSupportTab()
+{
+        menu = parent.parent.parent.nctabs.document.Tabs;
+	if(menu) {
+		menu.pressMe("support");
+        }
+
+}
+</script>
+<body bgcolor=white onLoad="setToSupportTab();">
+<br>
+<br>
+<p align=center>
+<font face=Helvetica size=3>
+Thank you for purchasing this ProCurve Switch 2810-24G
+</font>
+</p>
+<p align=center>
+<font  face=Helvetica size+=3>
+We'd like to keep you up to date about:
+<table align=center width>
+<td>
+<UL> 
+  <LI>  Software feature updates
+  <LI>  New product announcements
+  <LI>  Special events
+</UL>
+</td>
+</table>
+</font>
+</p>
+<p align=center>
+<form name=regForm action="http://www.hpe.com/networking/register/">
+<input type=submit Value="Register Now" onClick="parent.sreg.openRegistration();" size=18>
+</form>
+<font face=Helvetica size=2>
+<form name=clrReg>
+Don't ask me again
+<input type=checkBox name=tp onClick="parent.document.location='cgi/clearReg';">
+</form>
+</font>
+</p>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<html>
+<head>
+</head>
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+
+<script language="JavaScript">
+    function ft (ms)
+    {
+        var r, d, h, m, s;
+        var msg = "";
+        r=parseInt(ms/100);
+
+        if (r > 0) {
+            s=r%60; r=parseInt(r/60);
+            msg = s + (s > 1 ? " seconds" : " second");
+        }
+        if (r > 0) {
+            m=r%60; r=parseInt(r/60);
+            msg = m + (m > 1 ? " minutes" : " minute") + ", " + msg;
+        }
+        if (r > 0) {
+            h=r%24; r=parseInt(r/24);
+            msg = h + (h > 1 ? " hours" : " hour") + ", " + msg;
+        }
+        if (r > 0) {
+            d=r;
+            msg = d + (d > 1 ? " days" : " day") + ", " + msg;
+        }
+        return msg;
+    } // ft
+
+    function fm (mac)
+    {
+        var r = mac.toLowerCase();
+        return r.substring(2,8) + "-" + r.substring(8,14);
+    }
+
+    function link( URL ) {
+        if ( URL == "" ) return "(None)" ;
+        return "<A Href=\"" + URL + "\" target=_blank>" + URL + "</A>" ;
+    }
+</script>
+
+</head>
+<body bgcolor=white onLoad='navAid1("identity","")'> 
+<center> 
+<script language="JavaScript">
+  page = "" +
+    "<table border=1 cellspacing=0 cellpadding=0 width=80%> \n" +
+    "<tr height=14%><td bgcolor=#003366 align=center valign=middle> \n" +
+    "   <img src=../classes/status/10d.gif><br>\n" +
+    "   <img src=../classes/status/10d.gif><br>\n" +
+    "   <img src=../classes/status/10d.gif><br>\n" +
+    "   <img src=../classes/status/10d.gif><br>\n" +
+    "<tr><td> <table width=100%> \n" +
+    "<tr><th width=35% align=right><font face=Helvetica size=-1>\n" +
+    "   System Name:</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>\n" +
+    "   HP2810_01</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   System Location:</font></th>\n" +
+    "   <td><font face=Helvetica size=-1>\n" +
+    "   Kamer</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   System Contact:</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>\n" +
+    "   Phillippe Pelzer</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   System Up-Time:</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>" + 
+        ft("3539965") + 
+    "</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   System CPU Util(%):</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>" +
+    "1 " +
+    "</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   System Memory:</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>" +
+    "   Total - 23821200 " +
+    "   Free - 15127792 "+
+    "</font></td></tr> \n" +
+    "<tr><td colspan=2><hr></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   Product:</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>\n" +
+    "   ProCurve Switch 2810-24G" +
+    "   (J9021A)</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   Base MAC Address:</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>\n" +
+    "   00 1d b3 b7 0e 00  "+
+    "</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   Serial Number:</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>\n" +
+    "   CN814XI06X  " +
+    "</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   Version:</font></th> \n" +
+    "   <td><font face=Helvetica size=-1>" +
+    "    N.11.78, ROM N.10.01</font></td></tr> \n" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   IP Address:</th> \n" +
+    "   <td><font face=Helvetica size=-1>\n" +
+    "   192.168.178.3\n</td></tr>" +
+    "<tr><th align=right><font face=Helvetica size=-1>\n" +
+    "   Management Server:</th> \n" +
+    "   <td><font face=Helvetica size=-1>" + 
+        link("https://www.hpe.com/networking/support") + "\n" +
+    "   </td></tr>" + 
+    "</table></td></tr> </table>" ;
+
+    document.write( page );
+</script>
+ 
+</center> 
+</body> 
+</html> 
+
+</html>

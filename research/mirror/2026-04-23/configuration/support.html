@@ -1,0 +1,90 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+<script>
+    function reloadFrame() {
+        parent.parent.parent.ncidbar.location = "../ncidbar.html" ;
+    }
+    function doSubmit() {
+       var maxLen = 103;
+       for( i=1; i<=2; i++)
+       {
+          var e = document.forms[0].elements[i];
+
+          var pattern = /^[a-z|A-Z|0-9|`|!|@|#|\$|%|\^|&|\*|\(|\)|_|\+|=|\{|\}|\||\\|\]|\[|"|:|\;|'|\?|>|<|,|\.|\/| |-]+$/;
+          var result = true;
+
+          result = pattern.test(e.value);
+          if( result == false)
+          {
+             alert("Field Support/Management Server URL has invalid " +
+                   " chars.\n" + "Update canceled." );
+             return(false);
+          }
+
+          if( e.value.length > maxLen )
+          {
+             alert("Field Support/Management Server URL exceeds " +
+                   maxLen + " chars.\n" + "Update canceled." );
+             return( false );
+          }
+       }
+       return( true );
+    }
+</script>
+</head>
+
+<body bgcolor=white 
+    onLoad='navAid("configuration","support"); reloadFrame();' >
+
+<form name=si action="../cgi/support" onSubmit="return doSubmit();" >
+<input type=hidden name=indeces value=0 >
+<center>
+<table cellspacing=0 cellpadding=5 >
+<tr><th align=left><Font face="Arial" size=2 >
+    Support URL:</th>
+    <td><input name=_SuppURL value="http://www.procurve.com" size=48></td>
+</tr>
+<tr><th align=left><Font face="Arial" size=2 >
+    Management<br>Server URL:</th>
+    <td><input name=hpHttpMgMgmtSrvrURL
+        value="https://www.hpe.com/networking/support" size=48></td>
+</tr>
+
+</table>
+</center>
+<p>
+<hr>
+<table align=right><tr><td>
+<input type="submit" name="apply" value=" Apply Changes ">
+<input type="reset" name="clear" value=" Clear Changes ">
+</td></tr></table>
+
+</form>
+</body>
+</html>

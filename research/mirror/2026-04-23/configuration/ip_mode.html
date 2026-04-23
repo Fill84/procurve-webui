@@ -1,0 +1,35 @@
+<html>
+<!- $Revision: 3.1 $ >
+<head>
+<Script>
+    function newMode() {    // Adjusts ip2 depending upon current mode
+        parent.ipcf.location="ip2.html?VLAN="+
+        "&mode=" +
+        document.ipm.mode.options[document.ipm.mode.selectedIndex].value;
+    }
+</Script>
+</head>
+
+<body bgcolor=white topmargin=10 leftmargin=10 onLoad="newMode();" >
+<form name="ipm">
+<center>
+<table cellspacing=0>
+<tr>
+    <th align=left><Font face="Arial, Helvetica" size=2 >
+    IP Configuration:
+    </th>
+    <td>
+    <select name="mode" size=1 onChange="newMode();" >
+    <option value=1> Disabled
+<option value=2 selected> Manual
+<option value=3> DHCP/Bootp
+
+    </select>
+    </td>
+</tr>
+</table>
+</center>
+</form>
+
+</body>
+</html>

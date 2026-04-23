@@ -1,0 +1,31 @@
+<html>
+<head>
+<script language="JavaScript">
+    var noPort = "No port has been selected.\n" +
+                 "Select a port by clicking on the row." ;
+
+    function getDetails() {
+        if ( parent.pcf.document.list.selectedItemCount() == 0 ) {
+            alert( noPort );
+        } else {
+            parent.pcf.document.list.submitMultipleItems
+                ( "../status/portdf.html", "", "nc_view", true, false );
+        }
+    }
+</Script>
+</head>
+
+<body bgcolor=white>
+<table width=100%><tr><td>
+<form>
+<td align=left>
+<input type="button" name="refresh" value=" Refresh "
+       onClick="parent.pcf.document.list.submitMultipleItems
+         ('../cgi/portc', '', '_loopback', false, false);">
+<input type=button value="Details for Selected Port" 
+       onClick="getDetails();" >
+</td>
+</form>
+</tr></table>
+</body>
+</html>

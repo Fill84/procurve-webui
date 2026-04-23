@@ -1,0 +1,155 @@
+<html>
+<head>
+<!- $Revision: 1.9 $ >
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+<script language="JavaScript">
+    function initForm() {
+        var probeStatus   = 2 ;
+        var probeType     = 0 ;
+        
+        var monitorMode = 0 ;   // Default to off
+        if ( probeStatus == 1 ) {
+           monitorMode = 1;
+        }
+        // The following removed because it doesn't work w/ Netscape 3.x
+        // document.forms[2].mpmode[ monitorMode ].click() ;
+        //The index 2 refers to the form named mprf, the third form, in our case.
+
+        document.forms[2].mpmode[ monitorMode ].checked = "1" ;
+        if ( monitorMode == 0 ) {
+            parent.mpmf.location = "../configuration/monitor2.html" ;
+        }
+        else {
+            parent.mpmf.location = "../configuration/monitor2b.html" ;
+        }
+    }
+
+    function anySelected () {
+        if (parent.mpmf.document.list.selectedItemCount() >= 1)
+            return true;
+        else {
+            alert ('No ports have been selected.');
+            return false;
+        }
+    }
+
+    function apply() 
+    {
+        var monitorMode = 0 ;
+        var selArray;
+        var selValue;
+        var i;
+
+        if ( document.forms[2].mpmode[ 1 ].checked ) monitorMode = 1 ;
+        var form = document.forms[ monitorMode ] ;
+	if ( monitorMode != 0 ) {
+	   var mp = document.forms[2].monitoringPort[ document.forms[2].
+	      monitoringPort.selectedIndex ].value ;
+	    form.portCopyDest.value = mp;
+            form.portCopySourceMask.value = 
+                parent.mpmf.document.list.getPortMask() ;
+            selArray = parent.mpmf.document.list.selectedItemsValue();
+            selValue = selArray.split("~");
+            for ( i = 0 ; i < selValue.length; i++)
+                if(selValue[i] == mp)
+                {
+                   alert("Monitor Port can not be same as Mirror Port");
+                   return;
+                }
+	}
+        form.submit() ;
+    }
+</script>
+</head>
+
+<body bgcolor=white onLoad='navAid("configuration","monitor"); initForm();'>
+
+<form name=mpset0 action="../cgi/set_monitor" >
+<input Type=hidden Name="portCopyStatus" Value=2 >
+</form>
+
+<form name=mpset1 action="../cgi/set_monitor" >
+<input Type=hidden Name="portCopyStatus" Value=4 >
+<input Type=hidden Name="portCopyDest" Value=0 >
+<input Type=hidden Name="portCopySourceMask" Value=0 >
+</form>
+
+<form name=mprf >
+<center>
+<Table cellspacing=2 cellpadding=0 Width="100%" >
+<tr align=CENTER>
+    <td width=50%>
+    <Font Face="Arial, Helvetica" Size=2 >
+    <Input Type="RADIO" Name="mpmode" Value="off" 
+        onClick="parent.mpmf.location='../configuration/monitor2.html' ;"
+        > <B>Monitoring Off</B>
+    </Font>
+    </td>
+
+    <td width=50% >
+    <Font Face="Arial, Helvetica" Size=2 >
+    <Input Type="RADIO" Name="mpmode" Value="Ports" 
+        onClick="parent.mpmf.location='../configuration/monitor2b.html' ;"
+        > <B>Monitor Selected Ports</B>
+    </Font>
+    </td>
+</tr>
+<tr align=CENTER>
+    <td>
+    &nbsp;
+    </td>
+    <td colspan=2>
+    <Font Face="Arial, Helvetica" Size=2 >
+    <B>Monitoring Port</B> &nbsp;
+    <Select Name=monitoringPort >
+    <option value=7> 7
+<option value=8> 8
+<option value=11> 11
+<option value=12> 12
+<option value=13> 13
+<option value=14> 14
+<option value=17> 17
+<option value=18> 18
+<option value=19> 19
+<option value=20> 20
+<option value=21> 21
+<option value=22> 22
+<option value=23> 23
+<option value=24 selected> 24
+
+    </Select>
+    </Font>
+    </td>
+</tr>
+</Table>
+</center>
+<hr>
+
+</form>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+<!- chkForAM.js ->
+<script language="JavaScript">
+
+    function chkForAM() {
+        var server = "https://www.hpe.com/networking/support"  ;
+        var msg =
+            "Caution \n\n" +
+            "This device has a Management Server configured. It is " +
+            "recommended that these features \nbe configured using " + 
+            "\"Automatic Management\" from the Management Server at: \n" +
+            "\"" + server + "\"" ;
+        if ( server != "" && server.indexOf("www.hp.com") < 0 ) {
+            alert( msg );
+        }
+    }
+
+</script>
+
+<script language="JavaScript">
+    // change this to retrieve the VLAN index
+    var _st     = 2 ;
+    
+    function initForm () {
+        var form = document.devFeatures;
+        form.elements[1].options[(_st   == 2 ? 0 : 1)].selected = true ;
+    }
+    
+    function setDefaults() {
+        var form = document.devFeatures;
+        form.elements[1].options[0].selected = true ;
+    }
+
+</script>
+</head>
+
+<body bgcolor=white 
+    onLoad='navAid("configuration","features"); initForm(); chkForAM();' >
+
+<form name=devFeatures action="../cgi/globalfeature_set" >
+<table>
+<input type=hidden name=indeces value=1  >
+<tr>
+    <td align=right><font face="helvetica" size=2 >
+            <b>Spanning Tree</b>
+    </td>
+    <td><font face="helvetica" size=2 >
+        <select name=hpSwitchStpAdminStatus >
+            <option value=2 >Off
+            <option value=1 >On
+        </select>
+    </td>
+    <td align=right valign=top ><font face="helvetica" size=2 Color=blue >
+            <b>Global Features</b>
+    </td>
+</tr>
+<tr><td></td>
+    <td colspan=2 ><font face="helvetica" size=2 >
+        Support networks with redundant cabling through the use of Spanning
+        Tree. After a brief network interruption, Spanning Tree will 
+        eliminate network loops, or utilize back-up links between switches.
+        <b>(Note: There is a brief delay when enabling)<b/>
+    </td>
+</tr>
+</table>
+</form>
+</body>
+</html>

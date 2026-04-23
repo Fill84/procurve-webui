@@ -1,0 +1,22 @@
+<html>
+<! $Revision: 1.1 $ >
+<head>
+<script>
+	function doRefresh() {
+       parent.ps1.document.list.submitMultipleItems
+         ('../cgi/get_ports', '', '_loopback', false, false) ;
+	}
+</script>
+</head>
+
+<body bgcolor=white>
+<table width=100%>
+<tr><td>
+<form>
+<td align=left>
+<input type="button" name="refresh" value=" Refresh " onClick="doRefresh() ;" >
+</td>
+</form>
+</tr></table>
+</body>
+</html>

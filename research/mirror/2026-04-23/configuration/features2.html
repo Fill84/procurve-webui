@@ -1,0 +1,119 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+<!- chkForAM.js ->
+<script language="JavaScript">
+
+    function chkForAM() {
+        var server = "https://www.hpe.com/networking/support"  ;
+        var msg =
+            "Caution \n\n" +
+            "This device has a Management Server configured. It is " +
+            "recommended that these features \nbe configured using " + 
+            "\"Automatic Management\" from the Management Server at: \n" +
+            "\"" + server + "\"" ;
+        if ( server != "" && server.indexOf("www.hp.com") < 0 ) {
+            alert( msg );
+        }
+    }
+
+</script>
+
+<script language="JavaScript">
+    // change this to retrieve the VLAN index
+    var _igmp   = 1 ;
+    var _st     = 2 ;
+
+    function initForm () {
+        var form = document.devFeatures;
+        form.elements[1].options[(_igmp == 2 ? 0 : 1)].selected = true ;
+        form.elements[2].options[(_st   == 2 ? 0 : 1)].selected = true ;
+    }
+    
+    function setDefaults() {
+        var form = document.devFeatures;
+        form.elements[1].options[0].selected = true ;
+        form.elements[2].options[0].selected = true ;
+    }
+
+    function doSubmit() {
+	document.devFeatures.submit() ;
+    }
+
+</script>
+</head>
+
+<body bgcolor=white 
+    onLoad='navAid("configuration","features"); initForm(); chkForAM();' >
+
+<form name=devFeatures action="../cgi/feature_set" >
+<input type=hidden name=indeces value= >
+<table>
+<tr>
+    <td align=right><font face="helvetica" size=2 >
+            <b>Multicast Filtering (IGMP)</b>
+    </td>
+    <td><font face="helvetica" size=2 >
+        <select name=hpSwitchIgmpState >
+            <option value=2 >Off
+            <option value=1 >On
+        </select>
+    </td>
+</tr>
+<tr><td></td>
+    <td><font face="helvetica" size=2 >
+        Direct multicast packets to only those portions of the network
+        where they are needed. This improves network performance in networks
+        using the IGMP protocol with high levels of multicast traffic.
+        <br><br>
+    </td>
+</tr>
+<tr>
+    <td align=right><font face="helvetica" size=2 >
+            <b>Spanning Tree</b>
+    </td>
+    <td><font face="helvetica" size=2 >
+        <select name=hpSwitchStpAdminStatus >
+            <option value=2 >Off
+            <option value=1 >On
+        </select>
+    </td>
+</tr>
+<tr><td></td>
+    <td><font face="helvetica" size=2 >
+        Support networks with redundant cabling through the use of Spanning
+        Tree. After a brief network interruption, Spanning Tree will 
+        eliminate network loops, or utilize back-up links between switches.
+        <b>(Note: There is a brief delay when enabling)<b/>
+        <br><br>
+    </td>
+</tr>
+</table>
+</form>
+</body>
+</html>

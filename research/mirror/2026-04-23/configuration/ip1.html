@@ -1,0 +1,74 @@
+<html>
+<!- $Revision: 3.0 $ >
+<script language="JavaScript"> 
+function validIPcheck(e) {
+    var myChar;
+
+    var Chars = "0123456789.";
+
+
+    if (document.all) {
+        e = window.event;
+	myChar = String.fromCharCode(e.keyCode);
+    }
+    else
+        if (document.layers)
+ 	    var myChar = String.fromCharCode(e.which);
+
+if (Chars.indexOf(myChar) == -1) {
+         if (document.layers)
+            return false;
+        else if (document.all)
+             e.returnValue = false;
+    }
+                   
+}
+</script>
+
+<Head>
+<Script language="JavaScript">
+	var vlanCount = 1 ;
+        var defaultGateway = "192.168.178.1";
+
+        function resetForm() {
+                parent.ipvf.document.iprt.rt.value = defaultGateway;
+        }
+
+	function initForm() {
+		if (vlanCount > 1) {
+			parent.ipvf.document.location = "ip1a.html" ;
+		}
+	}
+function ivalidate(){
+           if(!document.iprt.rt.value)
+           {
+               document.iprt.rt.value="0.0.0.0";
+		return(true);
+           }else {
+		return IPvalidate(document.iprt.rt.value);
+           }
+	}
+
+</Script>
+</Head>
+
+<body bgcolor=white topmargin=10 leftmargin=10
+	onLoad="initForm();" >
+<form name=iprt action="../cgi/gateway" onSubmit="return ivalidate();">
+<center>
+<table cellspacing=0>
+<tr>
+    <th align=left><Font face="Arial, Helvetica" size=2 >
+	Default Gateway:
+    </th>
+    <td><input name=rt value="192.168.178.1" onkeypress="validIPcheck();" size=16>
+    </td>
+    <td>
+    <input type="submit" value="Apply">
+    </td>
+</tr>
+</table>
+</center>
+</form>
+</body>
+</html>

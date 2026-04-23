@@ -1,0 +1,39 @@
+<html>
+<head>
+<script language="JavaScript">
+    function reloadConfigScreen () {
+        parent.location="../configuration/stack_config.html" 
+    }
+</script>
+</head>
+<body bgcolor=white>
+<center>
+<form method=GET action=../cgi/set_stack_cfg name="stackconfig">
+<table cellspacing=0>
+<tr>
+    <th colspan=2 align=center>
+    <p>
+    </th>
+</tr>
+<tr>
+    <th align=left><Font face="Arial,Helvetica" size=2 >
+    </th>
+    <td>
+    <input type=hidden name=sf value=2>  
+    </td>
+</tr>
+</table>
+<hr>
+<table width=90% cellspacing=0>
+<tr>
+    <td align=right>
+    <input type=hidden name=sf value=2>
+
+    <input type=submit name=set value="Apply Changes" >
+    <input type=button name=reset value="Reset Changes" onClick="reloadConfigScreen();">
+    </td>
+</tr>
+</table>
+</form>
+</body>
+</html>

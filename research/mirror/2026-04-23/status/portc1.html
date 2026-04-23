@@ -1,0 +1,43 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+
+<body bgcolor=white onLoad='navAid("status","portcs")'>
+<applet code=GenericList.class archive=agent.jar name=list codebase=../classes width=100% height=100%>
+    <param name=onlyOneSelection value="1">
+    <param name=dataURL value="../cgi/portc"> 
+    <param name=formURL value="../status/portdf.html">
+    <param name=target  value="nc_view">
+    <param name=titles value="Port~Port Name~MCast%Rx~MCast%Tx~BCast%Rx~BCast%Tx~Pkts%Rx~Pkts%Tx~Errors%Rx"> 
+    <param name=columns value="65~155:x~230~305~380~455~530~605~999"> 
+    <param name=params  value=".~.~.~.~.~.~.~.~.">
+    <param name=delay value=10 >
+</applet>
+</body>
+</html>

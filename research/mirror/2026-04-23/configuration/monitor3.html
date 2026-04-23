@@ -1,0 +1,45 @@
+<html>
+<head>
+<!- $Revision: 1.3 $ >
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+
+<body bgcolor=white >
+
+<form>
+<p>
+<hr>
+<table align=right><tr><td>
+<input type="button" name="apply" value=" Apply Changes "
+	onClick="parent.mptf.apply();" >
+<input type="button" name="clear" value=" Clear Changes "
+	onClick="parent.mptf.location='../configuration/monitor1.html';" >
+</td></tr></table>
+</form>
+</body>
+</html>

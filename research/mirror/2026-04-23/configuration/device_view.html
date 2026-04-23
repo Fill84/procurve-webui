@@ -1,0 +1,220 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+<script language="JavaScript">
+    port_legend_html = 'port_legend.html';
+    port_legend_width_height = 'width=450, height=180';
+    function legend() {
+        w = window.open(port_legend_html, 'legend', port_legend_width_height);
+    }
+</script>
+</head>
+
+<body bgcolor=white onLoad='navAid("configuration","devview")'>
+
+<font face="Helvetica" size=0>
+<b>Click on a port or its LED to select it.
+    If you wish to select several ports at once,
+    hold down the <em>Ctrl</em> key while clicking on the additional
+    ports.  Click here for the <a href="javascript:legend()">
+    meaning of the port icons</a>.</b>
+</font>
+<br clear=all>
+
+<applet codebase=../classes
+code=XFishBob.class width=822 height=120 archive=agent.jar
+name=bob vspace=5 align=left >    
+    <param name=offLED      value="787878" >
+    <param name=getURL      value="../cgi/get_bobports" >
+    <param name=setURL      value="../cgi/set_bobports" >
+    <param name=isdual      value="true" >
+    <param name=statusLine  value=
+      "5~115~000000~Helvetica~0~11~ProCurve Switch 2810-24G Closeup View.~" >
+
+    <param name=components value= "
+    #----------------------------------------------------- ,
+    # Transceiver definition                               ,
+    #----------------------------------------------------- ,
+    <group xcvr> pGigT~pUTPN~Corresponding MiniGbic is inserted~0~0~ena:discon:nosel~notinv,
+    <group xcvr> pFiber~pFXB~.~64~0~ena:discon:nosel~inv,
+    <group xcvr3> pGigT~pUTPS~Corresponding MiniGbic is inserted~0~0~ena:discon:nosel~notinv,
+    <group xcvr3> pFiber~pFXB~.~64~0~ena:discon:nosel~inv,
+
+    #----------------------------------------------------- ,
+    # Port Bank definition                                 ,
+    #----------------------------------------------------- ,
+    <group portBank> L1x~led~1~11~-2~000000:Helvetica:0:9,
+    <group portBank> L3x~led~3~35~-2~000000:Helvetica:0:9,
+    <group portBank> L5x~led~5~59~-2~000000:Helvetica:0:9,
+    <group portBank> L7x~led~7~83~-2~000000:Helvetica:0:9,
+    <group portBank> L9x~led~9~107~-2~000000:Helvetica:0:9,
+    <group portBank> L11x~led~11~127~-2~000000:Helvetica:0:9,
+    <group portBank> f~rect~.~0~0~787878:empty:147:50:raised,
+    <group portBank> p1~pUTPN~.~2~2~ena:discon:nosel~notinv,
+    <group portBank> p3~pUTPN~.~26~2~ena:discon:nosel~notinv,
+    <group portBank> p5~pUTPN~.~50~2~ena:discon:nosel~notinv,
+    <group portBank> p7~pUTPN~.~74~2~ena:discon:nosel~notinv,
+    <group portBank> p9~pUTPN~.~98~2~ena:discon:nosel~notinv,
+    <group portBank> p11~pUTPN~.~122~2~ena:discon:nosel~notinv,
+    
+    # -- Bottom ,
+    <group portBank> L2x~led~2~11~60~000000:Helvetica:0:9,
+    <group portBank> L4x~led~4~35~60~000000:Helvetica:0:9,
+    <group portBank> L6x~led~6~59~60~000000:Helvetica:0:9,
+    <group portBank> L8x~led~8~83~60~000000:Helvetica:0:9,
+    <group portBank> L10x~led~10~103~60~000000:Helvetica:0:9,
+    <group portBank> L12x~led~12~127~60~000000:Helvetica:0:9,
+    <group portBank> p2~pUTPS~.~2~26~ena:discon:nosel~notinv,
+    <group portBank> p4~pUTPS~.~26~26~ena:discon:nosel~notinv,
+    <group portBank> p6~pUTPS~.~50~26~ena:discon:nosel~notinv,
+    <group portBank> p8~pUTPS~.~74~26~ena:discon:nosel~notinv,
+    <group portBank> p10~pUTPS~.~98~26~ena:discon:nosel~notinv,
+    <group portBank> p12~pUTPS~.~122~26~ena:discon:nosel~notinv,
+
+    #----------------------------------------------------- ,
+    # Port Bank 2 definition                                 ,
+    #----------------------------------------------------- ,
+    <group portBank2> L13x~led~13~7~-2~000000:Helvetica:0:9,
+    <group portBank2> L15x~led~15~31~-2~000000:Helvetica:0:9,
+    <group portBank2> L17x~led~17~55~-2~000000:Helvetica:0:9,
+    <group portBank2> L19x~led~19~79~-2~000000:Helvetica:0:9,
+    <group portBank2> f~rect~.~0~0~787878:empty:147:50:raised,
+    <group portBank2> p13~pUTPN~.~2~2~ena:discon:nosel~notinv,
+    <group portBank2> p15~pUTPN~.~26~2~ena:discon:nosel~notinv,
+    <group portBank2> p17~pUTPN~.~50~2~ena:discon:nosel~notinv,
+    <group portBank2> p19~pUTPN~.~74~2~ena:discon:nosel~notinv,
+
+
+    # -- Bottom ,
+    <group portBank2> L14x~led~14~7~60~000000:Helvetica:0:9,
+    <group portBank2> L16x~led~16~31~60~000000:Helvetica:0:9,
+    <group portBank2> L18x~led~18~55~60~000000:Helvetica:0:9,
+    <group portBank2> L20x~led~20~79~60~000000:Helvetica:0:9,
+    <group portBank2> p14~pUTPS~.~2~26~ena:discon:nosel~notinv,
+    <group portBank2> p16~pUTPS~.~26~26~ena:discon:nosel~notinv,
+    <group portBank2> p18~pUTPS~.~50~26~ena:discon:nosel~notinv,
+    <group portBank2> p20~pUTPS~.~74~26~ena:discon:nosel~notinv,
+
+    <group portBank3> f~rect~.~0~0~787878:empty:51:50:raised,
+    <group portBank3> pq~rect~.~2~2~787878:empty:22:22:raised,
+    <group portBank3> pw~rect~.~26~2~787878:empty:22:22:raised,
+    <group portBank3> pq~rect~.~2~26~787878:empty:22:22:raised,
+    <group portBank3> pw~rect~.~26~26~787878:empty:22:22:raised,
+
+    #==================================================== ,
+    #   End of Macros; Instantiation follows              ,
+    #==================================================== ,
+
+    #----------------------------- ,
+    # Backdrop for Puppyfish-PWR   ,
+    #----------------------------- ,
+    frame~rect3d~.~0~0~787878:fill:822:100:raised,
+    iframeb~rect~.~65~10~C0C0C0:fill:792:90:raised,
+    iframe~rect~.~65~10~000000:empty:792:90:raised,
+    power~rect~.~33~27~00FF00:fill:28:7:lowered,
+    powerText~text~Power~3~34~FFFFFF:Helvetica:1:9,
+    fault~rect~.~33~41~C6C3C6:fill:28:7:lowered,
+    faultText~text~Fault~3~48~FFFFFF:Helvetica:1:9,
+    locator~arc~.~42~55~006FDD:fill:9:9:0:360,
+    locatortext~text~Locator~3~62~FFFFFF:Helvetica:1:9,
+    logoBg~rect~.~66~11~009FDC:fill:75:37:raised,
+    logo~image~.~21~8~babyLogo,
+    logoText0~text~ProCurve~68~24~FFFFFF:Helvetica:1:10,
+    logoText1~text~Switch 2810~68~34~FFFFFF:Helvetica:1:10,
+    logoText2~text~j9021A     -24G~68~44~FFFFFF:Helvetica:1:9,
+    logodev~image~.~600~30~PNBLogo,
+    statusLine~rect~.~0~100~FFFFFF:fill:822:20,
+    rjconstext~text~Console~14~96~FFFFFF:Helvetica:1:9,
+    cons1~rect~.~22~67~C6C3C6:fill:22:21:raised,
+    cons2~rect~.~25~71~787878:fill:16:12:raised,
+    cons3~rect~.~29~71~787878:fill:8:15:raised,
+    #----------------------------------------------------- ,
+    # Port Groups                                          ,
+    #----------------------------------------------------- ,
+    g1~group portBank~.~150~30~1:3:1:2,
+    g2~group portBank2~.~310~30~5:7:3:4,
+    g3~group portBank3~.~470~30~1:3:1:2,
+
+    LAx~led~21T~413~28~000000:Helvetica:0:9,
+    LA1x~led~21M~474~28~000000:Helvetica:0:9,
+    portA~group xcvr~.~408~32~1:3:1:2,
+    LBx~led~22T~413~90~000000:Helvetica:0:9,
+    LB1x~led~22M~474~90~000000:Helvetica:0:9,
+    portB~group xcvr3~.~408~56~1:3:1:2,
+    LCx~led~23T~437~28~000000:Helvetica:0:9,
+    LC1x~led~23M~498~28~000000:Helvetica:0:9,
+    portC~group xcvr~.~432~32~1:3:1:2,
+    LDx~led~24T~437~90~000000:Helvetica:0:9,
+    LD1x~led~24M~498~90~000000:Helvetica:0:9,
+    portD~group xcvr3~.~432~56~1:3:1:2,
+
+    # ">
+</applet>
+
+
+</body>
+</html>
+
+
+<br clear=all>
+<p>
+<form>
+<table width=100%>
+
+
+<tr align=left>
+    <td><input type=button name=SelectAll value="Select All Ports"
+            onClick="document.bob.selectAllPorts(true)"></td>
+    <td><input type=button name=EnableSelected value="Enable Selected Ports"
+            onClick="parent.dvhf.location='../configuration/device_view2.html?exec='+escape('parent.dvf.document.bob.setEnableForSelectedPorts(true)')"></td>
+</tr>
+
+<tr align=left>
+    <td><input type=button name=DeselectAll value="Deselect All Ports"
+            onClick="document.bob.selectAllPorts(false)"></td>
+    <td><input type=button name=DisableSelected value="Disable Selected Ports"
+        onClick="parent.dvhf.location='../configuration/device_view2.html?exec='+escape('warnUser()')"></td>
+</tr>
+
+<tr align=left>
+    <td colspan=2>
+    <Font face="Arial,Helvetica" Size=2 >
+    <P>
+    <b>For advanced configuration start a
+    <A Href="telnet://192.168.178.3/">
+    telnet session to the switch console</A>.</b>
+    <br>
+    &nbsp;
+    </Font>
+    </td>
+</tr>
+</table>
+</form>
+
+</body>
+</html>

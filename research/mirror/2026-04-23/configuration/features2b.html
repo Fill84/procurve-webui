@@ -1,0 +1,110 @@
+<html>
+<hr>
+<head>
+<script language="JavaScript">
+    // change this to retrieve the VLAN index
+    var _igmp   = Invalid OID ;
+
+    function initForm () {
+        // Note: element zero is hidden
+        var vlan =  ;
+        var form = document.theVLAN;
+	for(var i = 0; i < form.elements[0].options.length; i++) {
+		if(form.elements[0].options[i].value == vlan) {
+                   form.elements[0].options[i].selected = true;
+                   break;
+                }
+        }
+
+        form = document.devFeatures;
+        form.elements[1].options[(_igmp == 2 ? 0 : 1)].selected = true ;
+    }
+    
+    function setDefaults() {
+        var form = document.devFeatures;
+		parent.dftf.setDefaults() ;
+        form.elements[1].options[0].selected = true ;
+    }
+
+    function doSubmit() {
+        // Submit both forms
+        parent.dftf.document.devFeatures.submit() ;
+        if(document.devFeatures.elements[1].options[1].selected == true)
+        {
+           var result = "0";
+           if( result.charAt(0) == 0 )
+           {
+	      document.devFeatures.submit() ;
+           }
+           else
+           {
+              if( confirm(result) )
+              {
+                 document.devFeatures.submit() ;
+              }
+              else
+              {
+                 // nothing required.
+              }
+           }
+        }
+        else
+        {
+           document.devFeatures.submit();
+        }
+    }
+
+    function loadNewVlan ( vlan ) {
+		// random forces the page to reload, IE bug fix
+        parent.dfmf.document.location = 
+            "../configuration/features2b.html?indeces=" + vlan + "&dummy=" + Math.random() ;
+    }
+
+</script>
+</head>
+
+<body bgcolor=white onLoad='initForm();' >
+
+<table>
+<form name=theVLAN >
+<tr>
+    <td align=right><font face="helvetica" size=2 >
+            <b>VLAN Selection</b>
+    </td>
+    <td><font face="helvetica" size=2 >
+        <select name=vlan_menu 
+            onChange="loadNewVlan( vlan_menu.options[vlan_menu.selectedIndex].value );" >
+            <option value=1> DEFAULT_VLAN
+
+        </select>
+    </td>
+    <td align=right valign=top ><font face="helvetica" size=2 Color=blue >
+            <b>VLAN Specific Features</b>
+    </td>
+</tr>
+</form>
+<form name=devFeatures action="../cgi/vlanfeature_set" >
+<input type=hidden name=indeces value= >
+<tr>
+    <td align=right><font face="helvetica" size=2 >
+            <b>Multicast Filtering (IGMP)</b>
+    </td>
+    <td><font face="helvetica" size=2 >
+        <select name=hpSwitchIgmpState >
+            <option value=2 >Off
+            <option value=1 >On
+        </select>
+    </td>
+</tr>
+<tr><td></td>
+    <td colspan=2 ><font face="helvetica" size=2 >
+        Direct multicast packets to only those portions of the network
+        where they are needed. This improves network performance in networks
+        using the IGMP protocol with high levels of multicast traffic.
+        <br><br>
+    </td>
+</tr>
+</form>
+</table>
+</body>
+</html>

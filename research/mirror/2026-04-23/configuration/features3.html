@@ -1,0 +1,23 @@
+<html>
+<body bgcolor=white >
+<Form>
+<table width=100%>
+<tr> <td colspan=2><hr>
+    </td> 
+</tr>
+<tr>
+    <td align=left><font face="helvetica" size=2 >
+        <input type=button value=" Reset to Default Settings " 
+            onClick="parent.dfmf.setDefaults();" >
+    </td>
+    <td align=right><font face="helvetica" size=2 >
+        <input type=button value=" Apply Changes "
+            onClick="parent.dfmf.doSubmit();" >
+        <input type=button value=" Clear Changes " 
+            onClick="parent.dfmf.initForm(); if(typeof parent.dftf == 'object') parent.dftf.initForm();" >
+    </td>
+</tr>
+</table>
+</form>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+<script language="JavaScript">
+    function clearDa() {
+        document.pgf.da.value="";
+        if( document.pgf.tp[1].checked)
+        document.location='link.html'
+    }
+    function validIP(e)
+    {
+        var myChar;
+        if( document.pgf.tp[0].checked)
+            var Chars = "0123456789.";
+        else 
+            var Chars = "0123456789.-abcdefABCDEF";
+
+        if (document.all) {
+           e = window.event;
+           myChar = String.fromCharCode(e.keyCode);
+        }
+        else
+          if (document.layers)
+             var myChar = String.fromCharCode(e.which);
+
+          if (Chars.indexOf(myChar) == -1) {
+             if (document.layers)
+               return false;
+             else if (document.all)
+               e.returnValue = false;
+          }
+    }
+</script>
+</head>
+
+<body bgcolor=white onload='navAid("diagnostics","ping")'>
+
+<form name=pgf action="../cgi/ping" target=pgsf>
+<input type=hidden name=index value="0">
+<input type=hidden name=interf value="0">
+<input type=hidden name=action value=start>
+
+<center>
+<table cellspacing=0 width=60%>
+<tr><th colspan=2><hr></th>
+</tr>
+<tr><th align=center><font face="Arial" size=2 >
+    <input type=radio name=tp value=1 checked
+    onclick="clearDa()"> Ping Test</th>
+    <th align=center><font face="Arial" size=2 >
+    <input type=radio name=tp value=2 onclick="clearDa()">
+    Link Test</th>
+</tr>
+</table>
+<p>
+
+<table align=center width=60%>
+<tr><th align=right><font face="Arial" size=2 >
+    Destination IP Address:</th>
+    <td>
+    <input name=da onkeypress="validIP();" size=16></td>
+</tr>
+<tr>
+<tr><th align=right><font face="Arial" size=2 >
+    Number of Packets to Send:</th>
+    <td><font face="Arial" size=2 >
+    <select name=nr size=1>
+    <option>1<option>5<option selected>10<option>20
+    </select></td>
+</tr>
+<tr><th align=right><font face="Arial" size=2 >
+    Timeout in Seconds:</th>
+    <td><font face="Arial" size=2 >
+    <select name=to>
+    <option>1
+    <option>5
+    <option>10
+    <option>30
+    </select>
+    </td>
+</tr>
+<tr><th colspan=2><hr></th>
+</tr>
+</table>
+
+<table align=center width=60%>
+<tr><td align=left><font face="Arial" size=2 >
+    <input type="button" value=" Start "
+    onclick="document.pgf.index.value=parent.pgsf.document.pgf.index.value;
+    document.pgf.submit();">
+    </td>
+    <td align=center><font face="Arial" size=2 >
+    <input type="button" value=" Stop "
+    onclick="parent.pgsf.document.pgf.submit();">
+    </td>
+    <td align=right><font face="Arial" size=2 >
+    <input type="button" value=" Defaults " onClick="parent.document.location='pingf.html';">
+    </td>
+    </form>
+</tr>
+</table>
+</center>
+
+</body>
+</html>

@@ -1,0 +1,52 @@
+<html>
+<head>
+<!- $Revision: 1.3 $ >
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+<body bgcolor=white >
+<Font Face="Arial, Helvetica" Size=2 >
+
+<br>
+<br>
+The Monitoring Port and a network analyzer are used to monitor the activity of
+other ports on the switch.
+<br>
+<br>
+<br>
+<B>Monitoring Off</B>: &nbsp;No monitoring of other ports on this switch.
+<br>
+<br>
+<br>
+<B>Monitor Selected Ports</B>: &nbsp;Select a port to be the Monitoring Port, then
+select the ports from the list below that you want to monitor. Click on
+Apply Changes.
+
+</Font>
+</body>
+</html>
+

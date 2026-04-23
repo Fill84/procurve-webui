@@ -1,0 +1,107 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+<Script>
+    function doReset() {
+        parent.ipvf.resetForm();
+        parent.ipmf.document.location = 
+            "ip_mode.html?VLAN=" +
+            "&mode="
+    }
+    function doSubmit() {
+        document.ipi.rt.value = parent.ipvf.document.iprt.rt.value;
+	if ( document.forms[0].mode.value != 1 ) return true ;  // ok to submit
+        if ( confirm( "Caution\n\n" +
+                      "Disabling IP will cause the loss of both\n" +
+                      "browser and telnet connectivity\n" +
+                      "(Only serial connectivity will be available)\n\n" +
+                      "Do you still wish to disable IP?" ) ) {
+            return true ;
+        } else {
+            return false ;
+        }
+    }
+</Script>
+</head>
+
+<body bgcolor=white onLoad='navAid("configuration","ip")' >
+<Font face="Arial, Helvetica" size=2 >
+<form name=ipi action="../cgi/ip" 
+    onReset="doReset();" onSubmit="return doSubmit();" >
+<input type=hidden name=rt value=0  >
+<center>
+<table cellspacing=0>
+    <html>
+<head>
+</head>
+<input type=hidden name=VLAN value=97>
+<input type=hidden name=mode value=3>
+<center>
+<table cellspacing=0>
+<tr>
+   <th colspan=2 align=center>
+   <p>
+   </th>
+</tr>
+<tr>
+    <th align=left><Font face="Arial,Helvetica" size=2 >
+    IP Address:
+    </th>
+    <td>
+    <Font face="Arial" size=2 >
+    192.168.178.3
+    </Font>
+    </td>
+</tr>
+<tr>
+    <th align=left><Font face="Arial,Helvetica" size=2 >
+    Subnet Mask:
+    </th>
+    <td>
+    <Font face="Arial" size=2 >
+    255.255.255.0
+    </Font>
+    </td>
+</tr>
+</table>
+</html>
+
+</table>
+<p><b>Warning: </b>Changing IP configuration could result in loss of browser
+          connectivity to the current URL.
+</center>
+<p>
+<hr>
+<table align=right><tr><td>
+<input type="submit" name="apply" value=" Apply Changes ">
+<input type="reset" name="clear" value=" Clear Changes ">
+</td></tr></table>
+
+</form>
+</body>
+</html>

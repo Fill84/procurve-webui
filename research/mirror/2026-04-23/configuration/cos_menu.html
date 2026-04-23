@@ -1,0 +1,28 @@
+<html>
+<head>
+<Script language="JavaScript">
+    function chkForAM() {
+        var server = "https://www.hpe.com/networking/support"  ;
+        var msg =
+            "Caution \n\n" +
+            "A network management server has been detected.  It is possible for " +
+            "the server to \noverwrite configuration changes made under " +
+            "the web agent.  It is recommended \nthat COS be configured through " +
+            "the network management server." ;
+        if ( server != "" && server.indexOf("www.hp.com") < 0 ) {
+            alert( msg );  
+        }
+    }
+
+    function selectCOSMenu() {
+        chkForAM();
+        parent.cosmenu.document.location = "cos_menu1.html" ;
+    }
+
+
+</Script>
+</head>
+<body bgcolor=#bfbfbf onLoad="selectCOSMenu()">
+</applet>
+</body>
+</html>

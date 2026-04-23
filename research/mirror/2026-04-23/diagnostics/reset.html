@@ -1,0 +1,48 @@
+<html>
+<!- $Revision: 3.0 $ ->
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+<body bgcolor=white onLoad='navAid("diagnostics","reset")'>
+<Font face="Arial" size=2 >
+
+<form name=dr action="../cgi/device_reset">
+
+Device reset is equivalent to powering off the device.  Network operation
+will be interrupted while the device is performing a self test and other
+initialization tasks.<p>
+
+To reset the device, click the button below.<p>
+<center>
+<input type=button value=" Reset Device " i18n
+    onClick="if (confirm ('Really reset the device?')) submit();" i18n>
+</center>
+
+</form>
+</body>
+</html>

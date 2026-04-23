@@ -1,0 +1,30 @@
+<html>
+<head>
+<!- $Revision: 3.4 $ ->
+<script language="JavaScript">
+    function anySelected () {
+        if (parent.psf.document.list.selectedItemCount() >= 1)
+            return true;
+        else {
+            alert ('No ports have been selected.');
+            return false;
+        }
+    }
+
+    function modPorts() {
+		if ( anySelected() ) {
+			parent.psf.document.list.submitMultipleItems
+				('../cgi/port_form', '', 'nc_view', true, false);
+		}
+    }
+</script>
+</head>
+<body bgcolor=white>
+
+<table align=right><tr><td>
+<form name=pob>
+<input type=button value=" Modify Selected Ports " onClick="modPorts();">
+</form>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+<body bgcolor=white onLoad='navAid("configuration","ports")'>
+<applet code=GenericList.class archive=agent.jar name=list codebase=../classes
+ width=100% height=100%>
+        <param name=dataURL value="../cgi/get_portscfg">
+        <param name=formURL value="../cgi/port_form" >
+        <param name=target  value="nc_view" >
+        <param name=titles  value="Port~Port Name~Port%Type~Enabled~?Status~Config%Mode~?Trunk~Flow%Control">
+        <param name=columns value="60~150:x~240~330~339:h~420~429:h~510">
+        <param name=params  value=".~.~.~.~.~.~.~.~.">
+</applet>
+</body>
+</html>
+

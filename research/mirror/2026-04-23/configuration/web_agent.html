@@ -1,0 +1,128 @@
+<html>
+<!- $Revision: 3.4 $ >
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+<script language="JavaScript">
+    ffs=32;
+dps=1;
+    var ffSetting = ffs ;   // GETFFCFG sets ffs and dps
+
+    function initForm () {
+        i = 0;
+        var form = document.features;
+        if ( parseInt(ffSetting) != parseInt(form.ffs.options[0].value) ) {
+           for(i = 1; i < form.ffs.length; i++) {
+               if(parseInt(ffSetting) >=parseInt(form.ffs.options[i].value)){
+                 form.ffs.options[i].selected=true;
+                 break;
+               }
+           }
+        } else {
+             form.ffs.options[0].selected=true;
+        }
+    }
+
+    function defaults () {
+        var form = document.features;
+        form.ffs.options[2].selected=true;
+    }
+
+    function setValue() {
+        var form = document.features ;
+            form.ffs.options[form.ffs.selectedIndex].selected=true;
+    }
+
+    function openTopic ( topic ) {
+        parent.parent.location = topic ;
+    }
+
+</script>
+</head>
+
+<body bgcolor=white onLoad='initForm();navAid("configuration","faultdetect")'>
+<Font face="Helvetica" size=2 >
+
+<form name=features action="../cgi/web_agent">
+
+This switch features <em><b>automatic fault detection</b></em> capability which
+can protect your network from being brought down by problems such as network
+loops, defective cables, transceivers and faulty network interface cards.
+
+<p>
+Configure the fault detection sensitivity which best suits your network
+environment. When done, click the <b>Apply Changes</b> button to save your
+settings to the device.<p>
+
+<table width=100%>
+<tr>
+    <td align=right nowrap><Font face="Helvetica" size=2 >
+            <b>Log Network Problems&nbsp;&nbsp;</b>
+    </td>
+    <td><Font face="Helvetica" size=2 >
+        <select name=ffs onChange="setValue()">
+            <option value="0">Never
+            <option value="224">Low Sensitivity
+            <option value="128">Medium Sensitivity
+            <option value="32">High Sensitivity (Recommended)
+        </select>
+    </td>
+</tr>
+<tr><td></td>
+    <td><Font face="Helvetica" size=2 >
+        Automatically detect network problems and report them, with
+        their causes, in the alert log (located under the 
+        <A Href="Javascript:openTopic('../status/index.html');">
+        Status tab</A>).
+        <br><br>
+    </td>
+</tr>
+
+</table>
+<p>
+
+<em><b>High sensitivity</b></em> setting causes the switch to act on
+<em><b>any</b></em> network problem.<br>
+
+<em><b>Low sensitivity</b></em> setting causes the switch to act only when
+<em><b>severe</b></em> problems occur.<p>
+
+
+<hr size=3>
+<table width=100%><tr>
+<td align=left><Font face="Helvetica" size=2 >
+    <input type=button value=" Reset to Default Settings " onClick="defaults();">
+</td>
+<td align=right><Font face="Helvetica" size=2 >
+    <input type=submit value=" Apply Changes ">
+    <input type=button value=" Clear Changes " onClick="initForm();">
+</td>
+</tr></table>
+
+</form>
+</body>
+</html>
