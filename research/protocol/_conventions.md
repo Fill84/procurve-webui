@@ -9,9 +9,12 @@ template so Phase 1 can translate each doc into Python mechanically.
 - **Applet operations are all GET.** Even mutations (e.g. `addVLAN`) encode
   arguments into the query string. There is no POST anywhere in the
   decompiled applet.
-- **Exception:** `/cgi/configfile` (config upload/restore) is NOT an applet
-  URL — it's a plain HTML form that uses POST multipart/form-data. Handle
-  separately; see `backup/upload_config.md`.
+- **Exceptions (POST endpoints, not applet URLs):**
+  - `/cgi/configfile` — config download (GET) only; uses query-string form,
+    see `backup/download_config.md`.
+  - `/cgi/upload` — config upload / restore. Plain HTML form POSTing
+    `multipart/form-data`. See `backup/upload_config.md`.
+  Both live outside the applet's GET-only world.
 
 ### URL construction
 - Applet classes build URLs in two patterns:
