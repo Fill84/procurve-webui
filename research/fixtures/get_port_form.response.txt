@@ -1,0 +1,145 @@
+<html>
+<!- port_form >
+<head>
+<Script language="JavaScript" >
+    function chkSubmit() {
+        var form = document.mpf ;
+        var n = 0 ;
+        var i = 0;
+        
+        var modearray = new Array ("10HDx", "100HDx", "10FDx",
+             "100FDx", "Auto", "Auto-10", "Auto-100", "Auto-1000");
+        var mvalue = form.hpSwitchPortFastEtherMode.value-1;
+        var fvalue = form.hpSwitchPortFlowControl.value;
+
+        if( (modearray[mvalue].indexOf("HD") > 0) && (fvalue ==2)) {
+             alert("To enable flow control the port(s) should be in full Duplex mode"); 
+             return false ;
+        }
+
+        if ( typeof form.hpSwitchPortBcastLimit == "object" ) {
+            n = form.hpSwitchPortBcastLimit.value ;
+        }
+        if ( n < 0 || n > 99 ) {
+            alert( "Broadcast Limit  must be in the range 0-99" );
+            return false ;
+        }
+        if ( typeof form._portName == "object" ) {
+            n = form._portName.value.length ;
+            portName = form._portName.value ;
+        }
+        if ( n > 64 ) {
+            alert( "Field Port Name exceeds 64 characters.\n" +
+               "Update canceled.");
+            return false ;
+        }
+        result = (portName).indexOf("~");
+        if( result >= 0 )
+        {
+            ok = false;
+            alert("There is an illegal character in Port Name" + 
+                  " field.\n The ~ character is not allowed in " + 
+                  "Port Name field." );
+            return false ;
+        } 
+        return true ;
+    }
+</Script>
+</head>
+
+<body bgcolor=white >
+
+<Form Name="mpf" Action="../cgi/mod_ports" onSubmit="return chkSubmit();" >
+
+<Input Type="hidden" Name="indeces" Value="1">
+<Center>
+
+<Table Cellspacing=0 Border=0 >
+<br>
+<tr>
+<td align=left><Font face="Arial,Helvetica" size=2>
+<B>Port(s):</B>
+</td>
+<td><Font face="Arial,Helvetica" size=2>
+
+<B>1</B>
+</td>
+</tr>
+<tr>
+<td align=left><Font face="Arial,Helvetica" size=2>
+<B>Port Name:</B>
+</td>
+<td>
+<br>
+<Input Type="text" Name="_portName" size=15 value="">
+
+<br>
+</td>
+</tr>
+<br>
+<tr>
+<td align=left><Font face="Arial,Helvetica" size=2>
+<B>Port Enabled:</B>
+</td>
+
+<td>
+<Input Type="RADIO" Name="hpSwitchPortAdminStatus" Value=1 Checked > Yes     <Input Type="RADIO" Name="hpSwitchPortAdminStatus" Value=2 > No 
+</td>
+</tr>
+<tr>
+<td align=left><Font face="Arial,Helvetica" size=2>
+<B>Mode:</B>
+</td>
+
+<td>
+<br>
+<Select Name="hpSwitchPortFastEtherMode" size=1 >
+<option value=1> 10HDx
+<option value=2> 100HDx
+<option value=3> 10FDx
+<option value=4> 100FDx
+<option value=5> Auto
+<option value=7> Auto-10
+<option value=8> Auto-100
+<option value=9 selected> Auto-1000
+<option value=11> Auto-10-100
+</Select>
+<br><br>
+</td>
+</tr>
+<tr>
+<td align=left><Font face="Arial,Helvetica" size=2>
+<B>Flow Control:</B>
+</td>
+<td>
+<Select Name="hpSwitchPortFlowControl" size=1 >
+<Option Value=2 Selected >Enable
+<Option Value=1 >Disable
+</Select>
+</td>
+</tr>
+</Table>
+</Center>
+
+
+<hr>
+<table align=left>
+<tr>
+        <td>
+        <input type="button" name="cancel" value=" Cancel "
+        onClick="parent.nc_view.location='../configuration/portsf.html'">
+        </td>
+</tr>
+</table>
+<table align=right>
+<tr>
+        <td>
+        <input type="submit" name="apply" value=" Apply Settings ">
+        <input type="reset" name="clear" value=" Clear Changes ">
+        </td>
+</tr>
+</table>
+</form>
+
+</body>
+</html>

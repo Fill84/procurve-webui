@@ -1,0 +1,25 @@
+1~1-Dyn1~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+2~2-Dyn1~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+3~3-Dyn3~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+4~4-Dyn3~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+5~5-Dyn3~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+6~6-Dyn3~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+7~7~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+8~8~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+9~9-Dyn2~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+10~10-Dyn2~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+11~11~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+12~12~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+13~13~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+14~14~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+15~15-Dyn3~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+16~16-Dyn1~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+17~17~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+18~18~UPS~100/1000T~Yes~.~Auto~ ~Enable~0
+19~19~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+20~20~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+21~21~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+22~22~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+23~23~ ~100/1000T~No~.~Auto-1000~ ~Enable~0
+24~24~ ~100/1000T~Yes~.~Auto-1000~ ~Enable~0
+
