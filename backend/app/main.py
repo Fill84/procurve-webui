@@ -23,6 +23,7 @@ from app.backup_store import BackupStore
 from app.errors import install_error_handlers
 from app.logging_config import configure_logging
 from app.settings import Settings
+from app.ws.port_traffic import port_traffic_ws
 
 
 @asynccontextmanager
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(security_router)
     app.include_router(diagnostics_router)
     app.include_router(support_router)
+    app.add_api_websocket_route("/ws/port-traffic", port_traffic_ws)
     return app
 
 
