@@ -893,14 +893,18 @@ def _parse_feature_flag(raw: str) -> bool | None:
 
     The template emits `1` (On), `2` (Off), or a literal string like
     `Invalid OID` on multi-VLAN variants where the default VLAN lookup
-    failed. Returns None for the latter.
+    failed. Returns None ONLY for the documented `Invalid OID` sentinel;
+    any other unexpected value raises ParseError so new firmware revisions
+    surface as a parser bug rather than silently becoming None.
     """
     v = raw.strip().strip('"')
     if v == "1":
         return True
     if v == "2":
         return False
-    return None
+    if v == "Invalid OID":
+        return None
+    raise ParseError(f"unknown feature-flag value {v!r}")
 
 
 @READ

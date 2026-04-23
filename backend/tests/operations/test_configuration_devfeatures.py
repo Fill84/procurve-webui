@@ -49,6 +49,20 @@ async def test_get_devfeatures_page_invalid_oid_yields_none() -> None:
 
 
 @respx.mock
+async def test_get_devfeatures_page_unknown_flag_raises() -> None:
+    """Unknown feature-flag values must raise ParseError, not silently
+    return None — firmware revisions that introduce new values should
+    surface as a parser bug rather than masquerade as Invalid OID."""
+    body = '<html><script>var _igmp = 3 ;\nvar _st = 1 ;</script></html>'
+    respx.get("http://192.168.178.3/configuration/features2.html").mock(
+        return_value=Response(200, text=body)
+    )
+    async with ProcurveTransport(host="192.168.178.3") as t:
+        with pytest.raises(ParseError):
+            await get_devfeatures_page(t)
+
+
+@respx.mock
 async def test_get_devfeatures_page_missing_vars_raises() -> None:
     respx.get("http://192.168.178.3/configuration/features2.html").mock(
         return_value=Response(200, text="<html>no feature vars</html>")
