@@ -83,10 +83,17 @@ async def upload_config(
     }
     if reboot_after:
         data[UPLOAD_REBOOT_FIELD] = "on"
+    # --- FIX (2026-04-23): strip \r before upload ---
+    # The /cgi/upload endpoint prepends an extra \r to every \n in the stored
+    # file. Uploading with \r\n line endings results in stored \r\r\n, which
+    # changes the downloaded SHA256 even though the operational config is
+    # semantically unchanged. Stripping \r before upload lets the switch insert
+    # its own \r\n and round-trip byte-identically.
+    upload_text = backup.text.replace("\r\n", "\n").replace("\r", "\n")
     files = {
         UPLOAD_CONFIGFILE_FIELD: (
             "CONFIG.pcc",
-            backup.text.encode("ascii"),
+            upload_text.encode("ascii"),
             "application/octet-stream",
         ),
     }

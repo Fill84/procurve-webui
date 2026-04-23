@@ -92,10 +92,13 @@ async def test_upload_config_includes_reboot_when_requested(monkeypatch):
 
 
 @respx.mock
-async def test_upload_config_preserves_bytes_exactly(monkeypatch):
-    """File part body must contain the backup bytes unchanged (round-trip fidelity)."""
-    import hashlib
+async def test_upload_config_strips_cr_before_upload(monkeypatch):
+    """File part body must have no \\r (only \\n) so switch storage round-trips byte-identically.
 
+    See research/backups/2026-04-23/README.md for the background — the switch's
+    /cgi/upload endpoint adds its own \\r to every \\n, so uploading already-CRLF
+    text results in doubled-CR storage.
+    """
     monkeypatch.setenv("READ_ONLY", "false")
     backup = _reference_backup()
     route = respx.post("http://192.168.178.3/cgi/upload").mock(
@@ -104,6 +107,8 @@ async def test_upload_config_preserves_bytes_exactly(monkeypatch):
     async with ProcurveTransport(host="192.168.178.3") as t:
         await upload_config(t, backup=backup)
     body = route.calls.last.request.content
+
+    # Extract the file part
     marker = b'filename="CONFIG.pcc"'
     idx = body.find(marker)
     assert idx >= 0
@@ -113,7 +118,14 @@ async def test_upload_config_preserves_bytes_exactly(monkeypatch):
     boundary_marker = b"\r\n--"
     content_end = body.find(boundary_marker, content_start)
     file_bytes = body[content_start:content_end]
-    assert hashlib.sha256(file_bytes).hexdigest() == backup.sha256
+
+    # File part must contain \n but never \r (CRs are inserted by switch storage)
+    assert b"\r" not in file_bytes
+    assert b"\n" in file_bytes
+
+    # Content is the baseline with all \r\n normalized to \n
+    expected = backup.text.replace("\r\n", "\n").replace("\r", "\n").encode("ascii")
+    assert file_bytes == expected
 
 
 async def test_upload_config_custom_configname(monkeypatch):
