@@ -1,0 +1,60 @@
+research/mirror/2026-04-23/configuration/device_view.html:    <param name=offLED      value="787878" >
+research/mirror/2026-04-23/configuration/device_view.html:    <param name=getURL      value="../cgi/get_bobports" >
+research/mirror/2026-04-23/configuration/device_view.html:    <param name=setURL      value="../cgi/set_bobports" >
+research/mirror/2026-04-23/configuration/device_view.html:    <param name=isdual      value="true" >
+research/mirror/2026-04-23/configuration/device_view.html:    <param name=statusLine  value=
+research/mirror/2026-04-23/configuration/device_view.html:    <param name=components value= "
+research/mirror/2026-04-23/configuration/menu.html:    <param name=target value=nc_view>
+research/mirror/2026-04-23/configuration/menu.html:    <param name=columns value="4" >
+research/mirror/2026-04-23/configuration/menu.html:    <param name=buttons 
+research/mirror/2026-04-23/configuration/menu.html:    <param name=selection value="devview">
+research/mirror/2026-04-23/configuration/ports1.html:        <param name=dataURL value="../cgi/get_portscfg">
+research/mirror/2026-04-23/configuration/ports1.html:        <param name=formURL value="../cgi/port_form" >
+research/mirror/2026-04-23/configuration/ports1.html:        <param name=target  value="nc_view" >
+research/mirror/2026-04-23/configuration/ports1.html:        <param name=titles  value="Port~Port Name~Port%Type~Enabled~?Status~Config%Mode~?Trunk~Flow%Control">
+research/mirror/2026-04-23/configuration/ports1.html:        <param name=columns value="60~150:x~240~330~339:h~420~429:h~510">
+research/mirror/2026-04-23/configuration/ports1.html:        <param name=params  value=".~.~.~.~.~.~.~.~.">
+research/mirror/2026-04-23/configuration/vlan.html:	<param name=family value="1">
+research/mirror/2026-04-23/configuration/vlan.html:	<param name=basecgiurl value="../cgi/">
+research/mirror/2026-04-23/diagnostics/menu.html:    <param name="target" value="nc_view">
+research/mirror/2026-04-23/diagnostics/menu.html:    <param name="buttons" 
+research/mirror/2026-04-23/ncidbar.html:    <param name=url value="../cgi/fflog?action=status">
+research/mirror/2026-04-23/ncidbar.html:    <param name=delay value=30>
+research/mirror/2026-04-23/ncidbar.html:    <param name=clickUrl value="../ncfw_b.html?index="> 
+research/mirror/2026-04-23/ncidbar.html:    <param name=clickTarget value="proxyf"> 
+research/mirror/2026-04-23/ncidbar.html:    <param name=text1 value="ProCurve Switch 2810-24G (J9021A)">
+research/mirror/2026-04-23/nctabs.html:        <param name=target value=nccontent>
+research/mirror/2026-04-23/nctabs.html:        <param name=type value=tabs> 
+research/mirror/2026-04-23/nctabs.html:        <param name=buttons 
+research/mirror/2026-04-23/security/menu.html:    <param name="target" value="nc_view">
+research/mirror/2026-04-23/security/menu.html:    <param name=columns value=5 > 
+research/mirror/2026-04-23/security/menu.html:    <param name=buttons 
+research/mirror/2026-04-23/status/menu.html:    <param name="target" value="nc_view">
+research/mirror/2026-04-23/status/menu.html:    <param name="buttons" 
+research/mirror/2026-04-23/status/overview.html:    <param name=dataURL value="../cgi/fflog?action=list"> 
+research/mirror/2026-04-23/status/overview.html:    <param name=formURL value="../status/overview2.html"> 
+research/mirror/2026-04-23/status/overview.html:    <param name=target  value="fft"> 
+research/mirror/2026-04-23/status/overview.html:    <param name=titles  value="Status~Alert~Date / Time~Description"> 
+research/mirror/2026-04-23/status/overview.html:    <param name=columns value="62:i~210:m~400:t~600:w"> 
+research/mirror/2026-04-23/status/overview.html:    <param name=params  value=".~.~dt~.">
+research/mirror/2026-04-23/status/overview.html:    <param name=images  value="11~10~2~3~4"> 
+research/mirror/2026-04-23/status/overview.html:    <param name=delay   value=15>
+research/mirror/2026-04-23/status/overview.html:    <param name=sortColumn value=2>
+research/mirror/2026-04-23/status/overview.html:    <param name=sortAscending value=no>
+research/mirror/2026-04-23/status/overview.html:    <param name=incremental value=yes>
+research/mirror/2026-04-23/status/portc1.html:    <param name=onlyOneSelection value="1">
+research/mirror/2026-04-23/status/portc1.html:    <param name=dataURL value="../cgi/portc"> 
+research/mirror/2026-04-23/status/portc1.html:    <param name=formURL value="../status/portdf.html">
+research/mirror/2026-04-23/status/portc1.html:    <param name=target  value="nc_view">
+research/mirror/2026-04-23/status/portc1.html:    <param name=titles value="Port~Port Name~MCast%Rx~MCast%Tx~BCast%Rx~BCast%Tx~Pkts%Rx~Pkts%Tx~Errors%Rx"> 
+research/mirror/2026-04-23/status/portc1.html:    <param name=columns value="65~155:x~230~305~380~455~530~605~999"> 
+research/mirror/2026-04-23/status/portc1.html:    <param name=params  value=".~.~.~.~.~.~.~.~.">
+research/mirror/2026-04-23/status/portc1.html:    <param name=delay value=10 >
+research/mirror/2026-04-23/status/portgraph.html:    <Param Name="URL"         value="../cgi/port_usage" >
+research/mirror/2026-04-23/status/portgraph.html:    <Param Name="securityURL" value="../securitymsg.html" >
+research/mirror/2026-04-23/status/portgraph.html:    <Param Name="pollRate" value="10000" >
+research/mirror/2026-04-23/status/portStatus1.html:    <param name=dataURL value="../cgi/get_ports"> 
+research/mirror/2026-04-23/status/portStatus1.html:    <param name=target  value="nc_view">
+research/mirror/2026-04-23/status/portStatus1.html:    <param name=titles value="Port~Port Name~Port Type~Enabled~Link%Status~Current%Mode~?Trnk~Flow Ctrl"> 
+research/mirror/2026-04-23/status/portStatus1.html:    <param name=columns value="65~155:x~230~305~380~455~464:h~555"> 
+research/mirror/2026-04-23/status/portStatus1.html:    <param name=params  value=".~.~.~.~.~.~.~.">
