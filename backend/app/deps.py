@@ -7,6 +7,7 @@ from fastapi import Depends, HTTPException, Request, status
 
 from app import auth as auth_module
 from app.auth import SESSION_COOKIE, SessionEntry, SessionStore
+from app.backup_store import BackupStore
 from app.settings import Settings
 from procurve_client.transport import ProcurveTransport
 
@@ -44,3 +45,13 @@ async def get_transport(
     session: SessionEntry = Depends(get_session),  # noqa: B008 — FastAPI pattern
 ) -> ProcurveTransport:
     return session.transport
+
+
+def get_backup_store(request: Request) -> BackupStore:
+    """Return the process-wide BackupStore bound to app.state."""
+    return cast(BackupStore, request.app.state.backup_store)
+
+
+def get_app_settings(request: Request) -> Settings:
+    """Return the Settings instance bound to app.state."""
+    return cast(Settings, request.app.state.settings)

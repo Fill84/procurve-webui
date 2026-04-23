@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.backups import router as backups_router
 from app.api.health import router as health_router
 from app.api.identity import router as identity_router
 from app.api.placeholders import (
@@ -18,6 +19,7 @@ from app.api.placeholders import (
 )
 from app.api.status import router as status_router
 from app.auth import SessionStore
+from app.backup_store import BackupStore
 from app.errors import install_error_handlers
 from app.logging_config import configure_logging
 from app.settings import Settings
@@ -29,6 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = Settings()
     app.state.settings = settings
     app.state.session_store = SessionStore(secret=settings.session_secret)
+    app.state.backup_store = BackupStore(root=settings.backups_dir)
     try:
         yield
     finally:
@@ -50,6 +53,7 @@ def create_app() -> FastAPI:
     app.include_router(identity_router)
     app.include_router(status_router)
     app.include_router(health_router)
+    app.include_router(backups_router)
     app.include_router(configuration_router)
     app.include_router(security_router)
     app.include_router(diagnostics_router)

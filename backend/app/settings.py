@@ -1,6 +1,8 @@
 """Application settings loaded from environment variables."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,6 +21,10 @@ class Settings(BaseSettings):
     session_secret: str = Field(..., min_length=32, description="Random signing key")
     session_ttl_hours: int = Field(default=8, gt=0)
     metrics_enabled: bool = Field(default=False)
+    backups_dir: Path = Field(
+        default=Path("/app/backups"),
+        description="Filesystem root for stored configuration backups",
+    )
 
     @field_validator("session_secret")
     @classmethod
