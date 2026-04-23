@@ -72,7 +72,10 @@ async def test_upload_config_posts_multipart(monkeypatch):
     assert b'name="configfile"' in body
     assert b'filename="CONFIG.pcc"' in body
     assert b'name="Uplo"' in body
-    assert b"Upload" in body
+    # Tight byte-exact match for the Uplo submit-field serialization.
+    # `b"Upload" in body` alone is too loose because "Upload" also
+    # appears in other parts of a multipart body.
+    assert b'Content-Disposition: form-data; name="Uplo"\r\n\r\nUpload\r\n' in body
     # Default: reboot checkbox omitted
     assert b'name="reboot"' not in body
 
