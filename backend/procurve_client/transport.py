@@ -64,7 +64,12 @@ class ProcurveTransport:
     def _auth_headers(self) -> dict[str, str]:
         return self.auth.headers()
 
-    async def get(self, path: str, *, params: dict[str, Any] | None = None) -> httpx.Response:
+    async def get(
+        self,
+        path: str,
+        *,
+        params: dict[str, Any] | list[tuple[str, Any]] | None = None,
+    ) -> httpx.Response:
         client = self._require_client()
         try:
             r = await client.get(path, params=params, headers=self._auth_headers())
