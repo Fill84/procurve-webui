@@ -4,7 +4,15 @@ Each returns HTTP 501 with `{error: "not_implemented", phase: "3+"}`.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+
+_NOT_IMPLEMENTED_BODY = {"error": "not_implemented", "phase": "3+"}
+
+
+def _not_implemented_response() -> JSONResponse:
+    return JSONResponse(status_code=501, content=_NOT_IMPLEMENTED_BODY)
+
 
 configuration_router = APIRouter(prefix="/api/v1/configuration", tags=["placeholders"])
 security_router = APIRouter(prefix="/api/v1/security", tags=["placeholders"])
@@ -12,28 +20,21 @@ diagnostics_router = APIRouter(prefix="/api/v1/diagnostics", tags=["placeholders
 support_router = APIRouter(prefix="/api/v1/support", tags=["placeholders"])
 
 
-def _not_implemented() -> None:
-    raise HTTPException(
-        status_code=501,
-        detail={"error": "not_implemented", "phase": "3+"},
-    )
-
-
 @configuration_router.get("")
-async def configuration_placeholder() -> None:
-    _not_implemented()
+async def configuration_placeholder() -> JSONResponse:
+    return _not_implemented_response()
 
 
 @security_router.get("")
-async def security_placeholder() -> None:
-    _not_implemented()
+async def security_placeholder() -> JSONResponse:
+    return _not_implemented_response()
 
 
 @diagnostics_router.get("")
-async def diagnostics_placeholder() -> None:
-    _not_implemented()
+async def diagnostics_placeholder() -> JSONResponse:
+    return _not_implemented_response()
 
 
 @support_router.get("")
-async def support_placeholder() -> None:
-    _not_implemented()
+async def support_placeholder() -> JSONResponse:
+    return _not_implemented_response()

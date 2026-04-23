@@ -45,5 +45,4 @@ EXPECTED = {"error": "not_implemented", "phase": "3+"}
 def test_placeholder_returns_501(client: TestClient, path: str) -> None:
     r = client.get(path)
     assert r.status_code == 501
-    # FastAPI wraps HTTPException.detail under `detail`.
-    assert r.json() == {"detail": EXPECTED}
+    assert r.json() == EXPECTED
