@@ -1,0 +1,32 @@
+# VCS
+.git
+.gitignore
+
+# Python
+.venv
+backend/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+backend/htmlcov/
+backend/coverage-report.md
+backend/.coverage
+
+# Node
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/openapi.json
+
+# Repo-only artifacts we don't want in the build context
+research/
+docs/
+*.md
+!backend/README.md
+
+# Misc
+*.log
+.env
+.env.local

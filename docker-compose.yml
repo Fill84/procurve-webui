@@ -1,0 +1,14 @@
+services:
+  procurve-webui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: procurve-webui:latest
+    container_name: procurve-webui
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./backups:/app/backups
+    restart: unless-stopped
