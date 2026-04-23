@@ -1,5 +1,11 @@
 # set_ssl
 
+> ⚠️ **FORBIDDEN:** Never invoked against the live switch.
+> Rewriting or disabling SSL config can sever the management session
+> and regenerate/revoke the server cert mid-connection, risking lockout.
+> See `memory/feedback_switch_write_safety.md`. Only the user runs this
+> operation manually when they choose.
+
 **Tab:** security
 **Kind:** write
 **Source in applet:** none — plain HTML form with a client-side JS helper
