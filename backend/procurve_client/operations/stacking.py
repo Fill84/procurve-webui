@@ -35,6 +35,8 @@ verified byte-for-byte against real multi-member traffic.
 """
 from __future__ import annotations
 
+import httpx
+
 from procurve_client._safety import READ, WRITE
 from procurve_client.errors import OperationError, ParseError
 from procurve_client.models.stacking import (
@@ -448,6 +450,32 @@ def _collect_error_lines(body: str) -> list[SetMembersError]:
     return errors
 
 
+# ---------------------------------------------------------------------
+# Internal helpers (no @WRITE gate)
+# ---------------------------------------------------------------------
+# Pattern note: the public `delete_members` carries the `@WRITE` decorator
+# (the canonical READ_ONLY boundary). `_delete_members_impl` below is the
+# shared URL-building and HTTP helper it delegates to. Internal callers
+# that are already inside a gated write path (e.g. `set_members` rollback)
+# invoke the impl directly so rollback cannot be suppressed by a race on
+# the env var. The impl is NEVER called from outside this module.
+
+
+async def _delete_members_impl(
+    transport: ProcurveTransport, nums: list[int]
+) -> httpx.Response:
+    """Internal helper: issue `/cgi/delete_members?nums=<n1>,<n2>,`.
+
+    Used by the public `delete_members` (after @WRITE check) and by
+    `set_members` rollback (already inside a @WRITE-gated call).
+    No @WRITE decorator on this helper by design — see the pattern note
+    above.
+    """
+    nums_csv = ",".join(str(n) for n in nums) + ","
+    url = f"{_DELETE_MEMBERS}?nums={nums_csv}"
+    return await transport.get(url)
+
+
 @WRITE
 async def set_members(
     transport: ProcurveTransport,
@@ -494,14 +522,11 @@ async def set_members(
 
     if errors and auto_rollback:
         # Auto-rollback: free the slots we just tried to claim.
+        # Call the internal impl directly — we're inside an already-gated
+        # write path, and rollback must always run even if the READ_ONLY
+        # env var is flipped mid-operation.
         rollback_req = DeleteMembersRequest(switch_nums=request.switch_nums)
-        rollback_addrs_csv = (
-            ",".join(str(n) for n in rollback_req.switch_nums) + ","
-        )
-        rollback_url = f"{_DELETE_MEMBERS}?nums={rollback_addrs_csv}"
-        # Bypass the @WRITE READ_ONLY check — we're inside an already
-        # permitted write path, and rollback must always run.
-        await transport.get(rollback_url)
+        await _delete_members_impl(transport, rollback_req.switch_nums)
         return SetMembersResponse(
             ok=False,
             errors=errors,
@@ -532,9 +557,7 @@ async def delete_members(
     # TODO: needs live capture — the applet never parses the response
     body so the success / error shapes are not verified on the wire.
     """
-    nums_csv = ",".join(str(n) for n in request.switch_nums) + ","
-    url = f"{_DELETE_MEMBERS}?nums={nums_csv}"
-    r = await transport.get(url)
+    r = await _delete_members_impl(transport, request.switch_nums)
 
     errors = _collect_error_lines(r.text)
     if errors:
