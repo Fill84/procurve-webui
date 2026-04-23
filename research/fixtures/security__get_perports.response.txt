@@ -1,0 +1,15 @@
+7~7~ ~Continuous~ ~None~1~1~1~0
+8~8~ ~Continuous~ ~None~1~1~1~0
+11~11~ ~Continuous~ ~None~1~1~1~0
+12~12~ ~Continuous~ ~None~1~1~1~0
+13~13~ ~Continuous~ ~None~1~1~1~0
+14~14~ ~Continuous~ ~None~1~1~1~0
+17~17~ ~Continuous~ ~None~1~1~1~0
+18~18~UPS~Continuous~ ~None~1~1~1~0
+19~19~ ~Continuous~ ~None~1~1~1~0
+20~20~ ~Continuous~ ~None~1~1~1~0
+21~21~ ~Continuous~ ~None~1~1~1~0
+22~22~ ~Continuous~ ~None~1~1~1~0
+23~23~ ~Continuous~ ~None~1~1~1~0
+24~24~ ~Continuous~ ~None~1~1~1~0
+

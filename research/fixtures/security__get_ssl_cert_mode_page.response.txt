@@ -1,0 +1,35 @@
+<html>
+<script>
+   function initForm()
+   {
+        var certificateStatus = 1 ;
+       if (certificateStatus == 1)
+             document.forms[0].certmode[0].checked = "1" ;
+          else
+             document.forms[0].certmode[1].checked = "1";
+   }
+</script>
+   <body bgcolor=white onLoad=initForm()>
+   <form name=certbut>
+    <center>
+    <Table cellspacing=1 cellpadding=0 Width=100% >
+    <tr>
+    <td width=50%>
+    <Font Face="Arial, Helvetica" Size=2 >
+    <Input Type="RADIO" Name="certmode" Value="certins" 
+     > <B>Create Certificate/ Certificate Request</B>
+    </Font>
+    </td>
+    <td width=50% >
+    <Font Face="Arial, Helvetica" Size=2 >
+    <Input Type="RADIO" Name="certmode" Value="certreq" 
+        onClick="parent.ssl2.location='../security/ssl_cert2.html' ;"
+        > <B>Use Installed Certificate</B>
+    </Font>
+    </td>
+    </tr>
+    </Table>
+    </center>
+   </form>
+  <body>
+</html>

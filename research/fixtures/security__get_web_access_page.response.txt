@@ -1,0 +1,141 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+
+<body bgcolor=white onLoad='navAid("security","web")'>
+<form name=websec action="web_access.html">
+<center>
+<html>
+<head>
+</head>
+<table cellspacing=0>
+<tr>
+    <td> <Font face="Arial,Helvetica" size=2 >
+    Read-Only Access</td>
+</tr>
+<tr>
+    <td>
+    <table border=1 cellspacing=0>
+    <tr>
+        <td>
+        <table cellspacing=0 >
+        <tr>
+            <th align=left> <Font face="Arial,Helvetica" size=2 >
+            Operator User Name:</th>
+            <td align=right>
+            <input name=_UserName value=""
+            size=16></td>
+
+        </tr>
+        <tr>
+            <th align=left> <Font face="Arial,Helvetica" size=2 >
+            Operator Password:</th>
+            <td align=right>
+            <input type=password 
+                name=_UserPasswd value="" size=16>
+            </td>
+        </tr>
+        <tr>
+            <th align=left> <Font face="Arial,Helvetica" size=2 >
+            Confirm  Operator Password:</th>
+            <td align=right>
+            <input type=password 
+                name=_UserPasswd2 value="" size=16>
+            </td>
+        </tr>
+        <tr>
+            <td rowspan 1>
+            </td>
+        </tr>
+        </table>
+        </td>
+    </tr>
+    </table>
+</tr>
+</td>
+
+<tr>
+    <td> <Font face="Arial,Helvetica" size=2 >
+    <br><br>Read-Write Access</td>
+</tr>
+
+<tr>
+    <td>
+    <table border=1 cellspacing=0>
+    <tr>
+        <td>
+        <table cellspacing=0 >
+        <tr>
+            <th align=left> <Font face="Arial,Helvetica" size=2 >
+            Manager User Name:</th>
+            <td align=right>
+            <input name=_RootName value=""
+            size=16></td>
+        </tr>
+        <tr>
+            <th align=left> <Font face="Arial,Helvetica" size=2 >
+            Manager Password:</th>
+            <td align=right>
+            <input type=password name=_RootPasswd 
+                value="" size=16></td>
+        </tr>
+        <tr>
+            <th align=left> <Font face="Arial,Helvetica" size=2 >
+            Confirm Manager Password:</th>
+            <td align=right>
+            <input type=password name=_RootPasswd2 
+                value="" size=16></td>
+        </tr>
+        </table>
+        </td>
+    </tr>
+    </table>
+    </td>
+</tr>
+</table>
+
+<center>
+
+<p>
+<hr>
+<table align=right>
+
+<tr>
+    <td>
+    <input type="submit" name="apply" value=" Apply Changes ">
+    <input type="reset" name="clear" value=" Clear Changes ">
+    </td>
+</tr>
+</table>
+</center>
+</html>
+
+</form>
+</body>
+</html>

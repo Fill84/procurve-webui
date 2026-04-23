@@ -1,0 +1,37 @@
+<html>
+  <head>
+    <title>SSL Config</title>
+<script>
+      function initForm() 
+      {
+        var sslStatus = 1 ;
+        document.sslsetting.sslstate.options[sslStatus - 1].selected = true;
+      }
+</script>
+  </head>
+
+  <body bgcolor=white onLoad=initForm()>
+    <center><font face="helvetica" size=3><b>SSL Settings</b></font></center>
+    <form name=sslsetting>
+    <table>
+    <tr>
+        <td align=right><font face="helvetica" size=2 >
+        <b>SSL Enable: </b>
+        <td> 
+        <font face="helvetica" size=2>
+            <select name=sslstate >
+            <option value=1 >Off
+            <option value=2 >On
+            </select>
+        </td>
+        <td align=right><font face="helvetica" size=2 >
+        <b>Port: </b>
+        </td>
+        <td><font face="helvetica" size=2>
+        <Input Type="TEXT" Name="sslport" Size=5 maxlength=5 Value="443">
+        </td>
+    </tr> 
+    </table>
+    </form>
+  </body>
+</html>
