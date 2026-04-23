@@ -35,6 +35,13 @@ def mount_static(app: FastAPI, dist_dir: Path) -> None:
     if not dist_dir.is_dir():
         # During dev the frontend may not be built yet — skip gracefully.
         return
+    if not (dist_dir / "index.html").is_file():
+        # Partial / in-progress build — refuse to mount a broken SPA rather
+        # than 500 on every request.
+        return
+    if not (dist_dir / "assets").is_dir():
+        # No hashed-bundles directory — same rationale as above.
+        return
 
     # Serve hashed assets under /assets with long-cache headers.
     app.mount(

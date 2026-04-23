@@ -112,3 +112,34 @@ def test_assets_path_returns_404_for_missing_file(
     client, _dist = client_with_dist
     r = client.get("/assets/nope.js")
     assert r.status_code == 404
+
+
+def test_static_mount_skipped_when_index_html_missing(
+    settings: Settings, tmp_path: Path
+) -> None:
+    """A partial build (dist exists + assets/ exists but no index.html) must
+    skip the mount rather than 500 on every request."""
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    # No index.html written.
+    app = create_app(dist_dir=dist)
+    with TestClient(app) as c:
+        app.state.settings = settings
+        r = c.get("/")
+        assert r.status_code == 404
+
+
+def test_static_mount_skipped_when_assets_dir_missing(
+    settings: Settings, tmp_path: Path
+) -> None:
+    """A partial build (dist + index.html but no assets/) must skip rather
+    than crash at mount time inside StaticFiles."""
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text("<html></html>", encoding="utf-8")
+    # No assets/ dir.
+    app = create_app(dist_dir=dist)
+    with TestClient(app) as c:
+        app.state.settings = settings
+        r = c.get("/")
+        assert r.status_code == 404
