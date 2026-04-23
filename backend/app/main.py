@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +24,7 @@ from app.backup_store import BackupStore
 from app.errors import install_error_handlers
 from app.logging_config import configure_logging
 from app.settings import Settings
+from app.static import mount_static
 from app.ws.port_traffic import port_traffic_ws
 
 
@@ -40,7 +42,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await app.state.session_store.close_all()
 
 
-def create_app() -> FastAPI:
+def _resolve_dist_dir() -> Path:
+    """Best-effort resolution of the frontend dist dir at app-creation time.
+
+    Prefers `Settings().frontend_dist` when the env is populated, but silently
+    falls back to the default path literal if required env is missing (e.g.
+    during the module-level `app = create_app()` that runs on plain import
+    with no SWITCH_HOST / SESSION_SECRET set). The static mount itself is a
+    no-op when the returned path does not exist, so a stale fallback is safe.
+    """
+    try:
+        return Settings().frontend_dist
+    except Exception:  # noqa: BLE001 — env may be unset at import time
+        return Path("/app/frontend/dist")
+
+
+def create_app(dist_dir: Path | None = None) -> FastAPI:
     app = FastAPI(title="procurve-webui", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
@@ -60,6 +77,9 @@ def create_app() -> FastAPI:
     app.include_router(diagnostics_router)
     app.include_router(support_router)
     app.add_api_websocket_route("/ws/port-traffic", port_traffic_ws)
+    # MUST be last: SPA fallback is a catch-all GET and would shadow API/WS
+    # routes if registered earlier.
+    mount_static(app, dist_dir if dist_dir is not None else _resolve_dist_dir())
     return app
 
 

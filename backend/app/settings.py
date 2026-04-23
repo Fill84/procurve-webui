@@ -25,6 +25,10 @@ class Settings(BaseSettings):
         default=Path("/app/backups"),
         description="Filesystem root for stored configuration backups",
     )
+    frontend_dist: Path = Field(
+        default=Path("/app/frontend/dist"),
+        description="Filesystem path to the built Vite `dist/` directory",
+    )
 
     @field_validator("session_secret")
     @classmethod
