@@ -1,0 +1,44 @@
+<html>
+<head>
+<script>
+   // Fix for PR 1*214188 -Resolved scrollBar issues
+   onresize = function() {
+      document.location='portgraph.html'
+   }
+</script>
+</head>
+<!- $Revision: 1.5 $ >
+<body bgcolor=white>
+
+<noscript>
+    <table width=90%><tr><th align=left>
+    <font face=Helvetica color=red size=3>
+    This product requires the JavaScript language, which is either disabled 
+    or not available on this browser.<p>
+    
+    To use this product you must either upgrade your browser to one that is
+    JavaScript compliant, or enable the JavaScript on your current browser.
+    <p><br><br><br><br>
+    </th></tr></table>
+</noscript>
+
+&nbsp;
+&nbsp;
+<applet name=PortGraph archive=agent.jar code=PortGraph.class codebase=../classes width=95% height=95% >
+    <Param Name="URL"         value="../cgi/port_usage" >
+    <Param Name="securityURL" value="../securitymsg.html" >
+    <Param Name="pollRate" value="10000" >
+    <Atl><table width=90%><tr><td align=left>
+    <font face="Helvetica" Color=red Size=3 >
+    This product requires the Java language, which is either disabled 
+    or not available on this browser.  <br>
+    <br>
+    To use this product you must either upgrade your browser to
+    one that is Java compliant, or enable the Java language on
+    your current browser.
+    <p><br><br><br><br>
+    </td></tr></table>
+</applet>
+
+</body>
+</html>

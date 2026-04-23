@@ -1,0 +1,48 @@
+<html>
+<!- $Revision: 1.17 $ ->
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+
+<body bgcolor=white onLoad='navAid("status","overview")'>
+<applet code=GenericList.class archive=agent.jar name=list codebase=../classes
+ width=100% height=100%>
+    <param name=dataURL value="../cgi/fflog?action=list"> 
+    <param name=formURL value="../status/overview2.html"> 
+    <param name=target  value="fft"> 
+    <param name=titles  value="Status~Alert~Date / Time~Description"> 
+    <param name=columns value="62:i~210:m~400:t~600:w"> 
+    <param name=params  value=".~.~dt~.">
+    <param name=images  value="11~10~2~3~4"> 
+    <param name=delay   value=15>
+    <param name=sortColumn value=2>
+    <param name=sortAscending value=no>
+    <param name=incremental value=yes>
+</applet>
+</body>
+</html>

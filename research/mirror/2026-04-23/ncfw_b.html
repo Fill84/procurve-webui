@@ -1,0 +1,27 @@
+<html> 
+<HEAD>
+</HEAD> 
+<body bgcolor="#003366"> 
+<script language="JavaScript">
+index="";
+indeces="";
+if ( index.length == 0 && indeces.length != 0 ) index = indeces ;
+if (index.length > 0) {
+    url = '../status/ffviewf.html?index=' + index + 
+            '&dt=' + escape('');
+    var w = window.open (url, '_blank', 'width=750,height=450,menubar=1');
+    w.focus();
+
+    var win = window;
+    while (typeof win.ncidbar != 'object' && win != window.top)
+        win = win.parent;
+
+    i = win.dws.length;
+    win.dws[i] = w;
+    w.originWindow = win;
+    w.winId = 100 + i;
+}
+</script>
+
+</body> 
+</html> 

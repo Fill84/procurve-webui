@@ -1,0 +1,50 @@
+<html>
+<head>
+<script language="JavaScript">
+    	var vlanCount = 1 ;
+	var cripStat = "0" ;
+	var isCrip = 0;
+	
+    function initForm() {
+	var isCrip = 0;
+
+	if ( cripStat == "1" ) {
+		isCrip = 1;
+	}
+
+        if ( vlanCount == 1 ) {
+			document.write("<frameset rows=190,*,80 border=0 frameborder=0 framespacing=0>");
+			if ( isCrip == 0 ) {
+				document.write("    <frame src=features2.html?indeces=1 name=dfmf noresize");
+				document.write("            marginwidth=10 marginheight=0 >");
+			} else {
+				document.write("    <frame src=features2c.html?indeces=1 name=dfmf noresize");
+				document.write("            marginwidth=10 marginheight=0 >");
+			}
+			document.write("    <frame src=features3.html name=dfbf noresize scrolling=no");
+			document.write("            marginwidth=10 marginheight=0 >");
+			document.write("</frameset>");
+        } else {
+			document.write("<frameset rows=120,*,80 border=0 frameborder=0 framespacing=0>");
+			document.write("    <frame src=features2a.html name=dftf noresize");
+			document.write("            marginwidth=10 marginheight=0 >");
+			if ( isCrip == 0 ) {
+				document.write("    <frame src=features2b.html?indeces=1 name=dfmf noresize");
+				document.write("            marginwidth=10 marginheight=0 >");
+			} else {
+				document.write("    <frame src=features2d.html?indeces=1 name=dfmf noresize");
+				document.write("            marginwidth=10 marginheight=0 >");
+			}
+			document.write("    <frame src=features3.html name=dfbf noresize scrolling=no");
+			document.write("            marginwidth=10 marginheight=10 >");
+			document.write("</frameset>");
+        }
+		document.close();
+    }
+</script>
+</head>
+
+<body bgcolor=white 
+    onLoad='initForm();'>
+</body>
+</html>

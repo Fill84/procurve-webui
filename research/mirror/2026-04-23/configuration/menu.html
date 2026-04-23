@@ -1,0 +1,27 @@
+<html>
+<head>
+</head>
+<!- $Revision: 3.2.2.3 $ >
+<body bgcolor=#bfbfbf>
+<script>parent.parent.ButtonsReady = top;</script>
+<applet code=PageSelector.class archive=agent.jar name=Buttons codebase=../classes width=100% height=70>
+    <param name=target value=nc_view>
+    <param name=columns value="4" >
+    <param name=buttons 
+         value="devview~Device View~../configuration/device_viewf.html~selected,
+                faultdetect~Fault Detection~../configuration/web_agentf.html,
+                system~System Info~../configuration/systemf.html,
+                ip~IP Configuration~../configuration/ipf.html,
+                ports~Port Configuration~../configuration/portsf.html,
+                qos~Quality of Service~../configuration/cos_mainf.html,
+                monitor~Monitor Port~../configuration/monitorf.html,
+                devfeatures~Device Features~../configuration/featuresf.html,
+                stacking~Stacking~../configuration/stack_configf.html,
+		vlan~VLAN Configuration~../configuration/vlan.html,
+	        support~Support/Mgmt URL~../configuration/supportf.html,
+                uploadf~Upload/Download~../configuration/configfilef.html
+		" >
+    <param name=selection value="devview">
+</applet>
+</body> 
+</html> 

@@ -1,0 +1,26 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <title>Update Software</title>
+<script>
+function getvalue(){
+   var url=window.location.href;
+}
+
+</script>
+</head>
+<body onLoad="getvalue();">
+   <table border="0" align=center cellpadding="50">
+     <tr>
+         <td>
+    <form name="sti" action="../cgi/upload" enctype="multipart/form-data" method="post">
+    You can upload an Configuration File.<p>
+    Configuration Name: <input name="configname" value="Config" /><br/>
+    File: <input type="file"   name="configfile"/><br/>
+    <input name="reboot" type="checkbox" checked>Reboot
+    <p/>
+    <input type="submit" name="Uplo" value="Upload"/>
+    </form>
+</td></tr></table>
+</body>
+</html>
+

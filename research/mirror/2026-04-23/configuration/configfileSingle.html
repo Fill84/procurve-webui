@@ -1,0 +1,105 @@
+<html>
+<head>
+<style type="text/css"> TD { FONT: 9pt arial }
+TH { FONT: bold 9pt arial }
+A { font-size: xx-small}
+</style>
+<script>
+    function buildurl(){
+       var param;
+       param="uploadImgfile.html?"+document.ti.ter.selectedIndex;
+       window.location.href=param;
+    }
+    function rename() {
+      window.showModalDialog('rename.htm', null,'status:no;dialogWidth:300px;dialogHeight:200px;dialogHide:true;help:no;scroll:no');
+      return false;
+    }
+    function choose() {
+       window.showModalDialog('choose.htm', null,'status:no;dialogWidth:300px;dialogHeight:200px;dialogHide:true;help:no;scroll:no');
+       return false;
+    }
+    function askdelete(s) {
+      confirm("Are you sure you want to delete " + s + "?");
+       return false;
+    }
+    function download() {
+      document.si.idx.value=document.si.fg.options[document.si.fg.selectedIndex].value;
+      return true;
+    }
+</script>
+</head>
+<body>
+<table border="1" cellpadding="50">
+<tr>
+<td width="884" height="638" align="center">
+<table border="1" cellpadding="5" cellspacing="0">
+<tr>
+<td>
+</td>
+<td>
+<strong>Software Version</strong></td>
+<td>
+<strong>Config File</strong></td>
+</tr>
+<tr>
+<td bgdColor="#ddffdd">
+<p align="right">
+<strong>Primary:</strong></p>
+</td>
+<td bgdColor="#ddffdd">
+ 10/09/17 N.11.78 </td>
+<td bgdColor="#ddffdd">
+Config</td>
+</tr>
+<tr>
+<td bgdColor="#ddddff">
+<p align="right">
+<strong>Secondary:</strong></p>
+</td>
+<td bgdColor="#ddddff">
+ 10/21/08 N.11.15 </td>
+<td bgdColor="#ddddff">
+Config	</td>
+</tr>
+</table>
+<br />
+<br />
+<br />
+<br />
+<br />
+<form name=si action="../cgi/configfile">																		
+<input type="hidden" name="idx" value="1">
+You can modify or download a Configuration File.<br />
+<br>
+Configuration:
+<select id="Select1" name="fg" size="1">
+<option value=1>Config</option>
+</select>
+<br>
+<br>
+<input id="Submit1" name="D1" title="Download a copy of the selected Configuration file" type="submit" value="Download" onclick="download();">
+<input id="Submit2" name="U1" title="Upload a saved Configuration file" type="button" value="Upload" onclick="window.location.href='uploadConfile.html'">
+<br />
+<br />
+<br />
+<hr />
+<br />
+</form>
+<form name=ti>
+You can upload a Software Image.<br />
+<br />
+Destination:&nbsp;
+<select id="Select2" name="ter" size="1">
+<option value=1>Primary</option>
+<option value=2>Secondary</option>
+</select>
+<br>
+<br>
+<input id="Button2" name="submitb" title="Upload a saved Image file" type="button" value="Upload" onclick="buildurl();">&nbsp;
+</td>
+</form>
+</tr>
+</table>
+</body>
+</html>
+

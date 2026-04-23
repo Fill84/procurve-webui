@@ -1,0 +1,84 @@
+<html> 
+<head>
+    <title> 
+    HP2810_01 -  
+        ProCurve Switch 2810-24G (J9021A)
+    </title> 
+<!-- Changed by: Jon A. LaRosa, 10-May-2000 -->
+
+<script>
+    var dws = new Array();
+
+    function unregister(id) {
+        dws[id] = false;
+    }
+    function closeAll() {
+        for (i = 0; i < dws.length; i++) {
+            win = dws[i] ;
+            if (typeof win == 'object') {
+                if ( typeof win.winId == 'number' && win.winId >= 100 ) {
+                    win.originWindow = false;
+                    win.close();
+                }
+            }
+        }
+    }
+</script>
+<script>
+function openRegistrationWindow() {
+    if( 0 ) {
+      var regw = window.open('regf.html', 'Registration', 'width=750, height=450,menubar=1');
+       regw.focus();
+    }
+}
+function openRegistrationWindow2() {
+    if( 0 ) {
+       this.nccontent.location = "support/regIndex.html";
+    }
+}
+</script>
+</head> 
+<frameset name=ncfw_b_fs cols=6,*,6 frameborder=no border=0 framespacing=0 
+    onLoad="openRegistrationWindow2();" 
+    onUnload="closeAll();" >
+    <frame src=ncfw_b.html marginwidth=0 marginheight=0 scrolling=no noresize> 
+    <frameset name=ncfw_fs rows=45,40,*,6,6 frameborder=no border=0 
+            framespacing=0> 
+        <frame src="ncidbar.html?" 
+            name=ncidbar marginwidth=0 marginheight=0 scrolling=no noresize> 
+        <frame src=nctabs.html name=nctabs marginwidth=0 marginheight=0 
+            scrolling=no noresize> 
+        <frameset name=nccontent_fs cols=6,*,6 frameborder=no border=0 
+            framespacing=0> 
+            <frame src=nccont_b.html marginwidth=0 marginheight=0 
+                scrolling=no noresize> 
+            <frameset name=bNotice_fs rows=*,0 frameborder=no border=0 framespacing=0>             
+            <frame src=status/index.html name=nccontent marginwidth=6 
+                 marginheight=6 scrolling=no noresize> 
+            <frame src=bNotice.html marginwidth=0 marginheight=0
+              scrolling=no noresize>
+            </frameset>
+            <frame src=nccont_b.html marginwidth=0 marginheight=0 
+                scrolling=no noresize> 
+        </frameset> 
+        <frame src=nccont_b.html marginwidth=0 marginheight=0 
+                scrolling=no noresize> 
+        <frame src=ncfw_b.html name=proxyf marginwidth=0 marginheight=0 
+                scrolling=no noresize> 
+    </frameset> 
+    <frame src=ncfw_b.html marginwidth=0 marginheight=0 scrolling=no noresize> 
+<noframes> 
+    <body>
+    <font face=Helvetica color=red size=3><b>
+    This product requires a frame capable browser.
+
+    To use this product you must upgrade your browser to one that
+    supports frames, Java and JavaScript languages.
+    </b></font>
+    </body> 
+</noframes> 
+</frameset> 
+
+</html> 
+  
+

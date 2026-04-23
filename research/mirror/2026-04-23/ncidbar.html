@@ -1,0 +1,100 @@
+<html> 
+<head>
+<!- gethelp.js ->
+<script language="JavaScript">
+
+    var asaHelpURL = "";
+    var mgmtServerURL = "https://www.hpe.com/networking/support" ;
+    // var mgmtServerURL = "<!- ESI- (GET, 1.3.6.1.4.1.11.2.36.1.1.2.1.0) ->" ;
+    var product = "ProCurveJ9021A";
+
+    function replace (pattern, string, in_string) {
+        start = in_string.indexOf (pattern);
+        if (start < 0) return in_string;
+        result = in_string.substring(0, start);
+        result = result + string + in_string.substring(start + pattern.length);
+        return result;
+    }
+
+    function getHelp () {
+        var helpURL = asaHelpURL ;
+        if ( helpURL  == "" && mgmtServerURL != "" ) {
+            helpURL = mgmtServerURL ;
+            var tail = helpURL.substring( helpURL.length-1, helpURL.length );
+            if ( tail != "/" ) helpURL += "/" ;
+            helpURL += "help/hpwnd/webhelp" ;   // Fixed suffix
+            helpURL += "/%p/SHelp.htm#%t/" ;        // template
+        }
+
+        if ( helpURL == "" ) {
+            alert ('To access online help, you must connect to this device using\n"TopTools for Hubs & Switches".');
+        } else {
+            tab = parent.nctabs.document.Tabs.pressed();
+            tab = tab.toLowerCase();
+            tab = replace("configuration", "conf", tab);
+
+            if ( typeof parent.nccontent.ncmenu == "object" )
+            {
+                button = parent.nccontent.ncmenu.document.Buttons.pressed();
+                buttonName = button.toLowerCase();
+                button =
+                     parent.nccontent.ncmenu.document.Buttons.pressedLabel();
+                buttonLabel = button.toLowerCase();
+                buttonLabel = replace (" ", "",buttonLabel);
+                //If the sub tab label contains "..." (Device Reset...) this 
+                //is replaced by "" (Device reset) and "/" ( support/Mgmt Url)
+                // this is replaced with only string before "/" ie (support)
+                buttonLabel = replace ("...", "",buttonLabel);
+                buttonLabel = replace ("/", "",buttonLabel);
+                helpURL += "%v/%b.htm";
+            }
+            else
+            {
+                buttonLabel = '';
+                buttonName = '';
+                helpURL += "%t_%b.htm";
+            }
+
+            url = replace ("%p", product, helpURL);
+            url = replace ("%t", tab, url);
+            url = replace ("%t", tab, url);
+            url = replace ("%v", buttonLabel, url);
+            url = replace ("%b", buttonName, url);
+            url = replace (" ", "", url);
+            opts = "resizable=1" ;
+            opts += ",menubar=1" ;
+            opts += ",scrollbars=1" ;
+            opts += ",toolbar=1" ;
+            helpWin = window.open ( url, 'AgentHelp', opts );
+            if ( navigator.appName != "Microsoft Internet Explorer" ) {
+                helpWin.focus() ;
+            }
+        }
+    }
+</script>
+
+</head>
+
+<body bgcolor=#003366 text=#ffffff> 
+<a href="http://www.procurve.com" target="_top">
+<img src=PNBlogo.gif align=left border=0
+    alt="ProCurve Home Page" ></a>
+
+<applet code=DeviceStatus.class archive=agent.jar name=DeviceStatus codebase=classes 
+        width=400 height=26 vspace=0 align=left>
+    <param name=url value="../cgi/fflog?action=status">
+    <param name=delay value=30>
+    <param name=clickUrl value="../ncfw_b.html?index="> 
+    <param name=clickTarget value="proxyf"> 
+    <param name=text1 value="ProCurve Switch 2810-24G (J9021A)">
+</applet>
+
+<a href="javascript:getHelp();" 
+    onMouseOver="window.status='On-Line Help';" >
+<img src=help.gif align=right border=0
+    alt="Click for Help about this page" ></a>
+
+<img src=classes/status/10d.gif align=right>
+
+</body> 
+</html>

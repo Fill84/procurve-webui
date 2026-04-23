@@ -1,0 +1,190 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+<body bgcolor=white onLoad='navAid("diagnostics","config")'>
+
+<font face="Helvetica" size=0>
+<b>You may wish to use your browser to print the following report or to save it into a file.</b></font><hr>
+<pre>
+; J9021A Configuration Editor; Created on release #N.11.78
+
+hostname "HP2810_01" 
+snmp-server contact "Phillippe Pelzer" 
+snmp-server location "Kamer" 
+time timezone 7 
+time daylight-time-rule Western-Europe 
+interface 1 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 2 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 3 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 4 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 5 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 6 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 7 
+   flow-control 
+   speed-duplex auto-1000 
+exit
+interface 8 
+   flow-control 
+   speed-duplex auto-1000 
+exit
+interface 9 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 10 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 11 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 12 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 13 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 14 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 15 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 16 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 17 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 18 
+   name "UPS" 
+   flow-control 
+   lacp Active 
+exit
+interface 19 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 20 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 21 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 22 
+   flow-control 
+   speed-duplex auto-1000 
+   lacp Active 
+exit
+interface 23 
+   disable
+   flow-control 
+   speed-duplex auto-1000 
+exit
+interface 24 
+   flow-control 
+   speed-duplex auto-1000 
+exit
+
+
+
+ip default-gateway 192.168.178.1 
+ip timep dhcp 
+snmp-server community "public" Unrestricted 
+vlan 1 
+   name "DEFAULT_VLAN" 
+   untagged 1-24 
+   ip address 192.168.178.3 255.255.255.0 
+   ip igmp 
+   exit 
+fault-finder bad-driver sensitivity high 
+fault-finder bad-transceiver sensitivity high 
+fault-finder bad-cable sensitivity high 
+fault-finder too-long-cable sensitivity high 
+fault-finder over-bandwidth sensitivity high 
+fault-finder broadcast-storm sensitivity high 
+fault-finder loss-of-link sensitivity high 
+fault-finder duplex-mismatch-HDx sensitivity high 
+fault-finder duplex-mismatch-FDx sensitivity high 
+ip authorized-managers 192.168.178.22 
+ip authorized-managers 192.168.178.100 
+no stack 
+ip ssh
+
+
+</pre>
+
+</form>
+</body>
+</html>

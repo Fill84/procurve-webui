@@ -1,0 +1,32 @@
+<html>
+<head>
+<script language="JavaScript">
+
+    function navAid (raisedTab, selectedButton) {
+        if (typeof parent.parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+        if (selectedButton != "") {
+            if (typeof parent.parent.parent.ButtonsReady == "boolean") {
+                buttons = parent.parent.ncmenu.document.Buttons;
+                buttons.pressMe (selectedButton);
+            }
+        }
+	setTimeout ('parent.parent.parent.ButtonsReady = true; parent.parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+    function navAid1 (raisedTab) {
+        if (typeof parent.parent.TabsReady == "boolean") {
+            menu = parent.parent.nctabs.document.Tabs;
+            menu.pressMe (raisedTab);
+        }
+	setTimeout ('parent.parent.TabsReady = true;', 1500);
+    } // navAid
+
+</script>
+
+</head>
+<body bgcolor=white onLoad='navAid1("support")'>
+</body>
+</html>

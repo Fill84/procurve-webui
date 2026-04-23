@@ -1,0 +1,21 @@
+<html>
+<head>
+<Script>
+    function displayWarning() {
+        info = "Changing the passwords of a switch that is a member of a stack is\r"
+        info += "a temporary operation. The commander will force the member\r"
+        info += "to use its passwords the next time the commander and member\r"
+        info += "synchronize. The commander and member synchronize after one\r"
+        info += "of the switches reboots or, more generally, when connectivity\r"
+        info += "between the commander and member is lost and then reestablished.\r"
+        info += "A commander and member will also synchronize if a configuration\r"
+        info += "change on the commander must be communicated to the member.\r"
+        alert (info)
+    }
+</Script>
+</head>
+<frameset rows=35,* border=0 frameborder=0 framespacing=0 >
+    <frame src=menu.html name=ncmenu noresize scrolling=no marginwidth=5 marginheight=5>
+    <frame src=web_accessf.html name=nc_view noresize scrolling=no marginwidth=0 marginheight=0>
+</frameset>
+</html>

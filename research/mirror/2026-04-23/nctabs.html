@@ -1,0 +1,25 @@
+<html>
+<HEAD>
+</HEAD> 
+<body bgcolor=#003366 topmargin=5 leftmargin=0>
+<center>
+<script>
+if ( navigator.appName == "Microsoft Internet Explorer" ) {
+    document.write("<applet name=Tabs archive=agent.jar code=PageSelector.class codebase=classes width=101% height=100% hspace=0 vspace=0>");
+} else {
+    document.write("<applet name=Tabs archive=agent.jar code=PageSelector.class codebase=classes width=101% height=38 hspace=0 vspace=0>");
+}
+</script>
+        <param name=target value=nccontent>
+        <param name=type value=tabs> 
+        <param name=buttons 
+            value="identity~Identity~../identity/index.html,
+                   status~Status~../status/index.html~selected,
+                   configuration~Configuration~../configuration/index.html,
+                   security~Security~../security/index.html,
+                   diagnostics~Diagnostics~../diagnostics/index.html,
+                   support~Support~../support/index.html" i18n>
+    </applet>
+    </center>
+</body>
+</html>
