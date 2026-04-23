@@ -8,7 +8,7 @@ Sources:
 """
 from __future__ import annotations
 
-from enum import Enum, IntEnum
+from enum import IntEnum, StrEnum
 
 from pydantic import BaseModel, Field
 
@@ -22,7 +22,7 @@ class PingTestType(IntEnum):
     LINK = 2
 
 
-class PingAction(str, Enum):
+class PingAction(StrEnum):
     START = "start"
     STOP = "stop"
 

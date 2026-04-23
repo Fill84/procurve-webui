@@ -135,7 +135,7 @@ async def get_port_status(transport: ProcurveTransport) -> PortStatusList:
                 port_type_label=row[2],
                 port_type=row[3],
                 enabled=_parse_yes_no(row[4]),
-                link_status=link,  # type: ignore[arg-type]
+                link_status=link,
                 current_mode=row[6],
                 trunk=row[7],
                 flow_ctrl=row[8],
@@ -210,7 +210,7 @@ async def get_port_usage(
             PortUsage(
                 port=int(row[0]),
                 label=row[1],
-                state=state,  # type: ignore[arg-type]
+                state=state,
                 usage1=int(row[3]),
                 usage2=int(row[4]),
                 usage3=int(row[5]),

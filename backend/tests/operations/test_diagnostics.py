@@ -21,7 +21,6 @@ from procurve_client.operations.diagnostics import (
 )
 from procurve_client.transport import ProcurveTransport
 
-
 # ---- ping ---------------------------------------------------------------
 
 async def test_ping_blocked_when_read_only(monkeypatch: pytest.MonkeyPatch) -> None:
