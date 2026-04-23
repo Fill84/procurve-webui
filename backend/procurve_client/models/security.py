@@ -214,7 +214,13 @@ class AccessLevelCode(IntEnum):
 
 
 class AddWebManagerRequest(BaseModel):
-    """`action=1` variant — add an authorized manager entry."""
+    """Add a new authorized-manager IP entry (`action=1` variant).
+
+    `indeces` defaults to an empty list (serialized as `indeces=` on the wire)
+    because the add-action CGI assigns the index server-side. Replace and
+    delete variants require a non-empty `indeces` because they operate on
+    existing rows identified by index.
+    """
 
     action: Literal[WebMgrAction.ADD] = WebMgrAction.ADD
     ip: IPv4Address
