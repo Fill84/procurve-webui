@@ -8,6 +8,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.health import router as health_router
+from app.api.identity import router as identity_router
+from app.api.placeholders import (
+    configuration_router,
+    diagnostics_router,
+    security_router,
+    support_router,
+)
+from app.api.status import router as status_router
 from app.auth import SessionStore
 from app.errors import install_error_handlers
 from app.logging_config import configure_logging
@@ -38,6 +47,13 @@ def create_app() -> FastAPI:
     )
     install_error_handlers(app)
     app.include_router(auth_router)
+    app.include_router(identity_router)
+    app.include_router(status_router)
+    app.include_router(health_router)
+    app.include_router(configuration_router)
+    app.include_router(security_router)
+    app.include_router(diagnostics_router)
+    app.include_router(support_router)
     return app
 
 
