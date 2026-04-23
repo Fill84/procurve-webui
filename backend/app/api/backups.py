@@ -23,7 +23,13 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
 
-from app.backup_store import BackupMeta, BackupStore, Trigger
+from app.backup_store import (
+    BackupMeta,
+    BackupStore,
+    CorruptBackupError,
+    InvalidBackupName,
+    Trigger,
+)
 from app.deps import get_app_settings, get_backup_store, get_transport
 from app.settings import Settings
 from procurve_client.operations.backup import download_config, upload_config
@@ -90,6 +96,10 @@ def download_backup(
 ) -> Response:
     try:
         backup = store.load(filename)
+    except InvalidBackupName as exc:
+        raise HTTPException(status_code=400, detail="invalid backup filename") from exc
+    except CorruptBackupError as exc:
+        raise HTTPException(status_code=500, detail="backup metadata corrupt") from exc
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="backup not found") from exc
     return Response(
@@ -107,6 +117,10 @@ async def diff_backup(
 ) -> PlainTextResponse:
     try:
         stored = store.load(filename)
+    except InvalidBackupName as exc:
+        raise HTTPException(status_code=400, detail="invalid backup filename") from exc
+    except CorruptBackupError as exc:
+        raise HTTPException(status_code=500, detail="backup metadata corrupt") from exc
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="backup not found") from exc
     live = await download_config(transport)
@@ -142,6 +156,10 @@ async def restore_backup(
         )
     try:
         backup = store.load(filename)
+    except InvalidBackupName as exc:
+        raise HTTPException(status_code=400, detail="invalid backup filename") from exc
+    except CorruptBackupError as exc:
+        raise HTTPException(status_code=500, detail="backup metadata corrupt") from exc
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="backup not found") from exc
     await upload_config(transport, backup=backup)
@@ -159,6 +177,8 @@ def delete_backup(
 ) -> Response:
     try:
         store.delete(filename)
+    except InvalidBackupName as exc:
+        raise HTTPException(status_code=400, detail="invalid backup filename") from exc
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="backup not found") from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)

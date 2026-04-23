@@ -285,6 +285,24 @@ def test_delete_missing_returns_404(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
+# path-traversal safety
+# ---------------------------------------------------------------------------
+
+
+def test_download_rejects_path_traversal(client: TestClient) -> None:
+    # URL-encoded path traversal must not escape the store. Regardless of how
+    # the router resolves this, the response must not be 200 and must not
+    # contain filesystem bytes from outside the store.
+    r = client.get("/api/v1/backups/..%2F..%2Fetc%2Fpasswd/download")
+    assert r.status_code in (400, 404, 422)
+
+
+def test_delete_rejects_path_traversal(client: TestClient) -> None:
+    r = client.delete("/api/v1/backups/..%2F..%2Fetc%2Fpasswd")
+    assert r.status_code in (400, 404, 422)
+
+
+# ---------------------------------------------------------------------------
 # live-sha
 # ---------------------------------------------------------------------------
 

@@ -7,11 +7,17 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from app.backup_store import BackupMeta, BackupStore
+from app.backup_store import (
+    BackupMeta,
+    BackupStore,
+    CorruptBackupError,
+    InvalidBackupName,
+)
 from procurve_client.models.backup import ConfigBackup
 
 
@@ -134,3 +140,126 @@ def test_root_is_created_if_missing(tmp_path: Path) -> None:
     assert root.is_dir()
     store.save(_fake_backup(b"d\n"), trigger="manual")
     assert len(store.list()) == 1
+
+
+# ---------------------------------------------------------------------------
+# Path-traversal / filename validation
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_name",
+    [
+        "../../etc/passwd",
+        "..\\..\\windows\\system32",
+        "/etc/passwd",
+        "C:\\Windows\\System32",
+        "normal.txt",                         # wrong extension
+        "backup_bad.pcc",                     # wrong prefix pattern
+        "backup_20260423T120000Z.pcc/../x",   # embedded separator
+        "",
+    ],
+)
+def test_load_rejects_non_canonical_filenames(tmp_path: Path, bad_name: str) -> None:
+    store = BackupStore(tmp_path)
+    with pytest.raises(InvalidBackupName):
+        store.load(bad_name)
+
+
+def test_delete_rejects_non_canonical_filenames(tmp_path: Path) -> None:
+    store = BackupStore(tmp_path)
+    with pytest.raises(InvalidBackupName):
+        store.delete("../../etc/passwd")
+
+
+def test_get_meta_rejects_non_canonical_filenames(tmp_path: Path) -> None:
+    store = BackupStore(tmp_path)
+    with pytest.raises(InvalidBackupName):
+        store.get_meta("../../etc/passwd")
+
+
+# ---------------------------------------------------------------------------
+# Collision suffixing
+# ---------------------------------------------------------------------------
+
+
+def test_save_appends_suffix_on_collision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Freeze the clock so both saves compute the same base filename.
+    import app.backup_store as store_mod
+
+    fixed = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
+    monkeypatch.setattr(store_mod, "_now", lambda: fixed)
+
+    store = BackupStore(tmp_path)
+    backup_a = ConfigBackup.from_bytes(b"alpha content here\n")
+    backup_b = ConfigBackup.from_bytes(b"beta content here\n")
+
+    meta_a = store.save(backup_a, trigger="manual")
+    meta_b = store.save(backup_b, trigger="manual")
+
+    assert meta_a.filename == "backup_20260423T120000Z.pcc"
+    assert meta_b.filename == "backup_20260423T120000Z-1.pcc"
+    names = {m.filename for m in store.list()}
+    assert names == {meta_a.filename, meta_b.filename}
+
+
+def test_save_appends_incrementing_suffix_on_repeated_collision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Three saves at the same instant should yield -0 (no suffix), -1, -2.
+    import app.backup_store as store_mod
+
+    fixed = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
+    monkeypatch.setattr(store_mod, "_now", lambda: fixed)
+
+    store = BackupStore(tmp_path)
+    metas = [
+        store.save(ConfigBackup.from_bytes(f"cfg-{i}\n".encode()), trigger="manual")
+        for i in range(3)
+    ]
+    names = [m.filename for m in metas]
+    assert names == [
+        "backup_20260423T120000Z.pcc",
+        "backup_20260423T120000Z-1.pcc",
+        "backup_20260423T120000Z-2.pcc",
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Corrupt / missing sidecar handling
+# ---------------------------------------------------------------------------
+
+
+def test_get_meta_missing_sidecar_when_pcc_present_raises_file_not_found(
+    tmp_path: Path,
+) -> None:
+    # Simulate a half-written backup: .pcc on disk but no sidecar.
+    store = BackupStore(tmp_path)
+    filename = "backup_20260423T120000Z.pcc"
+    (tmp_path / filename).write_bytes(b"orphan\n")
+    with pytest.raises(FileNotFoundError, match="metadata missing"):
+        store.get_meta(filename)
+
+
+def test_get_meta_corrupt_json_raises_corrupt_backup_error(tmp_path: Path) -> None:
+    store = BackupStore(tmp_path)
+    filename = "backup_20260423T120000Z.pcc"
+    (tmp_path / filename).write_bytes(b"data\n")
+    (tmp_path / f"{filename}.meta.json").write_text("{not valid json", encoding="utf-8")
+    with pytest.raises(CorruptBackupError):
+        store.get_meta(filename)
+
+
+def test_list_skips_corrupt_sidecar(tmp_path: Path) -> None:
+    # A well-formed pair plus a corrupt sidecar: listing shows only the good one.
+    store = BackupStore(tmp_path)
+    good = store.save(_fake_backup(b"ok\n"), trigger="manual")
+    bad_name = "backup_20990101T000000Z.pcc"
+    (tmp_path / bad_name).write_bytes(b"bytes\n")
+    (tmp_path / f"{bad_name}.meta.json").write_text(
+        "not-json-at-all", encoding="utf-8"
+    )
+    listed = store.list()
+    assert [m.filename for m in listed] == [good.filename]
