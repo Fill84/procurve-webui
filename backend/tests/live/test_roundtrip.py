@@ -1,10 +1,10 @@
 """One-time end-to-end round-trip test under explicit per-run user approval.
 
-This test is the sole live-write  ever executes against the switch during
+This test is the sole live-write that is ever executed against the switch during
 development. It is marked `roundtrip` (in addition to `live`) so it is opt-in
 and never runs by default. It is guarded by the `READ_ONLY=false` env var.
 
-Workflow (matches feedback_switch_write_safety.md):
+Workflow:
   1. Pre-state matches baseline — else STOP.
   2. Read current port 18 form (so we can submit a minimal change).
   3. Execute the write (change port 18 name UPS → UPS-TEST, preserve other fields).
@@ -60,7 +60,7 @@ async def test_roundtrip_port18_name(monkeypatch):
         assert pre.sha256 == REFERENCE_SHA, (
             f"live switch diverged from baseline: live={pre.sha256} "
             f"baseline={REFERENCE_SHA}. Refusing to run write-test. "
-            f"See memory/feedback_switch_write_safety.md."
+            f"Refusing to run the write-test until the operator rebaselines."
         )
 
         # 2. Read current port 18 form so we can preserve everything except name.

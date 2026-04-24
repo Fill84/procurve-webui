@@ -2,8 +2,9 @@
 
 ⚠️ SAFETY
     `device_reset` reboots the switch, interrupting all switched traffic
-    for the duration of the boot cycle.  NEVER invokes this function;
-    only the user runs it manually. See memory/feedback_switch_write_safety.md.
+    for the duration of the boot cycle. Automated tooling must NEVER invoke
+    this function — only the operator runs it manually, with a verified
+    backup in hand.
 
     `ping` and `link_test` are technically writes because they cause the
     switch to emit ICMP/link probes, but they do not change switch state.
@@ -158,14 +159,13 @@ async def get_configuration_report(
 
 @WRITE
 async def device_reset(transport: ProcurveTransport) -> DeviceResetResponse:
-    """FORBIDDEN —  never invokes this; only the user runs it manually.
+    """FORBIDDEN for automation — only the operator runs this manually.
 
     Sends GET /cgi/device_reset. The switch reboots immediately; expect a
     TCP reset mid-response. This implementation exists for full protocol
     parity and is decorated `@WRITE` so `READ_ONLY=true` blocks it.
 
-    See memory/feedback_switch_write_safety.md and
-    research/protocol/diagnostics/device_reset.md.
+    See research/protocol/diagnostics/device_reset.md.
     """
     try:
         r = await transport.get(_DEVICE_RESET_PATH)

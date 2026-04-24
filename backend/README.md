@@ -35,5 +35,5 @@ async def main():
         print(cfg.size, cfg.sha256)
 ```
 
-See `docs/superpowers/specs/2026-04-23-procurve-webui-design.md` for the
+See `docs/specs/2026-04-23-procurve-webui-design.md` for the
 architecture background.

@@ -14,9 +14,9 @@ Built because the original Java-applet UI no longer runs in modern browsers.
 
 ## Documents
 
-- Design spec: [`docs/superpowers/specs/2026-04-23-procurve-webui-design.md`](docs/superpowers/specs/2026-04-23-procurve-webui-design.md)
-- Phase 0 plan: [`docs/superpowers/plans/2026-04-23-procurve-webui-phase0.md`](docs/superpowers/plans/2026-04-23-procurve-webui-phase0.md)
-- Phase 1 plan: [`docs/superpowers/plans/2026-04-23-procurve-webui-phase1.md`](docs/superpowers/plans/2026-04-23-procurve-webui-phase1.md)
+- Design spec: [`docs/specs/2026-04-23-procurve-webui-design.md`](docs/specs/2026-04-23-procurve-webui-design.md)
+- Phase 0 plan: [`docs/plans/2026-04-23-procurve-webui-phase0.md`](docs/plans/2026-04-23-procurve-webui-phase0.md)
+- Phase 1 plan: [`docs/plans/2026-04-23-procurve-webui-phase1.md`](docs/plans/2026-04-23-procurve-webui-phase1.md)
 
 ## Research artifacts
 

@@ -10,8 +10,8 @@ Strategy:
   * For the reset test we override ``get_backup_store`` with a fresh store
     rooted at ``tmp_path`` so we can assert the pre-write backup landed.
 
- never invokes ``device_reset`` against a real switch — see
-memory/feedback_switch_write_safety.md.
+Automated tooling never invokes ``device_reset`` against a real switch —
+only the operator runs it manually, with a verified backup in hand.
 """
 from __future__ import annotations
 

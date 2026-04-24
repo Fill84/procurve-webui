@@ -21,9 +21,8 @@ Explicitly NOT exposed
 There is **no** HTTP surface for ``set_device_passwords``. Changing Manager
 / Operator credentials is a PHYSICAL-RECOVERY-ONLY lockout risk (the 2810
 firmware ships the password cleartext in the URL query string, so enabling
-it through a web UI would be doubly dangerous). Per
-``memory/feedback_switch_write_safety.md``  and the Phase 3 UI never
-invoke that operation — the user types it manually into the legacy applet
+it through a web UI would be doubly dangerous). The Phase 3 UI never
+invokes that operation — the user types it manually into the legacy applet
 when they choose, with a verified backup in hand.
 
 The negative test ``test_device_passwords_endpoint_does_not_exist_returns_404``

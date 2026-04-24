@@ -21,18 +21,18 @@ FORBIDDEN-WRITE WARNING
 
 Four operations in this module (`set_device_passwords`, `set_web_manager`,
 `set_ssl`, and any future credential/lockout-risking op) are FORBIDDEN
-for  to invoke against the live switch. Risk summary:
+for automated tooling to invoke against the live switch. Risk summary:
 
-- `set_device_passwords`: can lock the tools, the user, AND  out
-  of the device with no recovery short of a physical factory-reset.
-  Password travels cleartext in the query string (protocol flaw mirrored).
+- `set_device_passwords`: can lock every client out of the device with no
+  recovery short of a physical factory-reset. Password travels cleartext
+  in the query string (protocol flaw mirrored).
 - `set_web_manager`: can immediately lock the client out via Authorized-
   Manager-list whitelisting; mask misconfigs make management unreachable.
 - `set_ssl`: can sever the management session mid-connection by
   enabling/disabling HTTPS or regenerating the server cert.
 
 The user runs these operations manually when they choose, with a
-verified backup in hand. See `memory/feedback_switch_write_safety.md`.
+verified backup in hand.
 
 In code terms, the @WRITE decorator + READ_ONLY=true env var form the
 enforcement gate. Tests verify URL construction only (via respx), never
@@ -368,9 +368,8 @@ async def set_device_passwords(
     *,
     request: SetDevicePasswordsRequest,
 ) -> SetDevicePasswordsResponse:
-    """⚠️ FORBIDDEN:  never invokes this against the live switch.
-    Users run this operation manually when they choose. See
-    memory/feedback_switch_write_safety.md.
+    """⚠️ FORBIDDEN for automated tooling — only the operator runs this manually.
+    Users run this operation manually when they choose.
 
     GET `/security/web_access.html?<password fields>` — sets the Manager
     and Operator usernames/passwords. The password travels cleartext in
@@ -428,9 +427,8 @@ async def set_web_manager(
     *,
     request: SetWebManagerRequest,
 ) -> SetWebManagerResponse:
-    """⚠️ FORBIDDEN:  never invokes this against the live switch.
-    Users run this operation manually when they choose. See
-    memory/feedback_switch_write_safety.md.
+    """⚠️ FORBIDDEN for automated tooling — only the operator runs this manually.
+    Users run this operation manually when they choose.
 
     GET `/cgi/webMgr?action=<1|2|3>&<fields>` — add/replace/delete an
     authorized-manager entry. Risk: a bad mask or deleting the client's
@@ -563,9 +561,8 @@ async def set_ssl(
     *,
     request: SetSSLRequest,
 ) -> SetSSLResponse:
-    """⚠️ FORBIDDEN:  never invokes this against the live switch.
-    Users run this operation manually when they choose. See
-    memory/feedback_switch_write_safety.md.
+    """⚠️ FORBIDDEN for automated tooling — only the operator runs this manually.
+    Users run this operation manually when they choose.
 
     GET `/cgi/setssl?action=<1|2>&prt=...&certific=...&...` — configure
     the SSL subsystem (enable/disable HTTPS, swap or create server

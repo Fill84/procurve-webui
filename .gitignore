@@ -38,4 +38,4 @@ research/tools/*.jar
 research/decompiled/
 
 # Keep backups and mirror in git? YES — they are source-of-truth for Phase 0+
-# (so no rule here to exclude them)settings.local.json
+# (so no rule here to exclude them)
