@@ -1,26 +1,34 @@
-"""Configuration API (Task 3.5): system info + IP config + per-port.
+"""Configuration API (Task 3.5): system info + IP + per-port + features/monitor/bob.
 
 This router will grow across Task 3.5's five sub-tasks:
 
 * 3.5a — system info + IP config
-* 3.5b (adds per-port read/write below)
-* 3.5c — device features (IGMP / STP)
+* 3.5b — per-port
+* 3.5c (this revision adds device-features / fault-detection / monitor / bob-ports)
 * 3.5d — QoS (cos*, dscptable, diffserv)
 * 3.5e — support URLs
 
 Endpoints
 ---------
-Reads (4):
-  GET  /api/v1/configuration/system         -> SystemInfoPage
-  GET  /api/v1/configuration/ip             -> IpConfigPage
-  GET  /api/v1/configuration/ports          -> PortConfigList
-  GET  /api/v1/configuration/ports/{port}   -> PortForm
+Reads (8):
+  GET  /api/v1/configuration/system           -> SystemInfoPage
+  GET  /api/v1/configuration/ip               -> IpConfigPage
+  GET  /api/v1/configuration/ports            -> PortConfigList
+  GET  /api/v1/configuration/ports/{port}     -> PortForm
+  GET  /api/v1/configuration/device-features  -> DeviceFeaturesPage
+  GET  /api/v1/configuration/fault-detection  -> FaultDetectionPage
+  GET  /api/v1/configuration/monitor          -> MonitorPage
+  GET  /api/v1/configuration/bob-ports        -> BobPortsResponse
 
-Writes (4):
-  PUT  /api/v1/configuration/system         -> ConfigWriteAck   (autobackup only)
-  PUT  /api/v1/configuration/ip             -> ConfigWriteAck   (autobackup + host confirm, LOCKOUT-RISKY)
-  PUT  /api/v1/configuration/gateway        -> ConfigWriteAck   (autobackup only)
-  PUT  /api/v1/configuration/ports/{port}   -> ConfigWriteAck   (autobackup only)
+Writes (8):
+  PUT  /api/v1/configuration/system           -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/ip               -> ConfigWriteAck   (autobackup + host confirm, LOCKOUT-RISKY)
+  PUT  /api/v1/configuration/gateway          -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/ports/{port}     -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/device-features  -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/fault-detection  -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/monitor          -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/bob-ports        -> ConfigWriteAck   (autobackup only)
 
 Write-safety policy
 -------------------
@@ -46,6 +54,19 @@ which takes a pre-write backup before any switch write is attempted.
   is authoritative: we rebuild the request model so the URL and body
   agree even if the caller submitted a stale ``request.ports`` list
   (mirrors the Security tab's per-port endpoint).
+* ``PUT /device-features`` — IGMP / Spanning Tree toggles. Not lockout
+  risky in the sense that the management session survives; autobackup
+  is sufficient rollback.
+* ``PUT /fault-detection`` — sensitivity is a local telemetry filter;
+  changing it cannot sever the management session.
+* ``PUT /monitor`` — port-mirroring enable + destination / source mask.
+  Not lockout risky. (Destination port receives mirrored traffic; it is
+  not taken down as a data path.)
+* ``PUT /bob-ports`` — bulk enable / disable of admin status on a set of
+  ports (the device-view button). The operator's own uplink port being
+  included in a disable set would break the session, but that failure
+  mode is symmetric with the per-port endpoint which also takes no host
+  confirmation. Autobackup is the rollback path.
 """
 from __future__ import annotations
 
@@ -58,24 +79,40 @@ from app.settings import Settings
 from app.write_safety import require_host_confirmation, write_with_autobackup
 from procurve_client.models.network import (
     ConfigWriteAck,
+    DeviceFeaturesPage,
+    FaultDetectionPage,
     IpConfigPage,
+    MonitorPage,
     SetDefaultGatewayRequest,
+    SetDeviceFeaturesRequest,
+    SetFaultDetectionRequest,
     SetIpConfigRequest,
+    SetMonitorRequest,
     SetSystemInfoRequest,
     SystemInfoPage,
 )
 from procurve_client.models.port import (
+    BobPortsResponse,
     PortConfigList,
     PortForm,
+    SetBobPortsRequest,
     SetPortConfigRequest,
 )
 from procurve_client.operations.configuration import (
+    get_bobports,
+    get_devfeatures_page,
+    get_faultdetect_page,
     get_ip_page,
+    get_monitor_page,
     get_port_form,
     get_portscfg,
     get_system_page,
+    set_bobports,
     set_default_gateway,
+    set_device_features,
+    set_fault_detection,
     set_ip_config,
+    set_monitor,
     set_port_config,
     set_system_info,
 )
@@ -131,6 +168,30 @@ class SetPortConfigBody(BaseModel):
     """
 
     request: SetPortConfigRequest
+
+
+class SetDeviceFeaturesBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/device-features``."""
+
+    request: SetDeviceFeaturesRequest
+
+
+class SetFaultDetectionBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/fault-detection``."""
+
+    request: SetFaultDetectionRequest
+
+
+class SetMonitorBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/monitor``."""
+
+    request: SetMonitorRequest
+
+
+class SetBobPortsBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/bob-ports``."""
+
+    request: SetBobPortsRequest
 
 
 # ---------------------------------------------------------------------------
@@ -262,6 +323,112 @@ async def write_port_config(
         store=store,
         transport=transport,
         write=lambda: set_port_config(transport, request=pinned),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Device features / fault detection / monitor / bob-ports (reads)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/device-features", response_model=DeviceFeaturesPage)
+async def read_device_features(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> DeviceFeaturesPage:
+    """Read IGMP / Spanning-Tree flags + VLAN count."""
+    return await get_devfeatures_page(transport)
+
+
+@router.get("/fault-detection", response_model=FaultDetectionPage)
+async def read_fault_detection(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> FaultDetectionPage:
+    """Read fault-detection sensitivity."""
+    return await get_faultdetect_page(transport)
+
+
+@router.get("/monitor", response_model=MonitorPage)
+async def read_monitor(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> MonitorPage:
+    """Read port-mirroring state (enabled, candidate + selected dest port)."""
+    return await get_monitor_page(transport)
+
+
+@router.get("/bob-ports", response_model=BobPortsResponse)
+async def read_bob_ports(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> BobPortsResponse:
+    """Device-view port rollup (admin status per port + link state)."""
+    return await get_bobports(transport)
+
+
+# ---------------------------------------------------------------------------
+# Device features / fault detection / monitor / bob-ports (writes)
+# ---------------------------------------------------------------------------
+
+
+@router.put("/device-features", response_model=ConfigWriteAck)
+async def write_device_features(
+    body: SetDeviceFeaturesBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> ConfigWriteAck:
+    """Write IGMP / Spanning Tree flags. Not lockout-risky."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_device_features(transport, request=body.request),
+    )
+
+
+@router.put("/fault-detection", response_model=ConfigWriteAck)
+async def write_fault_detection(
+    body: SetFaultDetectionBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> ConfigWriteAck:
+    """Write fault-detection sensitivity (one of FaultSensitivity)."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_fault_detection(transport, request=body.request),
+    )
+
+
+@router.put("/monitor", response_model=ConfigWriteAck)
+async def write_monitor(
+    body: SetMonitorBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> ConfigWriteAck:
+    """Enable / disable port mirroring (dest + source mask required when on)."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_monitor(transport, request=body.request),
+    )
+
+
+@router.put("/bob-ports", response_model=ConfigWriteAck)
+async def write_bob_ports(
+    body: SetBobPortsBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> ConfigWriteAck:
+    """Bulk-enable / disable admin status on a set of ports."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_bobports(transport, request=body.request),
     )
 
 

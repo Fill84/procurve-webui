@@ -4,18 +4,23 @@
  * Vertical stack of cards, one per sub-tab of the legacy Configuration
  * menu. Task 3.5 ships across five sub-tasks:
  *
- *   3.5a (this commit)   System info + IP configuration
- *   3.5b                 Per-port configuration
- *   3.5c                 Device features (IGMP / STP)
- *   3.5d                 QoS (cos-app / dscp / diffserv / ...)
- *   3.5e                 Support URLs
+ *   3.5a   System info + IP configuration
+ *   3.5b   Per-port configuration
+ *   3.5c   Device features (IGMP / STP) + fault detection + port mirroring
+ *          + device-view admin status (bob-ports)
+ *   3.5d   QoS (cos-app / dscp / diffserv / ...)
+ *   3.5e   Support URLs
  *
- * Placeholders for 3.5b–e live inline until those sub-tasks replace them,
+ * Placeholders for 3.5d–e live inline until those sub-tasks replace them,
  * so the final shape of this page is visible in the UI today.
  */
 import { SystemInfoCard } from "./SystemInfoCard";
 import { IpConfigCard } from "./IpConfigCard";
 import { PortConfigTable } from "./PortConfigTable";
+import { DeviceFeaturesCard } from "./DeviceFeaturesCard";
+import { FaultDetectionCard } from "./FaultDetectionCard";
+import { MonitorCard } from "./MonitorCard";
+import { BobPortsCard } from "./BobPortsCard";
 
 export function ConfigurationPage() {
   return (
@@ -34,11 +39,11 @@ export function ConfigurationPage() {
         <SystemInfoCard />
         <IpConfigCard />
         <PortConfigTable />
+        <DeviceFeaturesCard />
+        <FaultDetectionCard />
+        <MonitorCard />
+        <BobPortsCard />
 
-        <PlaceholderCard
-          title="Device features"
-          note="Coming in Task 3.5c — IGMP and Spanning Tree toggles."
-        />
         <PlaceholderCard
           title="QoS"
           note="Coming in Task 3.5d — application priority, DSCP map, DiffServ table, VLAN priority."

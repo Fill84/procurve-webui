@@ -1,18 +1,27 @@
 /**
  * React Query hooks for the Configuration tab (Task 3.5).
  *
- * Sub-tasks 3.5a (system + IP) and 3.5b (ports). More hooks land in
- * 3.5c (features), 3.5d (QoS), 3.5e (support).
+ * Sub-tasks 3.5a (system + IP), 3.5b (ports), 3.5c (device features +
+ * fault detection + monitor + bob-ports). More hooks land in 3.5d (QoS)
+ * and 3.5e (support URLs).
  *
  * Backend endpoints:
- *   GET  /api/v1/configuration/system         -> SystemInfoPage
- *   PUT  /api/v1/configuration/system         -> ConfigWriteAck   (autobackup only)
- *   GET  /api/v1/configuration/ip             -> IpConfigPage
- *   PUT  /api/v1/configuration/ip             -> ConfigWriteAck   (autobackup + host confirm)
- *   PUT  /api/v1/configuration/gateway        -> ConfigWriteAck   (autobackup only)
- *   GET  /api/v1/configuration/ports          -> PortConfigList
- *   GET  /api/v1/configuration/ports/{port}   -> PortForm
- *   PUT  /api/v1/configuration/ports/{port}   -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/system            -> SystemInfoPage
+ *   PUT  /api/v1/configuration/system            -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/ip                -> IpConfigPage
+ *   PUT  /api/v1/configuration/ip                -> ConfigWriteAck   (autobackup + host confirm)
+ *   PUT  /api/v1/configuration/gateway           -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/ports             -> PortConfigList
+ *   GET  /api/v1/configuration/ports/{port}      -> PortForm
+ *   PUT  /api/v1/configuration/ports/{port}      -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/device-features   -> DeviceFeaturesPage
+ *   PUT  /api/v1/configuration/device-features   -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/fault-detection   -> FaultDetectionPage
+ *   PUT  /api/v1/configuration/fault-detection   -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/monitor           -> MonitorPage
+ *   PUT  /api/v1/configuration/monitor           -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/bob-ports         -> BobPortsResponse
+ *   PUT  /api/v1/configuration/bob-ports         -> ConfigWriteAck   (autobackup only)
  *
  * Every mutation invalidates:
  *   1. Its own resource query (so the UI refetches the fresh state), and
@@ -48,6 +57,35 @@ export type PortMode = components["schemas"]["PortMode"];
 export type SetPortConfigRequest =
   components["schemas"]["SetPortConfigRequest"];
 export type SetPortConfigBody = components["schemas"]["SetPortConfigBody"];
+
+export type DeviceFeaturesPage =
+  components["schemas"]["DeviceFeaturesPage"];
+export type SetDeviceFeaturesRequest =
+  components["schemas"]["SetDeviceFeaturesRequest"];
+export type SetDeviceFeaturesBody =
+  components["schemas"]["SetDeviceFeaturesBody"];
+
+export type FaultDetectionPage =
+  components["schemas"]["FaultDetectionPage"];
+export type FaultSensitivity =
+  components["schemas"]["FaultSensitivity"];
+export type SetFaultDetectionRequest =
+  components["schemas"]["SetFaultDetectionRequest"];
+export type SetFaultDetectionBody =
+  components["schemas"]["SetFaultDetectionBody"];
+
+export type MonitorPage = components["schemas"]["MonitorPage"];
+export type SetMonitorRequest =
+  components["schemas"]["SetMonitorRequest"];
+export type SetMonitorBody = components["schemas"]["SetMonitorBody"];
+
+export type BobPort = components["schemas"]["BobPort"];
+export type BobDevice = components["schemas"]["BobDevice"];
+export type BobPortsResponse =
+  components["schemas"]["BobPortsResponse"];
+export type SetBobPortsRequest =
+  components["schemas"]["SetBobPortsRequest"];
+export type SetBobPortsBody = components["schemas"]["SetBobPortsBody"];
 
 // ---------------------------------------------------------------------------
 // Reads
@@ -161,6 +199,119 @@ export function useSetPortConfig() {
       void qc.invalidateQueries({
         queryKey: ["configuration", "ports", variables.port],
       });
+      void qc.invalidateQueries({ queryKey: ["backups"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Device features
+// ---------------------------------------------------------------------------
+
+export function useDeviceFeatures() {
+  return useQuery<DeviceFeaturesPage>({
+    queryKey: ["configuration", "device-features"],
+    queryFn: () =>
+      apiGet<DeviceFeaturesPage>("/api/v1/configuration/device-features"),
+  });
+}
+
+export function useSetDeviceFeatures() {
+  const qc = useQueryClient();
+  return useMutation<ConfigWriteAck, ApiError, SetDeviceFeaturesBody>({
+    mutationFn: (body) =>
+      apiPut<ConfigWriteAck, SetDeviceFeaturesBody>(
+        "/api/v1/configuration/device-features",
+        body,
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: ["configuration", "device-features"],
+      });
+      void qc.invalidateQueries({ queryKey: ["backups"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Fault detection
+// ---------------------------------------------------------------------------
+
+export function useFaultDetection() {
+  return useQuery<FaultDetectionPage>({
+    queryKey: ["configuration", "fault-detection"],
+    queryFn: () =>
+      apiGet<FaultDetectionPage>("/api/v1/configuration/fault-detection"),
+  });
+}
+
+export function useSetFaultDetection() {
+  const qc = useQueryClient();
+  return useMutation<ConfigWriteAck, ApiError, SetFaultDetectionBody>({
+    mutationFn: (body) =>
+      apiPut<ConfigWriteAck, SetFaultDetectionBody>(
+        "/api/v1/configuration/fault-detection",
+        body,
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: ["configuration", "fault-detection"],
+      });
+      void qc.invalidateQueries({ queryKey: ["backups"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Monitor (port mirroring)
+// ---------------------------------------------------------------------------
+
+export function useMonitor() {
+  return useQuery<MonitorPage>({
+    queryKey: ["configuration", "monitor"],
+    queryFn: () => apiGet<MonitorPage>("/api/v1/configuration/monitor"),
+  });
+}
+
+export function useSetMonitor() {
+  const qc = useQueryClient();
+  return useMutation<ConfigWriteAck, ApiError, SetMonitorBody>({
+    mutationFn: (body) =>
+      apiPut<ConfigWriteAck, SetMonitorBody>(
+        "/api/v1/configuration/monitor",
+        body,
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["configuration", "monitor"] });
+      void qc.invalidateQueries({ queryKey: ["backups"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Bob-ports (device-view admin-status bulk toggle)
+// ---------------------------------------------------------------------------
+
+export function useBobPorts() {
+  return useQuery<BobPortsResponse>({
+    queryKey: ["configuration", "bob-ports"],
+    queryFn: () =>
+      apiGet<BobPortsResponse>("/api/v1/configuration/bob-ports"),
+  });
+}
+
+export function useSetBobPorts() {
+  const qc = useQueryClient();
+  return useMutation<ConfigWriteAck, ApiError, SetBobPortsBody>({
+    mutationFn: (body) =>
+      apiPut<ConfigWriteAck, SetBobPortsBody>(
+        "/api/v1/configuration/bob-ports",
+        body,
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["configuration", "bob-ports"] });
+      // Admin-status changes also appear in the per-port config list.
+      void qc.invalidateQueries({ queryKey: ["configuration", "ports"] });
       void qc.invalidateQueries({ queryKey: ["backups"] });
     },
   });

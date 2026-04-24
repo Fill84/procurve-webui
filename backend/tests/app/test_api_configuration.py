@@ -42,11 +42,18 @@ from app.settings import Settings
 from procurve_client.models.backup import ConfigBackup
 from procurve_client.models.network import (
     ConfigWriteAck,
+    DeviceFeaturesPage,
+    FaultDetectionPage,
+    FaultSensitivity,
     IpConfigPage,
     IpMode,
+    MonitorPage,
     SystemInfoPage,
 )
 from procurve_client.models.port import (
+    BobDevice,
+    BobPort,
+    BobPortsResponse,
     PortConfig,
     PortConfigList,
     PortForm,
@@ -753,3 +760,302 @@ def test_port_config_write_path_overrides_body_ports(
     req = seen["request"]
     assert req.ports == [5]  # type: ignore[attr-defined]
     assert req.name == "mismatch"  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
+# Device features / fault detection / monitor / bob-ports — reads
+# ---------------------------------------------------------------------------
+
+
+def test_device_features_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> DeviceFeaturesPage:
+        return DeviceFeaturesPage(
+            vlan_count=1, crip_stat="0", igmp=True, spanning_tree=False
+        )
+
+    monkeypatch.setattr(configuration_module, "get_devfeatures_page", fake_get)
+    r = client.get("/api/v1/configuration/device-features")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["vlan_count"] == 1
+    assert body["igmp"] is True
+    assert body["spanning_tree"] is False
+
+
+def test_fault_detection_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> FaultDetectionPage:
+        return FaultDetectionPage(sensitivity=FaultSensitivity.MEDIUM, dps=12)
+
+    monkeypatch.setattr(
+        configuration_module, "get_faultdetect_page", fake_get
+    )
+    r = client.get("/api/v1/configuration/fault-detection")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["sensitivity"] == int(FaultSensitivity.MEDIUM)
+    assert body["dps"] == 12
+
+
+def test_monitor_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> MonitorPage:
+        return MonitorPage(
+            enabled=True,
+            candidate_dest_ports=[1, 2, 3],
+            selected_dest_port=2,
+        )
+
+    monkeypatch.setattr(configuration_module, "get_monitor_page", fake_get)
+    r = client.get("/api/v1/configuration/monitor")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["enabled"] is True
+    assert body["candidate_dest_ports"] == [1, 2, 3]
+    assert body["selected_dest_port"] == 2
+
+
+def test_bob_ports_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> BobPortsResponse:
+        return BobPortsResponse(
+            device=BobDevice(codename="J9021A", port_count=24),
+            ports=[
+                BobPort(
+                    port=1, kind="copper", label="1", link=True, enabled=True
+                ),
+                BobPort(
+                    port=2,
+                    kind="copper",
+                    label="2",
+                    link=False,
+                    enabled=False,
+                ),
+            ],
+        )
+
+    monkeypatch.setattr(configuration_module, "get_bobports", fake_get)
+    r = client.get("/api/v1/configuration/bob-ports")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["device"]["codename"] == "J9021A"
+    assert body["device"]["port_count"] == 24
+    assert len(body["ports"]) == 2
+    assert body["ports"][0]["enabled"] is True
+    assert body["ports"][1]["enabled"] is False
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/configuration/device-features",
+        "/api/v1/configuration/fault-detection",
+        "/api/v1/configuration/monitor",
+        "/api/v1/configuration/bob-ports",
+    ],
+)
+def test_read_requires_auth(
+    settings: Settings, store: BackupStore, path: str
+) -> None:
+    fresh = create_app()
+    with TestClient(fresh) as c:
+        fresh.state.settings = settings
+        fresh.state.backup_store = store
+        r = c.get(path)
+        assert r.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Device features / fault detection / monitor / bob-ports — writes
+# ---------------------------------------------------------------------------
+
+_DEV_FEATURES_BODY = {
+    "request": {
+        "endpoint": "/cgi/feature_set",
+        "vlan_id": 1,
+        "igmp": True,
+        "spanning_tree": False,
+    }
+}
+
+_FAULT_DETECTION_BODY = {
+    "request": {"sensitivity": int(FaultSensitivity.MEDIUM)}
+}
+
+_MONITOR_BODY = {
+    "request": {"enabled": True, "dest_port": 2, "source_mask": 0b101},
+}
+
+_BOB_PORTS_BODY = {"request": {"enable": True, "ports": [1, 2, 3]}}
+
+
+# The 4 write endpoints share the same gate pattern. Parametrize the
+# READ_ONLY test over all of them.
+
+_WRITE_CASES = [
+    (
+        "/api/v1/configuration/device-features",
+        "set_device_features",
+        _DEV_FEATURES_BODY,
+    ),
+    (
+        "/api/v1/configuration/fault-detection",
+        "set_fault_detection",
+        _FAULT_DETECTION_BODY,
+    ),
+    ("/api/v1/configuration/monitor", "set_monitor", _MONITOR_BODY),
+    ("/api/v1/configuration/bob-ports", "set_bobports", _BOB_PORTS_BODY),
+]
+
+
+@pytest.mark.parametrize("path,op_name,body", _WRITE_CASES)
+def test_write_blocked_when_read_only(
+    read_only_settings: Settings,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+    op_name: str,
+    body: dict[str, object],
+) -> None:
+    app = create_app()
+    app.state.settings = read_only_settings
+    app.state.backup_store = store
+    called = False
+
+    async def must_not_run(transport: object, **kw: object) -> ConfigWriteAck:
+        nonlocal called
+        called = True
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, op_name, must_not_run)
+    _must_not_download(monkeypatch)
+
+    with TestClient(app) as c:
+        app.dependency_overrides[get_transport] = lambda: object()
+        app.dependency_overrides[get_backup_store] = lambda: store
+        r = c.put(path, json=body)
+        app.dependency_overrides.clear()
+    assert r.status_code == 403
+    detail = r.json().get("detail", r.json())
+    assert detail.get("error") == "read_only"
+    assert called is False
+
+
+@pytest.mark.parametrize("path,op_name,body", _WRITE_CASES)
+def test_write_creates_pre_write_backup(
+    client: TestClient,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+    op_name: str,
+    body: dict[str, object],
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    order: list[str] = []
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        order.append(op_name)
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, op_name, fake_set)
+
+    original_save = store.save
+
+    def spy_save(*args: object, **kwargs: object) -> object:
+        order.append("save")
+        return original_save(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(store, "save", spy_save)
+
+    r = client.put(path, json=body)
+    assert r.status_code == 200, r.text
+    assert order == ["save", op_name]
+    listed = store.list()
+    assert len(listed) == 1
+    assert listed[0].trigger == "pre-write"
+
+
+def test_device_features_write_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    seen: dict[str, object] = {}
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        seen.update(kw)
+        return ConfigWriteAck(ok=True, raw_body="OK~")
+
+    monkeypatch.setattr(configuration_module, "set_device_features", fake_set)
+    r = client.put(
+        "/api/v1/configuration/device-features", json=_DEV_FEATURES_BODY
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True
+    assert body["raw_body"] == "OK~"
+    req = seen["request"]
+    assert req.endpoint == "/cgi/feature_set"  # type: ignore[attr-defined]
+    assert req.vlan_id == 1  # type: ignore[attr-defined]
+    assert req.igmp is True  # type: ignore[attr-defined]
+    assert req.spanning_tree is False  # type: ignore[attr-defined]
+
+
+def test_fault_detection_write_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    seen: dict[str, object] = {}
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        seen.update(kw)
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, "set_fault_detection", fake_set)
+    r = client.put(
+        "/api/v1/configuration/fault-detection", json=_FAULT_DETECTION_BODY
+    )
+    assert r.status_code == 200, r.text
+    req = seen["request"]
+    assert int(req.sensitivity) == int(FaultSensitivity.MEDIUM)  # type: ignore[attr-defined]
+
+
+def test_monitor_write_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    seen: dict[str, object] = {}
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        seen.update(kw)
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, "set_monitor", fake_set)
+    r = client.put("/api/v1/configuration/monitor", json=_MONITOR_BODY)
+    assert r.status_code == 200, r.text
+    req = seen["request"]
+    assert req.enabled is True  # type: ignore[attr-defined]
+    assert req.dest_port == 2  # type: ignore[attr-defined]
+    assert req.source_mask == 0b101  # type: ignore[attr-defined]
+
+
+def test_bob_ports_write_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    seen: dict[str, object] = {}
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        seen.update(kw)
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, "set_bobports", fake_set)
+    r = client.put("/api/v1/configuration/bob-ports", json=_BOB_PORTS_BODY)
+    assert r.status_code == 200, r.text
+    req = seen["request"]
+    assert req.enable is True  # type: ignore[attr-defined]
+    assert req.ports == [1, 2, 3]  # type: ignore[attr-defined]

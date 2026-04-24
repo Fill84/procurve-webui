@@ -385,6 +385,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/configuration/device-features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Device Features
+         * @description Read IGMP / Spanning-Tree flags + VLAN count.
+         */
+        get: operations["read_device_features_api_v1_configuration_device_features_get"];
+        /**
+         * Write Device Features
+         * @description Write IGMP / Spanning Tree flags. Not lockout-risky.
+         */
+        put: operations["write_device_features_api_v1_configuration_device_features_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/fault-detection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Fault Detection
+         * @description Read fault-detection sensitivity.
+         */
+        get: operations["read_fault_detection_api_v1_configuration_fault_detection_get"];
+        /**
+         * Write Fault Detection
+         * @description Write fault-detection sensitivity (one of FaultSensitivity).
+         */
+        put: operations["write_fault_detection_api_v1_configuration_fault_detection_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/monitor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Monitor
+         * @description Read port-mirroring state (enabled, candidate + selected dest port).
+         */
+        get: operations["read_monitor_api_v1_configuration_monitor_get"];
+        /**
+         * Write Monitor
+         * @description Enable / disable port mirroring (dest + source mask required when on).
+         */
+        put: operations["write_monitor_api_v1_configuration_monitor_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/bob-ports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Bob Ports
+         * @description Device-view port rollup (admin status per port + link state).
+         */
+        get: operations["read_bob_ports_api_v1_configuration_bob_ports_get"];
+        /**
+         * Write Bob Ports
+         * @description Bulk-enable / disable admin status on a set of ports.
+         */
+        put: operations["write_bob_ports_api_v1_configuration_bob_ports_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security/web-access": {
         parameters: {
             query?: never;
@@ -744,6 +840,52 @@ export interface components {
             trigger: "manual" | "pre-write" | "scheduled";
         };
         /**
+         * BobDevice
+         * @description First line of /cgi/get_bobports — switch chassis metadata.
+         */
+        BobDevice: {
+            /** Codename */
+            codename: string;
+            /** Port Count */
+            port_count: number;
+        };
+        /**
+         * BobPort
+         * @description One port line from /cgi/get_bobports.
+         *
+         *     `label` is the rendered label the applet shows under the port — it may
+         *     differ from the SNMP port name. `mode` and `poe` are optional (many
+         *     firmwares omit the trailing fields).
+         */
+        BobPort: {
+            /** Port */
+            port: number;
+            /** Kind */
+            kind: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Link */
+            link: boolean;
+            /** Enabled */
+            enabled: boolean;
+            /** Mode */
+            mode?: string | null;
+            /** Poe */
+            poe?: number | null;
+        };
+        /**
+         * BobPortsResponse
+         * @description Device + port rollup for /cgi/get_bobports.
+         */
+        BobPortsResponse: {
+            device: components["schemas"]["BobDevice"];
+            /** Ports */
+            ports?: components["schemas"]["BobPort"][];
+        };
+        /**
          * CertMode
          * @description Certificate-mode radio state from `ssl_cert.html`.
          * @enum {integer}
@@ -810,6 +952,26 @@ export interface components {
             action: 3;
             /** Indeces */
             indeces: number[];
+        };
+        /**
+         * DeviceFeaturesPage
+         * @description Scraped state from /configuration/features2*.html.
+         *
+         *     `igmp` and `spanning_tree` are `None` when the injected JS variable was
+         *     `Invalid OID` (page-generator quirk on multi-VLAN variants).
+         */
+        DeviceFeaturesPage: {
+            /** Vlan Count */
+            vlan_count: number;
+            /**
+             * Crip Stat
+             * @default 0
+             */
+            crip_stat: string;
+            /** Igmp */
+            igmp?: boolean | null;
+            /** Spanning Tree */
+            spanning_tree?: boolean | null;
         };
         /**
          * DeviceIdentity
@@ -926,6 +1088,20 @@ export interface components {
             /** Ts Centiseconds */
             ts_centiseconds?: number | null;
         };
+        /**
+         * FaultDetectionPage
+         * @description Scraped state from /configuration/web_agent.html.
+         */
+        FaultDetectionPage: {
+            sensitivity: components["schemas"]["FaultSensitivity"];
+            /** Dps */
+            dps?: number | null;
+        };
+        /**
+         * FaultSensitivity
+         * @enum {integer}
+         */
+        FaultSensitivity: 0 | 32 | 128 | 224;
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1028,6 +1204,18 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /**
+         * MonitorPage
+         * @description Scraped state from /configuration/monitor1.html.
+         */
+        MonitorPage: {
+            /** Enabled */
+            enabled: boolean;
+            /** Candidate Dest Ports */
+            candidate_dest_ports?: number[];
+            /** Selected Dest Port */
+            selected_dest_port?: number | null;
         };
         /**
          * PerportsResponse
@@ -1351,6 +1539,26 @@ export interface components {
          */
         SecurityActionCode: 1 | 2 | 3;
         /**
+         * SetBobPortsBody
+         * @description Body for ``PUT /api/v1/configuration/bob-ports``.
+         */
+        SetBobPortsBody: {
+            request: components["schemas"]["SetBobPortsRequest"];
+        };
+        /**
+         * SetBobPortsRequest
+         * @description Parameters for /cgi/set_bobports (the bulk enable/disable button).
+         *
+         *     Wire uses `ifAdminStatus=1` for enable, `=2` for disable; port list goes
+         *     into `indeces=<csv>` (note the misspelling — preserved on the wire).
+         */
+        SetBobPortsRequest: {
+            /** Enable */
+            enable: boolean;
+            /** Ports */
+            ports: number[];
+        };
+        /**
          * SetDefaultGatewayBody
          * @description Body for ``PUT /api/v1/configuration/gateway``.
          *
@@ -1366,6 +1574,48 @@ export interface components {
              * Format: ipv4
              */
             gateway: string;
+        };
+        /**
+         * SetDeviceFeaturesBody
+         * @description Body for ``PUT /api/v1/configuration/device-features``.
+         */
+        SetDeviceFeaturesBody: {
+            request: components["schemas"]["SetDeviceFeaturesRequest"];
+        };
+        /**
+         * SetDeviceFeaturesRequest
+         * @description Write request for one of the five feature-set endpoints.
+         *
+         *     Use `endpoint` to pick the correct wire path. `igmp` / `spanning_tree`
+         *     may be None to omit the corresponding field.
+         */
+        SetDeviceFeaturesRequest: {
+            /**
+             * Endpoint
+             * @default /cgi/feature_set
+             * @enum {string}
+             */
+            endpoint: "/cgi/feature_set" | "/cgi/feature2_set" | "/cgi/globalfeature_set" | "/cgi/vlanfeature_set" | "/cgi/vlan2feature_set";
+            /**
+             * Vlan Id
+             * @default 1
+             */
+            vlan_id: number;
+            /** Igmp */
+            igmp?: boolean | null;
+            /** Spanning Tree */
+            spanning_tree?: boolean | null;
+        };
+        /**
+         * SetFaultDetectionBody
+         * @description Body for ``PUT /api/v1/configuration/fault-detection``.
+         */
+        SetFaultDetectionBody: {
+            request: components["schemas"]["SetFaultDetectionRequest"];
+        };
+        /** SetFaultDetectionRequest */
+        SetFaultDetectionRequest: {
+            sensitivity: components["schemas"]["FaultSensitivity"];
         };
         /**
          * SetIpConfigBody
@@ -1390,6 +1640,22 @@ export interface components {
             /** Vlan Id */
             vlan_id: number;
             mode: components["schemas"]["IpMode"];
+        };
+        /**
+         * SetMonitorBody
+         * @description Body for ``PUT /api/v1/configuration/monitor``.
+         */
+        SetMonitorBody: {
+            request: components["schemas"]["SetMonitorRequest"];
+        };
+        /** SetMonitorRequest */
+        SetMonitorRequest: {
+            /** Enabled */
+            enabled: boolean;
+            /** Dest Port */
+            dest_port?: number | null;
+            /** Source Mask */
+            source_mask?: number | null;
         };
         /**
          * SetPerportBody
@@ -2304,6 +2570,218 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SetDefaultGatewayBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_device_features_api_v1_configuration_device_features_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceFeaturesPage"];
+                };
+            };
+        };
+    };
+    write_device_features_api_v1_configuration_device_features_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDeviceFeaturesBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_fault_detection_api_v1_configuration_fault_detection_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FaultDetectionPage"];
+                };
+            };
+        };
+    };
+    write_fault_detection_api_v1_configuration_fault_detection_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetFaultDetectionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_monitor_api_v1_configuration_monitor_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorPage"];
+                };
+            };
+        };
+    };
+    write_monitor_api_v1_configuration_monitor_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetMonitorBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_bob_ports_api_v1_configuration_bob_ports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BobPortsResponse"];
+                };
+            };
+        };
+    };
+    write_bob_ports_api_v1_configuration_bob_ports_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetBobPortsBody"];
             };
         };
         responses: {
