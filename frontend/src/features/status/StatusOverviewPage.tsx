@@ -198,7 +198,10 @@ export function StatusOverviewPage() {
                     className="border-t border-neutral-100 align-top"
                   >
                     <td className="px-4 py-2 font-mono text-xs text-neutral-600">
-                      {formatAlertTimestamp(e.ts_centiseconds)}
+                      {formatAlertTimestamp(
+                        e.ts_centiseconds,
+                        identityQuery.data?.uptime_centiseconds,
+                      )}
                     </td>
                     <td className="px-4 py-2 text-neutral-700">
                       {e.category || "—"}
@@ -270,19 +273,52 @@ function SummaryCard({
 }
 
 /**
- * Render a best-effort human timestamp for an alert event.
+ * Render a human timestamp for an alert event.
  *
- * The switch reports `ts_centiseconds` as a wall-clock value (centiseconds
- * since the Unix epoch on firmware with a valid clock). Multiplying by 10
- * gives milliseconds suitable for `new Date`. If the result looks obviously
- * bogus (e.g. before 2000) we fall back to the raw centisecond value so
- * the admin can still sort and inspect entries.
+ * `ts_centiseconds` on this firmware is **sysUpTime** — centiseconds since
+ * the switch last booted, not a wall-clock value. See
+ * research/protocol/status/get_alert_log.md → "Timestamps are centiseconds,
+ * not ms. Matches the Identity-tab uptime convention."
+ *
+ * To turn that into something a human recognises we anchor it to the
+ * browser's wall clock at the moment the identity page was last read:
+ *
+ *     event_wall_ms = now_ms - (current_uptime_centi - alert_uptime_centi) * 10
+ *
+ * The `current_uptime_centi` comes from `useIdentity().uptime_centiseconds`,
+ * and the drift between that read and "now" is small enough (tens of
+ * seconds at most — useIdentity polls on mount) that the result is accurate
+ * to the second.
+ *
+ * When identity hasn't loaded yet we render a relative form ("uptime+Xs")
+ * so the caller still gets something sortable and self-consistent.
  */
-function formatAlertTimestamp(tsCenti: number): string {
-  const ms = tsCenti * 10;
-  const d = new Date(ms);
-  if (!Number.isFinite(d.getTime()) || d.getUTCFullYear() < 2000) {
-    return `t=${tsCenti}`;
+function formatAlertTimestamp(
+  tsCenti: number,
+  currentUptimeCenti: number | undefined,
+): string {
+  if (currentUptimeCenti === undefined) {
+    return `uptime+${Math.floor(tsCenti / 100)}s`;
   }
-  return d.toISOString().replace("T", " ").replace(/\.\d+Z$/, "Z");
+  const ageMs = Math.max(0, (currentUptimeCenti - tsCenti) * 10);
+  const wallMs = Date.now() - ageMs;
+  const d = new Date(wallMs);
+  if (!Number.isFinite(d.getTime())) return `t=${tsCenti}`;
+
+  const absolute = d
+    .toISOString()
+    .replace("T", " ")
+    .replace(/\.\d+Z$/, "Z");
+  return `${absolute} (${formatRelative(ageMs)})`;
+}
+
+function formatRelative(ageMs: number): string {
+  const s = Math.floor(ageMs / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h${m % 60 ? ` ${m % 60}m` : ""} ago`;
+  const days = Math.floor(h / 24);
+  return `${days}d ${h % 24}h ago`;
 }
