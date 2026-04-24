@@ -1,16 +1,16 @@
-"""Configuration API (Task 3.5): system info + IP + per-port + features/monitor/bob.
+"""Configuration API (Task 3.5): system info + IP + per-port + features/monitor/bob + QoS.
 
 This router will grow across Task 3.5's five sub-tasks:
 
 * 3.5a — system info + IP config
 * 3.5b — per-port
-* 3.5c (this revision adds device-features / fault-detection / monitor / bob-ports)
-* 3.5d — QoS (cos*, dscptable, diffserv)
+* 3.5c — device-features / fault-detection / monitor / bob-ports
+* 3.5d (this revision adds QoS: cos*, dscptable, diffserv, cosproto)
 * 3.5e — support URLs
 
 Endpoints
 ---------
-Reads (8):
+Reads (13):
   GET  /api/v1/configuration/system           -> SystemInfoPage
   GET  /api/v1/configuration/ip               -> IpConfigPage
   GET  /api/v1/configuration/ports            -> PortConfigList
@@ -19,8 +19,13 @@ Reads (8):
   GET  /api/v1/configuration/fault-detection  -> FaultDetectionPage
   GET  /api/v1/configuration/monitor          -> MonitorPage
   GET  /api/v1/configuration/bob-ports        -> BobPortsResponse
+  GET  /api/v1/configuration/qos/cos          -> CosAppList
+  GET  /api/v1/configuration/qos/user-pri     -> CosUserList
+  GET  /api/v1/configuration/qos/vlan-pri     -> CosVlanList
+  GET  /api/v1/configuration/qos/dscp         -> DscpTable
+  GET  /api/v1/configuration/qos/diffserv     -> DiffservTable
 
-Writes (8):
+Writes (15):
   PUT  /api/v1/configuration/system           -> ConfigWriteAck   (autobackup only)
   PUT  /api/v1/configuration/ip               -> ConfigWriteAck   (autobackup + host confirm, LOCKOUT-RISKY)
   PUT  /api/v1/configuration/gateway          -> ConfigWriteAck   (autobackup only)
@@ -29,6 +34,13 @@ Writes (8):
   PUT  /api/v1/configuration/fault-detection  -> ConfigWriteAck   (autobackup only)
   PUT  /api/v1/configuration/monitor          -> ConfigWriteAck   (autobackup only)
   PUT  /api/v1/configuration/bob-ports        -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/qos/cos          -> QosWriteAck      (autobackup only)
+  PUT  /api/v1/configuration/qos/user-pri     -> QosWriteAck      (autobackup only)
+  PUT  /api/v1/configuration/qos/vlan-pri     -> QosWriteAck      (autobackup only)
+  PUT  /api/v1/configuration/qos/mode         -> QosWriteAck      (autobackup only)
+  PUT  /api/v1/configuration/qos/dscp         -> QosWriteAck      (autobackup only, row-at-a-time)
+  PUT  /api/v1/configuration/qos/diffserv     -> QosWriteAck      (autobackup only)
+  PUT  /api/v1/configuration/qos/cos-proto    -> QosWriteAck      (autobackup only)
 
 Write-safety policy
 -------------------
@@ -67,6 +79,24 @@ which takes a pre-write backup before any switch write is attempted.
   included in a disable set would break the session, but that failure
   mode is symmetric with the per-port endpoint which also takes no host
   confirmation. Autobackup is the rollback path.
+* ``PUT /qos/*`` — all QoS writes (application priority, user priority,
+  VLAN priority, master mode, DSCP map, diffserv, protocol priority).
+  None are lockout-risky: QoS is a forwarding-plane policy, not a
+  management-plane control. Autobackup is the rollback path. The DSCP
+  table is edited one row at a time (``set_dscptable`` takes a single
+  ``(row_index, priority_8021p)`` pair) rather than the whole 64-entry
+  table in one write.
+
+Single-file design
+------------------
+Task 3.5's Phase 3 plan suggested splitting this module into a subpackage
+once it grew past ~450 lines. We kept it as a single file because every
+route handler calls an imported op symbol by name (``get_system_page``,
+``set_cos_appt``, …) and the test suite monkey-patches those symbols on
+this exact module. Splitting into ``configuration/system.py`` +
+``configuration/qos.py`` would force every existing test to know which
+sub-module owns each op and rewrite 31 patch calls. The docstring + grouped
+sections keep the file navigable at its current ~700-line size.
 """
 from __future__ import annotations
 
@@ -98,9 +128,29 @@ from procurve_client.models.port import (
     SetBobPortsRequest,
     SetPortConfigRequest,
 )
+from procurve_client.models.qos import (
+    CosAppList,
+    CosUserList,
+    CosVlanList,
+    DiffservTable,
+    DscpTable,
+    QosWriteAck,
+    SetCosApptRequest,
+    SetCosProtoRequest,
+    SetCosTosModeRequest,
+    SetCosUserPriRequest,
+    SetCosVlanPriRequest,
+    SetDiffservRequest,
+    SetDscpTableRequest,
+)
 from procurve_client.operations.configuration import (
     get_bobports,
+    get_cos_appt,
+    get_cos_userpri,
+    get_cos_vlanpri,
     get_devfeatures_page,
+    get_diffserv,
+    get_dscptable,
     get_faultdetect_page,
     get_ip_page,
     get_monitor_page,
@@ -108,8 +158,15 @@ from procurve_client.operations.configuration import (
     get_portscfg,
     get_system_page,
     set_bobports,
+    set_cos_appt,
+    set_cos_userpri,
+    set_cos_vlanpri,
+    set_cosproto,
+    set_costos_mode,
     set_default_gateway,
     set_device_features,
+    set_diffserv,
+    set_dscptable,
     set_fault_detection,
     set_ip_config,
     set_monitor,
@@ -429,6 +486,218 @@ async def write_bob_ports(
         store=store,
         transport=transport,
         write=lambda: set_bobports(transport, request=body.request),
+    )
+
+
+# ---------------------------------------------------------------------------
+# QoS — request bodies
+# ---------------------------------------------------------------------------
+
+
+class SetCosApptBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/qos/cos`` — Add / Replace / Delete
+    one application-priority row (``SetCosApptRequest.action``)."""
+
+    request: SetCosApptRequest
+
+
+class SetCosUserPriBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/qos/user-pri``."""
+
+    request: SetCosUserPriRequest
+
+
+class SetCosVlanPriBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/qos/vlan-pri``."""
+
+    request: SetCosVlanPriRequest
+
+
+class SetCosTosModeBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/qos/mode`` — the master QoS mode
+    (DISABLED / IP_PRECEDENCE / DIFFSERV)."""
+
+    request: SetCosTosModeRequest
+
+
+class SetDscpTableBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/qos/dscp`` — one row of the
+    64-entry DSCP → 802.1p map at a time (``row_index = codepoint + 1``)."""
+
+    request: SetDscpTableRequest
+
+
+class SetDiffservBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/qos/diffserv``."""
+
+    request: SetDiffservRequest
+
+
+class SetCosProtoBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/qos/cos-proto``."""
+
+    request: SetCosProtoRequest
+
+
+# ---------------------------------------------------------------------------
+# QoS — reads
+# ---------------------------------------------------------------------------
+
+
+@router.get("/qos/cos", response_model=CosAppList)
+async def read_qos_cos(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> CosAppList:
+    """List application → priority entries (cos-app table)."""
+    return await get_cos_appt(transport)
+
+
+@router.get("/qos/user-pri", response_model=CosUserList)
+async def read_qos_user_pri(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> CosUserList:
+    """List per-device (IP) QoS entries."""
+    return await get_cos_userpri(transport)
+
+
+@router.get("/qos/vlan-pri", response_model=CosVlanList)
+async def read_qos_vlan_pri(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> CosVlanList:
+    """List per-VLAN QoS entries."""
+    return await get_cos_vlanpri(transport)
+
+
+@router.get("/qos/dscp", response_model=DscpTable)
+async def read_qos_dscp(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> DscpTable:
+    """Fetch the 64-row DSCP → 802.1p priority map."""
+    return await get_dscptable(transport)
+
+
+@router.get("/qos/diffserv", response_model=DiffservTable)
+async def read_qos_diffserv(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> DiffservTable:
+    """Fetch the 64-row inbound DiffServ policy table."""
+    return await get_diffserv(transport)
+
+
+# ---------------------------------------------------------------------------
+# QoS — writes (all autobackup, none lockout-risky, no host confirm)
+# ---------------------------------------------------------------------------
+
+
+@router.put("/qos/cos", response_model=QosWriteAck)
+async def write_qos_cos(
+    body: SetCosApptBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> QosWriteAck:
+    """Add / replace / delete an application-priority entry."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_cos_appt(transport, request=body.request),
+    )
+
+
+@router.put("/qos/user-pri", response_model=QosWriteAck)
+async def write_qos_user_pri(
+    body: SetCosUserPriBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> QosWriteAck:
+    """Add / replace / delete a per-device QoS entry."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_cos_userpri(transport, request=body.request),
+    )
+
+
+@router.put("/qos/vlan-pri", response_model=QosWriteAck)
+async def write_qos_vlan_pri(
+    body: SetCosVlanPriBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> QosWriteAck:
+    """Assign DSCP or 802.1p priority to a VLAN (mutually exclusive)."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_cos_vlanpri(transport, request=body.request),
+    )
+
+
+@router.put("/qos/mode", response_model=QosWriteAck)
+async def write_qos_mode(
+    body: SetCosTosModeBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> QosWriteAck:
+    """Set the switch-wide ToS interpretation mode (CoS vs DSCP master)."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_costos_mode(transport, request=body.request),
+    )
+
+
+@router.put("/qos/dscp", response_model=QosWriteAck)
+async def write_qos_dscp(
+    body: SetDscpTableBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> QosWriteAck:
+    """Update a single row of the DSCP → 802.1p map (``row_index`` = codepoint+1)."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_dscptable(transport, request=body.request),
+    )
+
+
+@router.put("/qos/diffserv", response_model=QosWriteAck)
+async def write_qos_diffserv(
+    body: SetDiffservBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> QosWriteAck:
+    """Rewrite the DSCP policy for an inbound codepoint."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_diffserv(transport, request=body.request),
+    )
+
+
+@router.put("/qos/cos-proto", response_model=QosWriteAck)
+async def write_qos_cos_proto(
+    body: SetCosProtoBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> QosWriteAck:
+    """Submit the protocol-priority form (empty body on the 2810-24G)."""
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_cosproto(transport, request=body.request),
     )
 
 

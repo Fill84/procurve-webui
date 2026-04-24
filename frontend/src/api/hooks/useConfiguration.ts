@@ -2,8 +2,8 @@
  * React Query hooks for the Configuration tab (Task 3.5).
  *
  * Sub-tasks 3.5a (system + IP), 3.5b (ports), 3.5c (device features +
- * fault detection + monitor + bob-ports). More hooks land in 3.5d (QoS)
- * and 3.5e (support URLs).
+ * fault detection + monitor + bob-ports), 3.5d (QoS). More hooks land in
+ * 3.5e (support URLs).
  *
  * Backend endpoints:
  *   GET  /api/v1/configuration/system            -> SystemInfoPage
@@ -314,5 +314,203 @@ export function useSetBobPorts() {
       void qc.invalidateQueries({ queryKey: ["configuration", "ports"] });
       void qc.invalidateQueries({ queryKey: ["backups"] });
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// QoS (Task 3.5d)
+//
+// 5 read endpoints + 7 write endpoints. None are lockout-risky; all writes
+// pass through the backend's autobackup wrapper so a pre-write backup is on
+// disk before the switch is touched.
+//
+// The master QoS mode (CoS vs DSCP vs disabled) does not have its own read
+// endpoint — it's inferred from the priority labels on the sub-tables. The
+// UI keeps an explicit selector (QosModeSelector) whose ``PUT /qos/mode`` is
+// the sole authority, and gates which sub-cards render on the selector
+// state.
+// ---------------------------------------------------------------------------
+
+export type CosAppEntry = components["schemas"]["CosAppEntry"];
+export type CosAppList = components["schemas"]["CosAppList"];
+export type CosUserEntry = components["schemas"]["CosUserEntry"];
+export type CosUserList = components["schemas"]["CosUserList"];
+export type CosVlanEntry = components["schemas"]["CosVlanEntry"];
+export type CosVlanList = components["schemas"]["CosVlanList"];
+export type DscpPolicy = components["schemas"]["DscpPolicy"];
+export type DscpTable = components["schemas"]["DscpTable"];
+export type DiffservEntry = components["schemas"]["DiffservEntry"];
+export type DiffservTable = components["schemas"]["DiffservTable"];
+
+export type QosWriteAck = components["schemas"]["QosWriteAck"];
+
+export type ApplyPolicy = components["schemas"]["ApplyPolicy"];
+export type CosTosMode = components["schemas"]["CosTosMode"];
+
+export type SetCosApptRequest =
+  components["schemas"]["SetCosApptRequest"];
+export type SetCosApptBody = components["schemas"]["SetCosApptBody"];
+export type SetCosUserPriRequest =
+  components["schemas"]["SetCosUserPriRequest"];
+export type SetCosUserPriBody =
+  components["schemas"]["SetCosUserPriBody"];
+export type SetCosVlanPriRequest =
+  components["schemas"]["SetCosVlanPriRequest"];
+export type SetCosVlanPriBody =
+  components["schemas"]["SetCosVlanPriBody"];
+export type SetCosTosModeRequest =
+  components["schemas"]["SetCosTosModeRequest"];
+export type SetCosTosModeBody =
+  components["schemas"]["SetCosTosModeBody"];
+export type SetDscpTableRequest =
+  components["schemas"]["SetDscpTableRequest"];
+export type SetDscpTableBody =
+  components["schemas"]["SetDscpTableBody"];
+export type SetDiffservRequest =
+  components["schemas"]["SetDiffservRequest"];
+export type SetDiffservBody = components["schemas"]["SetDiffservBody"];
+export type SetCosProtoRequest =
+  components["schemas"]["SetCosProtoRequest"];
+export type SetCosProtoBody = components["schemas"]["SetCosProtoBody"];
+
+// Reads ---------------------------------------------------------------------
+
+export function useQosCos() {
+  return useQuery<CosAppList>({
+    queryKey: ["configuration", "qos", "cos"],
+    queryFn: () => apiGet<CosAppList>("/api/v1/configuration/qos/cos"),
+  });
+}
+
+export function useQosUserPri() {
+  return useQuery<CosUserList>({
+    queryKey: ["configuration", "qos", "user-pri"],
+    queryFn: () =>
+      apiGet<CosUserList>("/api/v1/configuration/qos/user-pri"),
+  });
+}
+
+export function useQosVlanPri() {
+  return useQuery<CosVlanList>({
+    queryKey: ["configuration", "qos", "vlan-pri"],
+    queryFn: () =>
+      apiGet<CosVlanList>("/api/v1/configuration/qos/vlan-pri"),
+  });
+}
+
+export function useQosDscp() {
+  return useQuery<DscpTable>({
+    queryKey: ["configuration", "qos", "dscp"],
+    queryFn: () => apiGet<DscpTable>("/api/v1/configuration/qos/dscp"),
+  });
+}
+
+export function useQosDiffserv() {
+  return useQuery<DiffservTable>({
+    queryKey: ["configuration", "qos", "diffserv"],
+    queryFn: () =>
+      apiGet<DiffservTable>("/api/v1/configuration/qos/diffserv"),
+  });
+}
+
+// Writes --------------------------------------------------------------------
+
+function invalidateQos(
+  qc: ReturnType<typeof useQueryClient>,
+  sub?: "cos" | "user-pri" | "vlan-pri" | "dscp" | "diffserv" | "mode",
+) {
+  if (sub) {
+    void qc.invalidateQueries({ queryKey: ["configuration", "qos", sub] });
+  } else {
+    void qc.invalidateQueries({ queryKey: ["configuration", "qos"] });
+  }
+  void qc.invalidateQueries({ queryKey: ["backups"] });
+}
+
+export function useSetQosCos() {
+  const qc = useQueryClient();
+  return useMutation<QosWriteAck, ApiError, SetCosApptBody>({
+    mutationFn: (body) =>
+      apiPut<QosWriteAck, SetCosApptBody>(
+        "/api/v1/configuration/qos/cos",
+        body,
+      ),
+    onSuccess: () => invalidateQos(qc, "cos"),
+  });
+}
+
+export function useSetQosUserPri() {
+  const qc = useQueryClient();
+  return useMutation<QosWriteAck, ApiError, SetCosUserPriBody>({
+    mutationFn: (body) =>
+      apiPut<QosWriteAck, SetCosUserPriBody>(
+        "/api/v1/configuration/qos/user-pri",
+        body,
+      ),
+    onSuccess: () => invalidateQos(qc, "user-pri"),
+  });
+}
+
+export function useSetQosVlanPri() {
+  const qc = useQueryClient();
+  return useMutation<QosWriteAck, ApiError, SetCosVlanPriBody>({
+    mutationFn: (body) =>
+      apiPut<QosWriteAck, SetCosVlanPriBody>(
+        "/api/v1/configuration/qos/vlan-pri",
+        body,
+      ),
+    onSuccess: () => invalidateQos(qc, "vlan-pri"),
+  });
+}
+
+export function useSetQosMode() {
+  const qc = useQueryClient();
+  return useMutation<QosWriteAck, ApiError, SetCosTosModeBody>({
+    mutationFn: (body) =>
+      apiPut<QosWriteAck, SetCosTosModeBody>(
+        "/api/v1/configuration/qos/mode",
+        body,
+      ),
+    onSuccess: () => {
+      // Mode change potentially reinterprets every QoS sub-table, so
+      // invalidate the whole qos branch and refresh the backups list too.
+      invalidateQos(qc);
+    },
+  });
+}
+
+export function useSetQosDscp() {
+  const qc = useQueryClient();
+  return useMutation<QosWriteAck, ApiError, SetDscpTableBody>({
+    mutationFn: (body) =>
+      apiPut<QosWriteAck, SetDscpTableBody>(
+        "/api/v1/configuration/qos/dscp",
+        body,
+      ),
+    onSuccess: () => invalidateQos(qc, "dscp"),
+  });
+}
+
+export function useSetQosDiffserv() {
+  const qc = useQueryClient();
+  return useMutation<QosWriteAck, ApiError, SetDiffservBody>({
+    mutationFn: (body) =>
+      apiPut<QosWriteAck, SetDiffservBody>(
+        "/api/v1/configuration/qos/diffserv",
+        body,
+      ),
+    onSuccess: () => invalidateQos(qc, "diffserv"),
+  });
+}
+
+export function useSetQosCosProto() {
+  const qc = useQueryClient();
+  return useMutation<QosWriteAck, ApiError, SetCosProtoBody>({
+    mutationFn: (body) =>
+      apiPut<QosWriteAck, SetCosProtoBody>(
+        "/api/v1/configuration/qos/cos-proto",
+        body,
+      ),
+    onSuccess: () => invalidateQos(qc),
   });
 }

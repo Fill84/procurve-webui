@@ -59,6 +59,21 @@ from procurve_client.models.port import (
     PortForm,
     PortMode,
 )
+from procurve_client.models.qos import (
+    ApplyPolicy,
+    CosAppEntry,
+    CosAppList,
+    CosTosMode,
+    CosUserEntry,
+    CosUserList,
+    CosVlanEntry,
+    CosVlanList,
+    DiffservEntry,
+    DiffservTable,
+    DscpPolicy,
+    DscpTable,
+    QosWriteAck,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -1059,3 +1074,301 @@ def test_bob_ports_write_happy_path(
     req = seen["request"]
     assert req.enable is True  # type: ignore[attr-defined]
     assert req.ports == [1, 2, 3]  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
+# QoS — reads
+# ---------------------------------------------------------------------------
+
+
+def test_qos_cos_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> CosAppList:
+        return CosAppList(
+            entries=[
+                CosAppEntry(
+                    application_name="http (80)",
+                    port_number=80,
+                    type="TCP",
+                    dscp="No Override",
+                    priority="No Override",
+                )
+            ]
+        )
+
+    monkeypatch.setattr(configuration_module, "get_cos_appt", fake_get)
+    r = client.get("/api/v1/configuration/qos/cos")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body["entries"]) == 1
+    assert body["entries"][0]["application_name"] == "http (80)"
+    assert body["entries"][0]["type"] == "TCP"
+
+
+def test_qos_user_pri_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> CosUserList:
+        return CosUserList(
+            entries=[
+                CosUserEntry(
+                    ip_address="10.0.0.5",
+                    dscp_policy="No Override",
+                    priority="No Override",
+                )
+            ]
+        )
+
+    monkeypatch.setattr(configuration_module, "get_cos_userpri", fake_get)
+    r = client.get("/api/v1/configuration/qos/user-pri")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["entries"][0]["ip_address"] == "10.0.0.5"
+
+
+def test_qos_vlan_pri_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> CosVlanList:
+        return CosVlanList(
+            entries=[
+                CosVlanEntry(
+                    vlan_id=1,
+                    vlan_label="DEFAULT_VLAN",
+                    dscp_policy="No Override",
+                    priority="No Override",
+                )
+            ]
+        )
+
+    monkeypatch.setattr(configuration_module, "get_cos_vlanpri", fake_get)
+    r = client.get("/api/v1/configuration/qos/vlan-pri")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["entries"][0]["vlan_id"] == 1
+    assert body["entries"][0]["vlan_label"] == "DEFAULT_VLAN"
+
+
+def test_qos_dscp_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> DscpTable:
+        return DscpTable(
+            rows=[
+                DscpPolicy(
+                    row_index=1, codepoint="000000", priority_label="0"
+                ),
+                DscpPolicy(
+                    row_index=2, codepoint="000001", priority_label="No Override"
+                ),
+            ]
+        )
+
+    monkeypatch.setattr(configuration_module, "get_dscptable", fake_get)
+    r = client.get("/api/v1/configuration/qos/dscp")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body["rows"]) == 2
+    assert body["rows"][0]["codepoint"] == "000000"
+    assert body["rows"][1]["priority_label"] == "No Override"
+
+
+def test_qos_diffserv_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> DiffservTable:
+        return DiffservTable(
+            rows=[
+                DiffservEntry(
+                    row_index=1,
+                    inbound_codepoint="000000",
+                    dscp_policy="No Override",
+                    priority_label="0",
+                )
+            ]
+        )
+
+    monkeypatch.setattr(configuration_module, "get_diffserv", fake_get)
+    r = client.get("/api/v1/configuration/qos/diffserv")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["rows"][0]["inbound_codepoint"] == "000000"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/configuration/qos/cos",
+        "/api/v1/configuration/qos/user-pri",
+        "/api/v1/configuration/qos/vlan-pri",
+        "/api/v1/configuration/qos/dscp",
+        "/api/v1/configuration/qos/diffserv",
+    ],
+)
+def test_qos_read_requires_auth(
+    settings: Settings, store: BackupStore, path: str
+) -> None:
+    fresh = create_app()
+    with TestClient(fresh) as c:
+        fresh.state.settings = settings
+        fresh.state.backup_store = store
+        r = c.get(path)
+        assert r.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# QoS — writes
+# ---------------------------------------------------------------------------
+
+_QOS_COS_BODY = {
+    "request": {
+        "action": "Add",
+        "app_id": 1,
+        "protocol": "TCP",
+        "policy_mode": int(ApplyPolicy.NO_OVERRIDE),
+    }
+}
+
+_QOS_USER_PRI_BODY = {
+    "request": {
+        "action": "Add",
+        "address": "10.0.0.5",
+        "policy_mode": int(ApplyPolicy.DSCP),
+        "dscp": 46,
+    }
+}
+
+_QOS_VLAN_PRI_BODY = {
+    "request": {
+        "vlan_id": 1,
+        "dscp": 46,
+        "priority_8021p": 255,
+    }
+}
+
+_QOS_MODE_BODY = {"request": {"mode": int(CosTosMode.DIFFSERV)}}
+
+_QOS_DSCP_BODY = {"request": {"row_index": 47, "priority_8021p": 5}}
+
+_QOS_DIFFSERV_BODY = {"request": {"row_index": 47, "dscp": 46}}
+
+_QOS_COS_PROTO_BODY = {"request": {"apply": "Apply Changes"}}
+
+_QOS_WRITE_CASES = [
+    ("/api/v1/configuration/qos/cos", "set_cos_appt", _QOS_COS_BODY),
+    (
+        "/api/v1/configuration/qos/user-pri",
+        "set_cos_userpri",
+        _QOS_USER_PRI_BODY,
+    ),
+    (
+        "/api/v1/configuration/qos/vlan-pri",
+        "set_cos_vlanpri",
+        _QOS_VLAN_PRI_BODY,
+    ),
+    ("/api/v1/configuration/qos/mode", "set_costos_mode", _QOS_MODE_BODY),
+    ("/api/v1/configuration/qos/dscp", "set_dscptable", _QOS_DSCP_BODY),
+    (
+        "/api/v1/configuration/qos/diffserv",
+        "set_diffserv",
+        _QOS_DIFFSERV_BODY,
+    ),
+    (
+        "/api/v1/configuration/qos/cos-proto",
+        "set_cosproto",
+        _QOS_COS_PROTO_BODY,
+    ),
+]
+
+
+@pytest.mark.parametrize("path,op_name,body", _QOS_WRITE_CASES)
+def test_qos_write_blocked_when_read_only(
+    read_only_settings: Settings,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+    op_name: str,
+    body: dict[str, object],
+) -> None:
+    app = create_app()
+    app.state.settings = read_only_settings
+    app.state.backup_store = store
+    called = False
+
+    async def must_not_run(transport: object, **kw: object) -> QosWriteAck:
+        nonlocal called
+        called = True
+        return QosWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, op_name, must_not_run)
+    _must_not_download(monkeypatch)
+
+    with TestClient(app) as c:
+        app.dependency_overrides[get_transport] = lambda: object()
+        app.dependency_overrides[get_backup_store] = lambda: store
+        r = c.put(path, json=body)
+        app.dependency_overrides.clear()
+    assert r.status_code == 403
+    detail = r.json().get("detail", r.json())
+    assert detail.get("error") == "read_only"
+    assert called is False
+
+
+@pytest.mark.parametrize("path,op_name,body", _QOS_WRITE_CASES)
+def test_qos_write_creates_pre_write_backup(
+    client: TestClient,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+    op_name: str,
+    body: dict[str, object],
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    order: list[str] = []
+
+    async def fake_set(transport: object, **kw: object) -> QosWriteAck:
+        order.append(op_name)
+        return QosWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, op_name, fake_set)
+
+    original_save = store.save
+
+    def spy_save(*args: object, **kwargs: object) -> object:
+        order.append("save")
+        return original_save(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(store, "save", spy_save)
+
+    r = client.put(path, json=body)
+    assert r.status_code == 200, r.text
+    assert order == ["save", op_name]
+    listed = store.list()
+    assert len(listed) == 1
+    assert listed[0].trigger == "pre-write"
+
+
+@pytest.mark.parametrize("path,op_name,body", _QOS_WRITE_CASES)
+def test_qos_write_happy_path(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+    op_name: str,
+    body: dict[str, object],
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    seen: dict[str, object] = {}
+
+    async def fake_set(transport: object, **kw: object) -> QosWriteAck:
+        seen.update(kw)
+        return QosWriteAck(ok=True, raw_body="OK~")
+
+    monkeypatch.setattr(configuration_module, op_name, fake_set)
+    r = client.put(path, json=body)
+    assert r.status_code == 200, r.text
+    resp = r.json()
+    assert resp["ok"] is True
+    assert resp["raw_body"] == "OK~"
+    # Each op is called with a `request=` kwarg carrying a pydantic model.
+    assert "request" in seen

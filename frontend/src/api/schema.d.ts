@@ -481,6 +481,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/configuration/qos/cos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Qos Cos
+         * @description List application → priority entries (cos-app table).
+         */
+        get: operations["read_qos_cos_api_v1_configuration_qos_cos_get"];
+        /**
+         * Write Qos Cos
+         * @description Add / replace / delete an application-priority entry.
+         */
+        put: operations["write_qos_cos_api_v1_configuration_qos_cos_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/qos/user-pri": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Qos User Pri
+         * @description List per-device (IP) QoS entries.
+         */
+        get: operations["read_qos_user_pri_api_v1_configuration_qos_user_pri_get"];
+        /**
+         * Write Qos User Pri
+         * @description Add / replace / delete a per-device QoS entry.
+         */
+        put: operations["write_qos_user_pri_api_v1_configuration_qos_user_pri_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/qos/vlan-pri": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Qos Vlan Pri
+         * @description List per-VLAN QoS entries.
+         */
+        get: operations["read_qos_vlan_pri_api_v1_configuration_qos_vlan_pri_get"];
+        /**
+         * Write Qos Vlan Pri
+         * @description Assign DSCP or 802.1p priority to a VLAN (mutually exclusive).
+         */
+        put: operations["write_qos_vlan_pri_api_v1_configuration_qos_vlan_pri_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/qos/dscp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Qos Dscp
+         * @description Fetch the 64-row DSCP → 802.1p priority map.
+         */
+        get: operations["read_qos_dscp_api_v1_configuration_qos_dscp_get"];
+        /**
+         * Write Qos Dscp
+         * @description Update a single row of the DSCP → 802.1p map (``row_index`` = codepoint+1).
+         */
+        put: operations["write_qos_dscp_api_v1_configuration_qos_dscp_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/qos/diffserv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Qos Diffserv
+         * @description Fetch the 64-row inbound DiffServ policy table.
+         */
+        get: operations["read_qos_diffserv_api_v1_configuration_qos_diffserv_get"];
+        /**
+         * Write Qos Diffserv
+         * @description Rewrite the DSCP policy for an inbound codepoint.
+         */
+        put: operations["write_qos_diffserv_api_v1_configuration_qos_diffserv_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/qos/mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Qos Mode
+         * @description Set the switch-wide ToS interpretation mode (CoS vs DSCP master).
+         */
+        put: operations["write_qos_mode_api_v1_configuration_qos_mode_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/qos/cos-proto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Qos Cos Proto
+         * @description Submit the protocol-priority form (empty body on the 2810-24G).
+         */
+        put: operations["write_qos_cos_proto_api_v1_configuration_qos_cos_proto_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security/web-access": {
         parameters: {
             query?: never;
@@ -799,6 +959,12 @@ export interface components {
             events: components["schemas"]["AlertEvent"][];
         };
         /**
+         * ApplyPolicy
+         * @description QoS apply-policy selector shared by set_cos_appt and set_cos_userpri.
+         * @enum {integer}
+         */
+        ApplyPolicy: 1 | 2 | 3;
+        /**
          * AuthorizedManager
          * @description One row from `/cgi/webMgr`.
          */
@@ -929,6 +1095,75 @@ export interface components {
             raw_html: string;
             /** Config Text */
             config_text: string;
+        };
+        /**
+         * CosAppEntry
+         * @description One row of /cgi/cosapp — an application → priority mapping.
+         */
+        CosAppEntry: {
+            /** Application Name */
+            application_name: string;
+            /** Port Number */
+            port_number: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "TCP" | "UDP";
+            /** Dscp */
+            dscp: string;
+            /** Priority */
+            priority: string;
+        };
+        /** CosAppList */
+        CosAppList: {
+            /** Entries */
+            entries?: components["schemas"]["CosAppEntry"][];
+        };
+        /**
+         * CosTosMode
+         * @description Switch-wide Type-of-Service interpretation mode (set_costos_mode).
+         * @enum {integer}
+         */
+        CosTosMode: 1 | 2 | 3;
+        /**
+         * CosUserEntry
+         * @description One row of /cgi/cosuser — per-device QoS mapping.
+         */
+        CosUserEntry: {
+            /**
+             * Ip Address
+             * Format: ipv4
+             */
+            ip_address: string;
+            /** Dscp Policy */
+            dscp_policy: string;
+            /** Priority */
+            priority: string;
+        };
+        /** CosUserList */
+        CosUserList: {
+            /** Entries */
+            entries?: components["schemas"]["CosUserEntry"][];
+        };
+        /**
+         * CosVlanEntry
+         * @description One row of /cgi/cosvlan — VLAN-level QoS mapping.
+         */
+        CosVlanEntry: {
+            /** Vlan Id */
+            vlan_id: number;
+            /** Vlan Label */
+            vlan_label: string;
+            /** Dscp Policy */
+            dscp_policy: string;
+            /** Priority */
+            priority: string;
+        };
+        /** CosVlanList */
+        CosVlanList: {
+            /** Entries */
+            entries?: components["schemas"]["CosVlanEntry"][];
         };
         /** CreateBackupRequest */
         CreateBackupRequest: {
@@ -1087,6 +1322,42 @@ export interface components {
             description?: string | null;
             /** Ts Centiseconds */
             ts_centiseconds?: number | null;
+        };
+        /**
+         * DiffservEntry
+         * @description One row of /cgi/diffserv_get — inbound DSCP policy.
+         */
+        DiffservEntry: {
+            /** Row Index */
+            row_index: number;
+            /** Inbound Codepoint */
+            inbound_codepoint: string;
+            /** Dscp Policy */
+            dscp_policy: string;
+            /** Priority Label */
+            priority_label: string;
+        };
+        /** DiffservTable */
+        DiffservTable: {
+            /** Rows */
+            rows?: components["schemas"]["DiffservEntry"][];
+        };
+        /**
+         * DscpPolicy
+         * @description One row of /cgi/dscptable_get — DSCP → 802.1p mapping.
+         */
+        DscpPolicy: {
+            /** Row Index */
+            row_index: number;
+            /** Codepoint */
+            codepoint: string;
+            /** Priority Label */
+            priority_label: string;
+        };
+        /** DscpTable */
+        DscpTable: {
+            /** Rows */
+            rows?: components["schemas"]["DscpPolicy"][];
         };
         /**
          * FaultDetectionPage
@@ -1458,6 +1729,21 @@ export interface components {
             ports: components["schemas"]["PortStatus"][];
         };
         /**
+         * QosWriteAck
+         * @description HTTP-200 acknowledgement for a QoS write endpoint.
+         *
+         *     Not derived from parsed response body — the body shape is unverified.
+         */
+        QosWriteAck: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Raw Body */
+            raw_body?: string | null;
+        };
+        /**
          * RSAKey
          * @description `rsakey` wire codes — corresponds to the RSA-key select widget.
          * @enum {integer}
@@ -1559,6 +1845,123 @@ export interface components {
             ports: number[];
         };
         /**
+         * SetCosApptBody
+         * @description Body for ``PUT /api/v1/configuration/qos/cos`` — Add / Replace / Delete
+         *     one application-priority row (``SetCosApptRequest.action``).
+         */
+        SetCosApptBody: {
+            request: components["schemas"]["SetCosApptRequest"];
+        };
+        /**
+         * SetCosApptRequest
+         * @description Parameters for /cgi/cosappf. Cross-frame quirk — see protocol doc.
+         */
+        SetCosApptRequest: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "Add" | "Replace" | "Delete";
+            /** App Id */
+            app_id: number;
+            /**
+             * Protocol
+             * @enum {string}
+             */
+            protocol: "TCP" | "UDP";
+            /** Port */
+            port?: number | null;
+            /** @default 1 */
+            policy_mode: components["schemas"]["ApplyPolicy"];
+            /** Dscp */
+            dscp?: number | null;
+            /** Priority 8021P */
+            priority_8021p?: number | null;
+        };
+        /**
+         * SetCosProtoBody
+         * @description Body for ``PUT /api/v1/configuration/qos/cos-proto``.
+         */
+        SetCosProtoBody: {
+            request: components["schemas"]["SetCosProtoRequest"];
+        };
+        /**
+         * SetCosProtoRequest
+         * @description Protocol-priority submit. On the 2810-24G the form is empty; exact
+         *     field set unknown — see protocol doc (`# TODO: needs live capture`).
+         */
+        SetCosProtoRequest: {
+            /**
+             * Apply
+             * @default Apply Changes
+             */
+            apply: string;
+        };
+        /**
+         * SetCosTosModeBody
+         * @description Body for ``PUT /api/v1/configuration/qos/mode`` — the master QoS mode
+         *     (DISABLED / IP_PRECEDENCE / DIFFSERV).
+         */
+        SetCosTosModeBody: {
+            request: components["schemas"]["SetCosTosModeRequest"];
+        };
+        /** SetCosTosModeRequest */
+        SetCosTosModeRequest: {
+            mode: components["schemas"]["CosTosMode"];
+        };
+        /**
+         * SetCosUserPriBody
+         * @description Body for ``PUT /api/v1/configuration/qos/user-pri``.
+         */
+        SetCosUserPriBody: {
+            request: components["schemas"]["SetCosUserPriRequest"];
+        };
+        /** SetCosUserPriRequest */
+        SetCosUserPriRequest: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "Add" | "Replace" | "Delete";
+            /**
+             * Address
+             * Format: ipv4
+             */
+            address: string;
+            /** @default 1 */
+            policy_mode: components["schemas"]["ApplyPolicy"];
+            /** Priority 8021P */
+            priority_8021p?: number | null;
+            /** Dscp */
+            dscp?: number | null;
+        };
+        /**
+         * SetCosVlanPriBody
+         * @description Body for ``PUT /api/v1/configuration/qos/vlan-pri``.
+         */
+        SetCosVlanPriBody: {
+            request: components["schemas"]["SetCosVlanPriRequest"];
+        };
+        /**
+         * SetCosVlanPriRequest
+         * @description Parameters for /cgi/cosvlanf. dscp and priority_8021p are mutually
+         *     exclusive (the legacy UI enforces this client-side).
+         */
+        SetCosVlanPriRequest: {
+            /** Vlan Id */
+            vlan_id: number;
+            /**
+             * Dscp
+             * @default 255
+             */
+            dscp: number;
+            /**
+             * Priority 8021P
+             * @default 255
+             */
+            priority_8021p: number;
+        };
+        /**
          * SetDefaultGatewayBody
          * @description Body for ``PUT /api/v1/configuration/gateway``.
          *
@@ -1605,6 +2008,38 @@ export interface components {
             igmp?: boolean | null;
             /** Spanning Tree */
             spanning_tree?: boolean | null;
+        };
+        /**
+         * SetDiffservBody
+         * @description Body for ``PUT /api/v1/configuration/qos/diffserv``.
+         */
+        SetDiffservBody: {
+            request: components["schemas"]["SetDiffservRequest"];
+        };
+        /** SetDiffservRequest */
+        SetDiffservRequest: {
+            /** Row Index */
+            row_index: number;
+            /** Dscp */
+            dscp: number;
+        };
+        /**
+         * SetDscpTableBody
+         * @description Body for ``PUT /api/v1/configuration/qos/dscp`` — one row of the
+         *     64-entry DSCP → 802.1p map at a time (``row_index = codepoint + 1``).
+         */
+        SetDscpTableBody: {
+            request: components["schemas"]["SetDscpTableRequest"];
+        };
+        /**
+         * SetDscpTableRequest
+         * @description Parameters for /cgi/dscptable_set. `row_index = codepoint + 1`.
+         */
+        SetDscpTableRequest: {
+            /** Row Index */
+            row_index: number;
+            /** Priority 8021P */
+            priority_8021p: number;
         };
         /**
          * SetFaultDetectionBody
@@ -2792,6 +3227,337 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_qos_cos_api_v1_configuration_qos_cos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CosAppList"];
+                };
+            };
+        };
+    };
+    write_qos_cos_api_v1_configuration_qos_cos_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCosApptBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QosWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_qos_user_pri_api_v1_configuration_qos_user_pri_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CosUserList"];
+                };
+            };
+        };
+    };
+    write_qos_user_pri_api_v1_configuration_qos_user_pri_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCosUserPriBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QosWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_qos_vlan_pri_api_v1_configuration_qos_vlan_pri_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CosVlanList"];
+                };
+            };
+        };
+    };
+    write_qos_vlan_pri_api_v1_configuration_qos_vlan_pri_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCosVlanPriBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QosWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_qos_dscp_api_v1_configuration_qos_dscp_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DscpTable"];
+                };
+            };
+        };
+    };
+    write_qos_dscp_api_v1_configuration_qos_dscp_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDscpTableBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QosWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_qos_diffserv_api_v1_configuration_qos_diffserv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiffservTable"];
+                };
+            };
+        };
+    };
+    write_qos_diffserv_api_v1_configuration_qos_diffserv_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDiffservBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QosWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_qos_mode_api_v1_configuration_qos_mode_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCosTosModeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QosWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_qos_cos_proto_api_v1_configuration_qos_cos_proto_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCosProtoBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QosWriteAck"];
                 };
             };
             /** @description Validation Error */

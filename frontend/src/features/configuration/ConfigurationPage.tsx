@@ -11,8 +11,7 @@
  *   3.5d   QoS (cos-app / dscp / diffserv / ...)
  *   3.5e   Support URLs
  *
- * Placeholders for 3.5d–e live inline until those sub-tasks replace them,
- * so the final shape of this page is visible in the UI today.
+ * 3.5e remains a placeholder until that sub-task lands.
  */
 import { SystemInfoCard } from "./SystemInfoCard";
 import { IpConfigCard } from "./IpConfigCard";
@@ -21,6 +20,7 @@ import { DeviceFeaturesCard } from "./DeviceFeaturesCard";
 import { FaultDetectionCard } from "./FaultDetectionCard";
 import { MonitorCard } from "./MonitorCard";
 import { BobPortsCard } from "./BobPortsCard";
+import { QosSection } from "./qos/QosSection";
 
 export function ConfigurationPage() {
   return (
@@ -44,10 +44,8 @@ export function ConfigurationPage() {
         <MonitorCard />
         <BobPortsCard />
 
-        <PlaceholderCard
-          title="QoS"
-          note="Coming in Task 3.5d — application priority, DSCP map, DiffServ table, VLAN priority."
-        />
+        <QosSection />
+
         <PlaceholderCard
           title="Support URLs"
           note="Coming in Task 3.5e — support URL and management server URL."
