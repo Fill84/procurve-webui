@@ -10,7 +10,7 @@ This router will grow across Task 3.5's five sub-tasks:
 
 Endpoints
 ---------
-Reads (13):
+Reads (14):
   GET  /api/v1/configuration/system           -> SystemInfoPage
   GET  /api/v1/configuration/ip               -> IpConfigPage
   GET  /api/v1/configuration/ports            -> PortConfigList
@@ -24,8 +24,9 @@ Reads (13):
   GET  /api/v1/configuration/qos/vlan-pri     -> CosVlanList
   GET  /api/v1/configuration/qos/dscp         -> DscpTable
   GET  /api/v1/configuration/qos/diffserv     -> DiffservTable
+  GET  /api/v1/configuration/support-page     -> SupportPage
 
-Writes (15):
+Writes (16):
   PUT  /api/v1/configuration/system           -> ConfigWriteAck   (autobackup only)
   PUT  /api/v1/configuration/ip               -> ConfigWriteAck   (autobackup + host confirm, LOCKOUT-RISKY)
   PUT  /api/v1/configuration/gateway          -> ConfigWriteAck   (autobackup only)
@@ -41,6 +42,7 @@ Writes (15):
   PUT  /api/v1/configuration/qos/dscp         -> QosWriteAck      (autobackup only, row-at-a-time)
   PUT  /api/v1/configuration/qos/diffserv     -> QosWriteAck      (autobackup only)
   PUT  /api/v1/configuration/qos/cos-proto    -> QosWriteAck      (autobackup only)
+  PUT  /api/v1/configuration/support-page     -> ConfigWriteAck   (autobackup only)
 
 Write-safety policy
 -------------------
@@ -79,6 +81,11 @@ which takes a pre-write backup before any switch write is attempted.
   included in a disable set would break the session, but that failure
   mode is symmetric with the per-port endpoint which also takes no host
   confirmation. Autobackup is the rollback path.
+* ``PUT /support-page`` — the two Support URLs shown in the applet's
+  Support tab. URL fields don't affect management access, so no host
+  confirmation. Autobackup is the rollback path. Distinct from the
+  Phase 3.2 ``/api/v1/support`` static info endpoint (which is a
+  read-only info view, not an editable form).
 * ``PUT /qos/*`` — all QoS writes (application priority, user priority,
   VLAN priority, master mode, DSCP map, diffserv, protocol priority).
   None are lockout-risky: QoS is a forwarding-plane policy, not a
@@ -118,7 +125,9 @@ from procurve_client.models.network import (
     SetFaultDetectionRequest,
     SetIpConfigRequest,
     SetMonitorRequest,
+    SetSupportRequest,
     SetSystemInfoRequest,
+    SupportPage,
     SystemInfoPage,
 )
 from procurve_client.models.port import (
@@ -156,6 +165,7 @@ from procurve_client.operations.configuration import (
     get_monitor_page,
     get_port_form,
     get_portscfg,
+    get_support_page,
     get_system_page,
     set_bobports,
     set_cos_appt,
@@ -171,6 +181,7 @@ from procurve_client.operations.configuration import (
     set_ip_config,
     set_monitor,
     set_port_config,
+    set_support,
     set_system_info,
 )
 from procurve_client.transport import ProcurveTransport
@@ -539,6 +550,16 @@ class SetCosProtoBody(BaseModel):
     request: SetCosProtoRequest
 
 
+class SetSupportPageBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/support-page``.
+
+    No ``confirm_switch_host`` — the two URL fields are cosmetic and
+    cannot sever the operator's management session.
+    """
+
+    request: SetSupportRequest
+
+
 # ---------------------------------------------------------------------------
 # QoS — reads
 # ---------------------------------------------------------------------------
@@ -698,6 +719,40 @@ async def write_qos_cos_proto(
         store=store,
         transport=transport,
         write=lambda: set_cosproto(transport, request=body.request),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Support page form — the two URL fields the applet's Support tab shows.
+# Distinct from ``/api/v1/support`` (Phase 3.2), which is a static info view.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/support-page", response_model=SupportPage)
+async def read_support_page(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> SupportPage:
+    """Read the Support URL + Management Server URL fields."""
+    return await get_support_page(transport)
+
+
+@router.put("/support-page", response_model=ConfigWriteAck)
+async def write_support_page(
+    body: SetSupportPageBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> ConfigWriteAck:
+    """Write the two Support-page URL fields.
+
+    Not lockout-risky — URL fields don't affect management access, so
+    no host confirmation. Autobackup is the rollback path.
+    """
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_support(transport, request=body.request),
     )
 
 

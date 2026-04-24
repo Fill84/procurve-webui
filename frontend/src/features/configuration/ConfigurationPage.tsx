@@ -9,9 +9,8 @@
  *   3.5c   Device features (IGMP / STP) + fault detection + port mirroring
  *          + device-view admin status (bob-ports)
  *   3.5d   QoS (cos-app / dscp / diffserv / ...)
- *   3.5e   Support URLs
- *
- * 3.5e remains a placeholder until that sub-task lands.
+ *   3.5e   Support URLs (this tab's editable form — distinct from the
+ *          Support TAB's static read-only view at `/support`).
  */
 import { SystemInfoCard } from "./SystemInfoCard";
 import { IpConfigCard } from "./IpConfigCard";
@@ -21,6 +20,7 @@ import { FaultDetectionCard } from "./FaultDetectionCard";
 import { MonitorCard } from "./MonitorCard";
 import { BobPortsCard } from "./BobPortsCard";
 import { QosSection } from "./qos/QosSection";
+import { SupportPageCard } from "./SupportPageCard";
 
 export function ConfigurationPage() {
   return (
@@ -46,22 +46,8 @@ export function ConfigurationPage() {
 
         <QosSection />
 
-        <PlaceholderCard
-          title="Support URLs"
-          note="Coming in Task 3.5e — support URL and management server URL."
-        />
+        <SupportPageCard />
       </div>
     </div>
-  );
-}
-
-function PlaceholderCard({ title, note }: { title: string; note: string }) {
-  return (
-    <section className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-6">
-      <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-        {title}
-      </h4>
-      <p className="mt-1 text-sm text-neutral-600">{note}</p>
-    </section>
   );
 }

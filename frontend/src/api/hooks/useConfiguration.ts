@@ -2,8 +2,8 @@
  * React Query hooks for the Configuration tab (Task 3.5).
  *
  * Sub-tasks 3.5a (system + IP), 3.5b (ports), 3.5c (device features +
- * fault detection + monitor + bob-ports), 3.5d (QoS). More hooks land in
- * 3.5e (support URLs).
+ * fault detection + monitor + bob-ports), 3.5d (QoS), 3.5e (support
+ * page form).
  *
  * Backend endpoints:
  *   GET  /api/v1/configuration/system            -> SystemInfoPage
@@ -22,6 +22,8 @@
  *   PUT  /api/v1/configuration/monitor           -> ConfigWriteAck   (autobackup only)
  *   GET  /api/v1/configuration/bob-ports         -> BobPortsResponse
  *   PUT  /api/v1/configuration/bob-ports         -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/support-page      -> SupportPage
+ *   PUT  /api/v1/configuration/support-page      -> ConfigWriteAck   (autobackup only)
  *
  * Every mutation invalidates:
  *   1. Its own resource query (so the UI refetches the fresh state), and
@@ -512,5 +514,44 @@ export function useSetQosCosProto() {
         body,
       ),
     onSuccess: () => invalidateQos(qc),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Support page form (Task 3.5e)
+//
+// The two URL fields the applet's Support tab shows — editable config on
+// the Configuration tab. Distinct from Phase 3.2's `/api/v1/support`
+// static info endpoint used by the Support TAB view.
+// ---------------------------------------------------------------------------
+
+export type SupportPage = components["schemas"]["SupportPage"];
+export type SetSupportRequest =
+  components["schemas"]["SetSupportRequest"];
+export type SetSupportPageBody =
+  components["schemas"]["SetSupportPageBody"];
+
+export function useSupportPageConfig() {
+  return useQuery<SupportPage>({
+    queryKey: ["configuration", "support-page"],
+    queryFn: () =>
+      apiGet<SupportPage>("/api/v1/configuration/support-page"),
+  });
+}
+
+export function useSetSupportPageConfig() {
+  const qc = useQueryClient();
+  return useMutation<ConfigWriteAck, ApiError, SetSupportPageBody>({
+    mutationFn: (body) =>
+      apiPut<ConfigWriteAck, SetSupportPageBody>(
+        "/api/v1/configuration/support-page",
+        body,
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: ["configuration", "support-page"],
+      });
+      void qc.invalidateQueries({ queryKey: ["backups"] });
+    },
   });
 }

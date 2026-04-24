@@ -641,6 +641,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/configuration/support-page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Support Page
+         * @description Read the Support URL + Management Server URL fields.
+         */
+        get: operations["read_support_page_api_v1_configuration_support_page_get"];
+        /**
+         * Write Support Page
+         * @description Write the two Support-page URL fields.
+         *
+         *     Not lockout-risky — URL fields don't affect management access, so
+         *     no host confirmation. Autobackup is the rollback path.
+         */
+        put: operations["write_support_page_api_v1_configuration_support_page_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security/web-access": {
         parameters: {
             query?: never;
@@ -2253,6 +2280,23 @@ export interface components {
             raw_body?: string | null;
         };
         /**
+         * SetSupportPageBody
+         * @description Body for ``PUT /api/v1/configuration/support-page``.
+         *
+         *     No ``confirm_switch_host`` — the two URL fields are cosmetic and
+         *     cannot sever the operator's management session.
+         */
+        SetSupportPageBody: {
+            request: components["schemas"]["SetSupportRequest"];
+        };
+        /** SetSupportRequest */
+        SetSupportRequest: {
+            /** Support Url */
+            support_url: string;
+            /** Mgmt Url */
+            mgmt_url: string;
+        };
+        /**
          * SetSystemInfoBody
          * @description Body for ``PUT /api/v1/configuration/system``.
          *
@@ -2337,6 +2381,16 @@ export interface components {
              * @default The legacy Support tab redirected to http://www.procurve.com, which is unreachable in 2026. Use `current_url` instead.
              */
             note: string;
+        };
+        /**
+         * SupportPage
+         * @description Scraped state from /configuration/support.html.
+         */
+        SupportPage: {
+            /** Support Url */
+            support_url: string;
+            /** Mgmt Url */
+            mgmt_url: string;
         };
         /**
          * SystemInfoPage
@@ -3558,6 +3612,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QosWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_support_page_api_v1_configuration_support_page_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportPage"];
+                };
+            };
+        };
+    };
+    write_support_page_api_v1_configuration_support_page_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetSupportPageBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
                 };
             };
             /** @description Validation Error */

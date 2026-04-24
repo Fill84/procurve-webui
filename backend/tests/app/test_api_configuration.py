@@ -48,6 +48,7 @@ from procurve_client.models.network import (
     IpConfigPage,
     IpMode,
     MonitorPage,
+    SupportPage,
     SystemInfoPage,
 )
 from procurve_client.models.port import (
@@ -872,6 +873,7 @@ def test_bob_ports_read_happy_path(
         "/api/v1/configuration/fault-detection",
         "/api/v1/configuration/monitor",
         "/api/v1/configuration/bob-ports",
+        "/api/v1/configuration/support-page",
     ],
 )
 def test_read_requires_auth(
@@ -1372,3 +1374,122 @@ def test_qos_write_happy_path(
     assert resp["raw_body"] == "OK~"
     # Each op is called with a `request=` kwarg carrying a pydantic model.
     assert "request" in seen
+
+
+# ---------------------------------------------------------------------------
+# Support page form (Task 3.5e)
+#
+# The Configuration tab's editable Support-page form — two URL fields.
+# Distinct from Phase 3.2's static /api/v1/support info view.
+# ---------------------------------------------------------------------------
+
+
+_SUPPORT_PAGE_BODY = {
+    "request": {
+        "support_url": "http://support.example.com",
+        "mgmt_url": "http://mgmt.example.com",
+    }
+}
+
+
+def test_configuration_support_page_read_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> SupportPage:
+        return SupportPage(
+            support_url="http://support.example.com",
+            mgmt_url="http://mgmt.example.com",
+        )
+
+    monkeypatch.setattr(configuration_module, "get_support_page", fake_get)
+    r = client.get("/api/v1/configuration/support-page")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["support_url"] == "http://support.example.com"
+    assert body["mgmt_url"] == "http://mgmt.example.com"
+
+
+def test_configuration_support_page_write_blocked_when_read_only(
+    read_only_settings: Settings,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_app()
+    app.state.settings = read_only_settings
+    app.state.backup_store = store
+    called = False
+
+    async def must_not_run(transport: object, **kw: object) -> ConfigWriteAck:
+        nonlocal called
+        called = True
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, "set_support", must_not_run)
+    _must_not_download(monkeypatch)
+
+    with TestClient(app) as c:
+        app.dependency_overrides[get_transport] = lambda: object()
+        app.dependency_overrides[get_backup_store] = lambda: store
+        r = c.put(
+            "/api/v1/configuration/support-page", json=_SUPPORT_PAGE_BODY
+        )
+        app.dependency_overrides.clear()
+    assert r.status_code == 403
+    detail = r.json().get("detail", r.json())
+    assert detail.get("error") == "read_only"
+    assert called is False
+
+
+def test_configuration_support_page_write_creates_pre_write_backup(
+    client: TestClient,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    order: list[str] = []
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        order.append("set_support")
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, "set_support", fake_set)
+
+    original_save = store.save
+
+    def spy_save(*args: object, **kwargs: object) -> object:
+        order.append("save")
+        return original_save(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(store, "save", spy_save)
+
+    r = client.put(
+        "/api/v1/configuration/support-page", json=_SUPPORT_PAGE_BODY
+    )
+    assert r.status_code == 200, r.text
+    assert order == ["save", "set_support"]
+    listed = store.list()
+    assert len(listed) == 1
+    assert listed[0].trigger == "pre-write"
+
+
+def test_configuration_support_page_write_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    seen: dict[str, object] = {}
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        seen.update(kw)
+        return ConfigWriteAck(ok=True, raw_body="OK~")
+
+    monkeypatch.setattr(configuration_module, "set_support", fake_set)
+    r = client.put(
+        "/api/v1/configuration/support-page", json=_SUPPORT_PAGE_BODY
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True
+    assert body["raw_body"] == "OK~"
+    req = seen["request"]
+    assert req.support_url == "http://support.example.com"  # type: ignore[attr-defined]
+    assert req.mgmt_url == "http://mgmt.example.com"  # type: ignore[attr-defined]
