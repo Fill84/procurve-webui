@@ -21,7 +21,7 @@
  * unreachable from the backend (see test_device_passwords_endpoint_does_not_exist_returns_404).
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost, type ApiError } from "@/api/client";
+import { apiGet, apiPost, apiPut, type ApiError } from "@/api/client";
 import type { components } from "@/api/schema";
 
 export type WebAccessPage = components["schemas"]["WebAccessPage"];
@@ -102,20 +102,6 @@ export function useSslState() {
 // ---------------------------------------------------------------------------
 // Writes
 // ---------------------------------------------------------------------------
-
-async function apiPut<T, B>(path: string, body: B): Promise<T> {
-  const r = await fetch(path, {
-    method: "PUT",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) {
-    const { ApiError: ApiErrorCtor } = await import("@/api/client");
-    throw new ApiErrorCtor(r.status, await r.text());
-  }
-  return (await r.json()) as T;
-}
 
 export function useSetWebAccess() {
   const qc = useQueryClient();

@@ -49,6 +49,21 @@ export async function apiPost<T, B = unknown>(
   return (await r.json()) as T;
 }
 
+/** PUT JSON and return JSON. */
+export async function apiPut<T, B = unknown>(
+  path: string,
+  body: B,
+): Promise<T> {
+  const r = await fetch(path, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new ApiError(r.status, await r.text());
+  return (await r.json()) as T;
+}
+
 /** DELETE a resource and return JSON. */
 export async function apiDelete<T>(path: string): Promise<T> {
   const r = await fetch(path, { method: "DELETE", credentials: "include" });

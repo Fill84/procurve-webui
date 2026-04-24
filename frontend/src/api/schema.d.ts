@@ -260,16 +260,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/configuration": {
+    "/api/v1/configuration/system": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Configuration Placeholder */
-        get: operations["configuration_placeholder_api_v1_configuration_get"];
-        put?: never;
+        /** Read System */
+        get: operations["read_system_api_v1_configuration_system_get"];
+        /**
+         * Write System
+         * @description Write system name / location / contact.
+         *
+         *     Not lockout-risky — the pre-write backup is sufficient rollback.
+         */
+        put: operations["write_system_api_v1_configuration_system_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/ip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Ip */
+        get: operations["read_ip_api_v1_configuration_ip_get"];
+        /**
+         * Write Ip
+         * @description Write the management-interface IP configuration.
+         *
+         *     LOCKOUT RISK: changing VLAN / mode / gateway on the management
+         *     interface can sever the operator's TCP session to the switch
+         *     instantly.  Gated with ``require_host_confirmation``.
+         */
+        put: operations["write_ip_api_v1_configuration_ip_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/gateway": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Gateway
+         * @description Set only the default gateway.
+         *
+         *     A wrong gateway breaks external routing but the operator's direct
+         *     LAN session to the switch survives — no host confirmation (see
+         *     module docstring for the trade-off).
+         */
+        put: operations["write_gateway_api_v1_configuration_gateway_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -654,6 +709,19 @@ export interface components {
          */
         CertificMode: 2 | 3;
         /**
+         * ConfigWriteAck
+         * @description Shared ack type for write endpoints whose response body is unverified.
+         */
+        ConfigWriteAck: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Raw Body */
+            raw_body?: string | null;
+        };
+        /**
          * ConfigurationReportResponse
          * @description Trimmed view of :class:`procurve_client.models.diagnostics.ConfigurationReport`.
          *
@@ -842,6 +910,32 @@ export interface components {
             /** Entries */
             entries?: components["schemas"]["IntrusionEntry"][];
         };
+        /**
+         * IpConfigPage
+         * @description Scraped state from /configuration/ip1.html + /configuration/ip2.html.
+         *
+         *     `ip_address` / `subnet_mask` are injected plain-text on ip2.html and are
+         *     read-only on this firmware — they are not editable via the web UI.
+         */
+        IpConfigPage: {
+            /** Vlan Id */
+            vlan_id: number;
+            mode: components["schemas"]["IpMode"];
+            /** Ip Address */
+            ip_address?: string | null;
+            /** Subnet Mask */
+            subnet_mask?: string | null;
+            /**
+             * Gateway
+             * Format: ipv4
+             */
+            gateway: string;
+        };
+        /**
+         * IpMode
+         * @enum {integer}
+         */
+        IpMode: 1 | 2 | 3;
         /**
          * LinkTestRequest
          * @description L2 link test. `destination` is a MAC address (dash- or colon-separated).
@@ -1129,6 +1223,47 @@ export interface components {
          */
         SecurityActionCode: 1 | 2 | 3;
         /**
+         * SetDefaultGatewayBody
+         * @description Body for ``PUT /api/v1/configuration/gateway``.
+         *
+         *     No host confirmation — see module docstring for the trade-off.
+         */
+        SetDefaultGatewayBody: {
+            request: components["schemas"]["SetDefaultGatewayRequest"];
+        };
+        /** SetDefaultGatewayRequest */
+        SetDefaultGatewayRequest: {
+            /**
+             * Gateway
+             * Format: ipv4
+             */
+            gateway: string;
+        };
+        /**
+         * SetIpConfigBody
+         * @description Body for ``PUT /api/v1/configuration/ip``.
+         *
+         *     ``request`` carries the full :class:`SetIpConfigRequest` the procurve op
+         *     expects; ``confirm_switch_host`` gates against accidentally severing the
+         *     operator's session to the switch.
+         */
+        SetIpConfigBody: {
+            request: components["schemas"]["SetIpConfigRequest"];
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /** SetIpConfigRequest */
+        SetIpConfigRequest: {
+            /**
+             * Gateway
+             * Format: ipv4
+             */
+            gateway: string;
+            /** Vlan Id */
+            vlan_id: number;
+            mode: components["schemas"]["IpMode"];
+        };
+        /**
          * SetPerportBody
          * @description Body for ``PUT /api/v1/security/per-port/{port}``.
          *
@@ -1251,6 +1386,31 @@ export interface components {
             raw_body?: string | null;
         };
         /**
+         * SetSystemInfoBody
+         * @description Body for ``PUT /api/v1/configuration/system``.
+         *
+         *     No ``confirm_switch_host`` — SNMP name / location / contact are not
+         *     lockout-risky.
+         */
+        SetSystemInfoBody: {
+            request: components["schemas"]["SetSystemInfoRequest"];
+        };
+        /** SetSystemInfoRequest */
+        SetSystemInfoRequest: {
+            /** Name */
+            name: string;
+            /**
+             * Location
+             * @default
+             */
+            location: string;
+            /**
+             * Contact
+             * @default
+             */
+            contact: string;
+        };
+        /**
          * SetWebManagerBody
          * @description Body for ``POST /api/v1/security/web-managers``.
          *
@@ -1310,6 +1470,20 @@ export interface components {
              * @default The legacy Support tab redirected to http://www.procurve.com, which is unreachable in 2026. Use `current_url` instead.
              */
             note: string;
+        };
+        /**
+         * SystemInfoPage
+         * @description Scraped state from /configuration/system.html.
+         */
+        SystemInfoPage: {
+            /** Mac Address */
+            mac_address: string;
+            /** Name */
+            name: string;
+            /** Location */
+            location: string;
+            /** Contact */
+            contact: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -1762,7 +1936,7 @@ export interface operations {
             };
         };
     };
-    configuration_placeholder_api_v1_configuration_get: {
+    read_system_api_v1_configuration_system_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1777,7 +1951,126 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SystemInfoPage"];
+                };
+            };
+        };
+    };
+    write_system_api_v1_configuration_system_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetSystemInfoBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_ip_api_v1_configuration_ip_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IpConfigPage"];
+                };
+            };
+        };
+    };
+    write_ip_api_v1_configuration_ip_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetIpConfigBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_gateway_api_v1_configuration_gateway_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDefaultGatewayBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
