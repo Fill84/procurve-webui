@@ -10,11 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
 from app.api.backups import router as backups_router
+from app.api.diagnostics import router as diagnostics_router
 from app.api.health import router as health_router
 from app.api.identity import router as identity_router
 from app.api.placeholders import (
     configuration_router,
-    diagnostics_router,
     security_router,
 )
 from app.api.status import router as status_router

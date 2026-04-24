@@ -16,7 +16,6 @@ def _not_implemented_response() -> JSONResponse:
 
 configuration_router = APIRouter(prefix="/api/v1/configuration", tags=["placeholders"])
 security_router = APIRouter(prefix="/api/v1/security", tags=["placeholders"])
-diagnostics_router = APIRouter(prefix="/api/v1/diagnostics", tags=["placeholders"])
 
 
 @configuration_router.get("")
@@ -26,9 +25,4 @@ async def configuration_placeholder() -> JSONResponse:
 
 @security_router.get("")
 async def security_placeholder() -> JSONResponse:
-    return _not_implemented_response()
-
-
-@diagnostics_router.get("")
-async def diagnostics_placeholder() -> JSONResponse:
     return _not_implemented_response()

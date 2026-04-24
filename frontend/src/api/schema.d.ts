@@ -294,17 +294,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/diagnostics": {
+    "/api/v1/diagnostics/ping": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Diagnostics Placeholder */
-        get: operations["diagnostics_placeholder_api_v1_diagnostics_get"];
+        get?: never;
+        put?: never;
+        /** Run Ping */
+        post: operations["run_ping_api_v1_diagnostics_ping_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diagnostics/link-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Link Test */
+        post: operations["run_link_test_api_v1_diagnostics_link_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diagnostics/configuration-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Configuration Report */
+        get: operations["configuration_report_api_v1_diagnostics_configuration_report_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diagnostics/device-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Device */
+        post: operations["reset_device_api_v1_diagnostics_device_reset_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -386,6 +437,20 @@ export interface components {
              * @enum {string}
              */
             trigger: "manual" | "pre-write" | "scheduled";
+        };
+        /**
+         * ConfigurationReportResponse
+         * @description Trimmed view of :class:`procurve_client.models.diagnostics.ConfigurationReport`.
+         *
+         *     The full model carries a ``running_config`` dataclass for the structured
+         *     parse; the Diagnostics tab only needs the rendered text + raw HTML, so we
+         *     return a flat Pydantic model here to keep the OpenAPI schema clean.
+         */
+        ConfigurationReportResponse: {
+            /** Raw Html */
+            raw_html: string;
+            /** Config Text */
+            config_text: string;
         };
         /** CreateBackupRequest */
         CreateBackupRequest: {
@@ -473,6 +538,27 @@ export interface components {
             management_server_url?: string | null;
         };
         /**
+         * DeviceResetRequest
+         * @description Reboot confirmation. `confirm_switch_host` must equal settings.switch_host.
+         */
+        DeviceResetRequest: {
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /**
+         * DeviceResetResponse
+         * @description Outcome of /cgi/device_reset (FORBIDDEN — see module docstring).
+         */
+        DeviceResetResponse: {
+            /**
+             * Initiated
+             * @default false
+             */
+            initiated: boolean;
+            /** Message */
+            message?: string | null;
+        };
+        /**
          * DeviceStatusBanner
          * @description Parsed /cgi/fflog?action=status response (first line only).
          *
@@ -505,6 +591,24 @@ export interface components {
             /** Switch Reachable */
             switch_reachable: boolean;
         };
+        /**
+         * LinkTestRequest
+         * @description L2 link test. `destination` is a MAC address (dash- or colon-separated).
+         */
+        LinkTestRequest: {
+            /** Destination */
+            destination: string;
+            /**
+             * Packet Count
+             * @default 10
+             */
+            packet_count: number;
+            /**
+             * Timeout S
+             * @default 5
+             */
+            timeout_s: number;
+        };
         /** LiveShaResponse */
         LiveShaResponse: {
             /** Sha256 */
@@ -526,6 +630,40 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /**
+         * PingRequest
+         * @description Ping test. `destination` is an IPv4 address or hostname.
+         */
+        PingRequest: {
+            /** Destination */
+            destination: string;
+            /**
+             * Packet Count
+             * @default 10
+             */
+            packet_count: number;
+            /**
+             * Timeout S
+             * @default 5
+             */
+            timeout_s: number;
+        };
+        /**
+         * PingResult
+         * @description Parsed result of /cgi/ping (for both ping and link_test).
+         *
+         *     The switch returns HTML containing `Successes: <N>` / `Failures: <N>`
+         *     plus a row of LED images. Parse the two counters; preserve the raw HTML
+         *     so the UI can render the LEDs later if desired.
+         */
+        PingResult: {
+            /** Successes */
+            successes: number;
+            /** Failures */
+            failures: number;
+            /** Raw Html */
+            raw_html: string;
         };
         /**
          * PortCounters
@@ -1110,7 +1248,73 @@ export interface operations {
             };
         };
     };
-    diagnostics_placeholder_api_v1_diagnostics_get: {
+    run_ping_api_v1_diagnostics_ping_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PingResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_link_test_api_v1_diagnostics_link_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PingResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    configuration_report_api_v1_diagnostics_configuration_report_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1125,7 +1329,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ConfigurationReportResponse"];
+                };
+            };
+        };
+    };
+    reset_device_api_v1_diagnostics_device_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceResetResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

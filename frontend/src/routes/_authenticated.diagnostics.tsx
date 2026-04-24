@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComingLaterPage } from "@/features/coming-later/ComingLaterPage";
+import { DiagnosticsPage } from "@/features/diagnostics/DiagnosticsPage";
 
 export const Route = createFileRoute("/_authenticated/diagnostics")({
-  component: () => <ComingLaterPage tabName="Diagnostics" />,
+  component: DiagnosticsPage,
 });
