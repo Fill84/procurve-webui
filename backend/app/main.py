@@ -15,8 +15,8 @@ from app.api.health import router as health_router
 from app.api.identity import router as identity_router
 from app.api.placeholders import (
     configuration_router,
-    security_router,
 )
+from app.api.security import router as security_router
 from app.api.status import router as status_router
 from app.api.support import router as support_router
 from app.auth import SessionStore

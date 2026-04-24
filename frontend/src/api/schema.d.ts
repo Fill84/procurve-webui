@@ -277,17 +277,147 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/security": {
+    "/api/v1/security/web-access": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Security Placeholder */
-        get: operations["security_placeholder_api_v1_security_get"];
+        /** Read Web Access */
+        get: operations["read_web_access_api_v1_security_web_access_get"];
+        /**
+         * Write Web Access
+         * @description Configure the SSL subsystem (HTTPS on/off, port, cert mode).
+         *
+         *     LOCKOUT RISK: enabling HTTPS-only without a valid certificate
+         *     installed will lock you out of the web UI. The browser will refuse
+         *     to present the self-signed cert without an override, and the
+         *     firmware does not fall back to HTTP while HTTPS is on. Keep an SSH
+         *     session open before toggling this.
+         */
+        put: operations["write_web_access_api_v1_security_web_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/web-managers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Web Managers */
+        get: operations["read_web_managers_api_v1_security_web_managers_get"];
+        put?: never;
+        /**
+         * Write Web Managers
+         * @description Add / replace / delete an authorized-manager IP entry.
+         *
+         *     LOCKOUT RISK: the Authorized-Manager list is a whitelist. Adding an
+         *     entry that excludes your client IP (or deleting your own row) locks
+         *     you out of the web UI immediately, with no graceful back-off.
+         */
+        post: operations["write_web_managers_api_v1_security_web_managers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/per-port": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Per Port */
+        get: operations["read_per_port_api_v1_security_per_port_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/intrusion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Intrusion */
+        get: operations["read_intrusion_api_v1_security_intrusion_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/ssl-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Ssl State */
+        get: operations["read_ssl_state_api_v1_security_ssl_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/per-port/{port}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Per Port
+         * @description Configure one port's security policy.
+         *
+         *     Not lockout-risky — the pre-write backup is sufficient rollback.
+         *     The path param ``port`` must match ``body.request.port``; a mismatch
+         *     is a client-side mistake and we do not silently coerce it.
+         */
+        put: operations["write_per_port_api_v1_security_per_port__port__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/intrusion/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write Intrusion Reset
+         * @description Clear cosmetic intrusion alert flags. Low risk — still autobacked.
+         */
+        post: operations["write_intrusion_reset_api_v1_security_intrusion_reset_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -387,6 +517,54 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AccessLevel
+         * @enum {string}
+         */
+        AccessLevel: "Manager" | "Operator";
+        /**
+         * AccessLevelCode
+         * @description Wire codes for access level (inverse of the read-side string enum).
+         * @enum {integer}
+         */
+        AccessLevelCode: 1 | 2;
+        /**
+         * AddWebManagerRequest
+         * @description Add a new authorized-manager IP entry (`action=1` variant).
+         *
+         *     `indeces` defaults to an empty list (serialized as `indeces=` on the wire)
+         *     because the add-action CGI assigns the index server-side. Replace and
+         *     delete variants require a non-empty `indeces` because they operate on
+         *     existing rows identified by index.
+         */
+        AddWebManagerRequest: {
+            /**
+             * Action
+             * @default 1
+             * @constant
+             */
+            action: 1;
+            /**
+             * Ip
+             * Format: ipv4
+             */
+            ip: string;
+            /**
+             * Mask
+             * Format: ipv4
+             * @default 255.255.255.255
+             */
+            mask: string;
+            level: components["schemas"]["AccessLevelCode"];
+            /** Indeces */
+            indeces?: number[];
+        };
+        /**
+         * AddressSelection
+         * @description Address-selection display tokens from `/cgi/perports`.
+         * @enum {string}
+         */
+        AddressSelection: "Continuous" | "Static" | "Port Access" | "Limited";
+        /**
          * AlertEvent
          * @description One row from the alert-log stream (/cgi/fflog?action=list).
          */
@@ -417,6 +595,25 @@ export interface components {
             events: components["schemas"]["AlertEvent"][];
         };
         /**
+         * AuthorizedManager
+         * @description One row from `/cgi/webMgr`.
+         */
+        AuthorizedManager: {
+            /** Index */
+            index: number;
+            /**
+             * Ip
+             * Format: ipv4
+             */
+            ip: string;
+            /**
+             * Mask
+             * Format: ipv4
+             */
+            mask: string;
+            access_level: components["schemas"]["AccessLevel"];
+        };
+        /**
          * BackupMeta
          * @description Sidecar metadata describing a stored backup.
          */
@@ -439,6 +636,24 @@ export interface components {
             trigger: "manual" | "pre-write" | "scheduled";
         };
         /**
+         * CertMode
+         * @description Certificate-mode radio state from `ssl_cert.html`.
+         * @enum {integer}
+         */
+        CertMode: 1 | 2;
+        /**
+         * CertType
+         * @description `certtype` wire codes.
+         * @enum {integer}
+         */
+        CertType: 3 | 4;
+        /**
+         * CertificMode
+         * @description `certific` wire codes (assembled by submitApply() JS helper).
+         * @enum {integer}
+         */
+        CertificMode: 2 | 3;
+        /**
          * ConfigurationReportResponse
          * @description Trimmed view of :class:`procurve_client.models.diagnostics.ConfigurationReport`.
          *
@@ -460,6 +675,20 @@ export interface components {
              * @enum {string}
              */
             trigger: "manual" | "pre-write" | "scheduled";
+        };
+        /**
+         * DeleteWebManagerRequest
+         * @description `action=3` variant — delete the entry at `indeces[0]`.
+         */
+        DeleteWebManagerRequest: {
+            /**
+             * Action
+             * @default 3
+             * @constant
+             */
+            action: 3;
+            /** Indeces */
+            indeces: number[];
         };
         /**
          * DeviceIdentity
@@ -592,6 +821,28 @@ export interface components {
             switch_reachable: boolean;
         };
         /**
+         * IntrusionEntry
+         * @description One row from `/cgi/intrusion`.
+         */
+        IntrusionEntry: {
+            /** Port */
+            port: number;
+            /** Port Name */
+            port_name: string;
+            /** Intruder Address */
+            intruder_address: string;
+            /** Timestamp */
+            timestamp: string;
+        };
+        /**
+         * IntrusionLogResponse
+         * @description Parsed shape of `/cgi/intrusion` (read).
+         */
+        IntrusionLogResponse: {
+            /** Entries */
+            entries?: components["schemas"]["IntrusionEntry"][];
+        };
+        /**
          * LinkTestRequest
          * @description L2 link test. `destination` is a MAC address (dash- or colon-separated).
          */
@@ -630,6 +881,14 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /**
+         * PerportsResponse
+         * @description Parsed shape of `/cgi/perports?GR=<group>`.
+         */
+        PerportsResponse: {
+            /** Rows */
+            rows?: components["schemas"]["PortSecurityRow"][];
         };
         /**
          * PingRequest
@@ -704,6 +963,41 @@ export interface components {
             ports: components["schemas"]["PortCounters"][];
         };
         /**
+         * PortSecurityMode
+         * @description Values from `<select name=mode>` on `perport_form1.html`.
+         *
+         *     # TODO: needs live capture — values 3/4 (if present) are unknown.
+         * @enum {integer}
+         */
+        PortSecurityMode: 1 | 2 | 5;
+        /**
+         * PortSecurityRow
+         * @description One row from `/cgi/perports?GR=`.
+         *
+         *     Blank-string columns are serialized as a literal single space by
+         *     the switch to preserve column alignment in the applet renderer;
+         *     we pass them through unchanged.
+         */
+        PortSecurityRow: {
+            /** Port */
+            port: number;
+            /** Port Label */
+            port_label: string;
+            /** Port Name */
+            port_name: string;
+            address_selection: components["schemas"]["AddressSelection"];
+            /** Authorized Address */
+            authorized_address: string;
+            /** Mode */
+            mode: string;
+            /** Security Action */
+            security_action: number;
+            /** Address Limit */
+            address_limit: number;
+            /** Trunk */
+            trunk: boolean;
+        };
+        /**
          * PortStatus
          * @description One row from /cgi/get_ports.
          *
@@ -754,6 +1048,237 @@ export interface components {
             ports: components["schemas"]["PortStatus"][];
         };
         /**
+         * RSAKey
+         * @description `rsakey` wire codes — corresponds to the RSA-key select widget.
+         * @enum {integer}
+         */
+        RSAKey: 1 | 2 | 3 | 4;
+        /**
+         * ReplaceWebManagerRequest
+         * @description `action=2` variant — modify the entry at `indeces[0]` in place.
+         */
+        ReplaceWebManagerRequest: {
+            /**
+             * Action
+             * @default 2
+             * @constant
+             */
+            action: 2;
+            /**
+             * Ip
+             * Format: ipv4
+             */
+            ip: string;
+            /**
+             * Mask
+             * Format: ipv4
+             * @default 255.255.255.255
+             */
+            mask: string;
+            level: components["schemas"]["AccessLevelCode"];
+            /** Indeces */
+            indeces: number[];
+        };
+        /**
+         * ResetIntrusionFlagsResponse
+         * @description Return shape for `/cgi/intrusion_clear`.
+         */
+        ResetIntrusionFlagsResponse: {
+            /**
+             * Applied
+             * @default true
+             */
+            applied: boolean;
+            /** Raw Body */
+            raw_body?: string | null;
+        };
+        /**
+         * SSLActionCode
+         * @description Power state mirror for `action` on `/cgi/setssl`.
+         * @enum {integer}
+         */
+        SSLActionCode: 1 | 2;
+        /**
+         * SSLState
+         * @description Consolidated projection across ssl_config.html, ssl_cert.html,
+         *     and ssl_menu.html.
+         *
+         *     `ssl_enabled` maps from the firmware's `sslStatus` (`1`=Off, `2`=On).
+         *     `ca_signed_installed` maps from `crtStat` (`1`=not installed,
+         *     `2`=installed).
+         */
+        SSLState: {
+            /** Ssl Enabled */
+            ssl_enabled: boolean;
+            /**
+             * Ssl Port
+             * @default 443
+             */
+            ssl_port: number;
+            cert_mode: components["schemas"]["CertMode"];
+            /** Ca Signed Installed */
+            ca_signed_installed: boolean;
+        };
+        /**
+         * SecurityActionCode
+         * @description Security-action codes.
+         *
+         *     # TODO: needs live capture — values 2/3 are inferred from the HTML
+         *     label order and not confirmed against the switch.
+         * @enum {integer}
+         */
+        SecurityActionCode: 1 | 2 | 3;
+        /**
+         * SetPerportBody
+         * @description Body for ``PUT /api/v1/security/per-port/{port}``.
+         *
+         *     No host confirmation — per-port security tweaks are reversible via the
+         *     pre-write backup and are not lockout-risky.
+         */
+        SetPerportBody: {
+            request: components["schemas"]["SetPerportRequest"];
+        };
+        /**
+         * SetPerportRequest
+         * @description Arguments for `/cgi/perport` — configure one port's security policy.
+         */
+        SetPerportRequest: {
+            /**
+             * Group
+             * @default
+             */
+            group: string;
+            /**
+             * Trunk
+             * @default 0
+             */
+            trunk: number;
+            /** Port */
+            port: number;
+            /** Indeces */
+            indeces: number[];
+            mode: components["schemas"]["PortSecurityMode"];
+            /** @default 1 */
+            security_action: components["schemas"]["SecurityActionCode"];
+            /**
+             * Address Limit
+             * @default 1
+             */
+            address_limit: number;
+        };
+        /**
+         * SetPerportResponse
+         * @description Return shape for `/cgi/perport` (write path).
+         */
+        SetPerportResponse: {
+            /**
+             * Applied
+             * @default true
+             */
+            applied: boolean;
+            /** Message */
+            message?: string | null;
+            /** Raw Body */
+            raw_body?: string | null;
+        };
+        /**
+         * SetSSLBody
+         * @description Body for ``PUT /api/v1/security/web-access``.
+         *
+         *     ``request`` is the full :class:`SetSSLRequest` the procurve op expects;
+         *     ``confirm_switch_host`` gates against accidental HTTPS-only lockouts.
+         */
+        SetSSLBody: {
+            request: components["schemas"]["SetSSLRequest"];
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /**
+         * SetSSLRequest
+         * @description Arguments for the FORBIDDEN `/cgi/setssl` GET.
+         *
+         *     Top three fields (`enabled`, `port`, `cert_mode`) are always emitted.
+         *     Certificate-creation fields are emitted only when `cert_mode` ==
+         *     CREATE_OR_SELF_SIGNED AND `enabled` == ON, matching the JS helper
+         *     that assembles the URL in `ssl_cert1.html:submitApply()`.
+         *
+         *     # TODO: needs live capture — the full param set beyond (action, prt,
+         *     certific) is inferred from the HTML form names; the JS that appends
+         *     them to the URL was truncated in the mirrored source.
+         */
+        SetSSLRequest: {
+            /** @default 2 */
+            enabled: components["schemas"]["SSLActionCode"];
+            /**
+             * Port
+             * @default 443
+             */
+            port: number;
+            /** @default 2 */
+            cert_mode: components["schemas"]["CertificMode"];
+            cert_type?: components["schemas"]["CertType"] | null;
+            rsa_key?: components["schemas"]["RSAKey"] | null;
+            /** Validity Start */
+            validity_start?: string | null;
+            /** Validity End */
+            validity_end?: string | null;
+            /** Common Name */
+            common_name?: string | null;
+            /** Organization Name */
+            organization_name?: string | null;
+            /** Organization Unit */
+            organization_unit?: string | null;
+            /** City */
+            city?: string | null;
+            /** State */
+            state?: string | null;
+            /** Country */
+            country?: string | null;
+        };
+        /**
+         * SetSSLResponse
+         * @description Return shape for `/cgi/setssl` (write path).
+         */
+        SetSSLResponse: {
+            /**
+             * Applied
+             * @default true
+             */
+            applied: boolean;
+            /** Message */
+            message?: string | null;
+            /** Raw Body */
+            raw_body?: string | null;
+        };
+        /**
+         * SetWebManagerBody
+         * @description Body for ``POST /api/v1/security/web-managers``.
+         *
+         *     ``request`` is the add/replace/delete discriminated union;
+         *     ``confirm_switch_host`` gates against accidental management-IP lockouts.
+         */
+        SetWebManagerBody: {
+            /** Request */
+            request: components["schemas"]["AddWebManagerRequest"] | components["schemas"]["ReplaceWebManagerRequest"] | components["schemas"]["DeleteWebManagerRequest"];
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /**
+         * SetWebManagerResponse
+         * @description Return shape for `/cgi/webMgr` (write path).
+         */
+        SetWebManagerResponse: {
+            /**
+             * Applied
+             * @default true
+             */
+            applied: boolean;
+            /** Message */
+            message?: string | null;
+            /** Raw Body */
+            raw_body?: string | null;
+        };
+        /**
          * SupportInfo
          * @description The static support-link info that replaces the old Support tab.
          *
@@ -798,6 +1323,35 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * WebAccessPage
+         * @description Scraped projection of the device-passwords HTML form.
+         *
+         *     The firmware renders both username fields with empty `value=""`
+         *     regardless of the configured usernames (standard password-form
+         *     security hygiene). Reading the current values requires parsing
+         *     `running-config` from `/cgi/configfile` instead.
+         */
+        WebAccessPage: {
+            /**
+             * Operator Username
+             * @default
+             */
+            operator_username: string;
+            /**
+             * Manager Username
+             * @default
+             */
+            manager_username: string;
+        };
+        /**
+         * WebManagersResponse
+         * @description Parsed shape of `/cgi/webMgr` (read).
+         */
+        WebManagersResponse: {
+            /** Entries */
+            entries?: components["schemas"]["AuthorizedManager"][];
         };
         /** WhoamiResponse */
         WhoamiResponse: {
@@ -1228,7 +1782,7 @@ export interface operations {
             };
         };
     };
-    security_placeholder_api_v1_security_get: {
+    read_web_access_api_v1_security_web_access_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1243,7 +1797,219 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["WebAccessPage"];
+                };
+            };
+        };
+    };
+    write_web_access_api_v1_security_web_access_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetSSLBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetSSLResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_web_managers_api_v1_security_web_managers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebManagersResponse"];
+                };
+            };
+        };
+    };
+    write_web_managers_api_v1_security_web_managers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetWebManagerBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetWebManagerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_per_port_api_v1_security_per_port_get: {
+        parameters: {
+            query?: {
+                group?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerportsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_intrusion_api_v1_security_intrusion_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntrusionLogResponse"];
+                };
+            };
+        };
+    };
+    read_ssl_state_api_v1_security_ssl_state_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SSLState"];
+                };
+            };
+        };
+    };
+    write_per_port_api_v1_security_per_port__port__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                port: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPerportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetPerportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_intrusion_reset_api_v1_security_intrusion_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetIntrusionFlagsResponse"];
                 };
             };
         };

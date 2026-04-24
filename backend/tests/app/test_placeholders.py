@@ -37,7 +37,6 @@ EXPECTED = {"error": "not_implemented", "phase": "3+"}
     "path",
     [
         "/api/v1/configuration",
-        "/api/v1/security",
     ],
 )
 def test_placeholder_returns_501(client: TestClient, path: str) -> None:
