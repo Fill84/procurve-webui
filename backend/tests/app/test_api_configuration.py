@@ -46,6 +46,12 @@ from procurve_client.models.network import (
     IpMode,
     SystemInfoPage,
 )
+from procurve_client.models.port import (
+    PortConfig,
+    PortConfigList,
+    PortForm,
+    PortMode,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -522,3 +528,228 @@ def test_gateway_write_happy_path(
     assert r.json()["ok"] is True
     req = seen["request"]
     assert str(req.gateway) == "192.168.178.254"  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
+# Ports — list (read)
+# ---------------------------------------------------------------------------
+
+
+def _sample_port_row(port: int, name: str = "") -> PortConfig:
+    return PortConfig(
+        port=port,
+        port_name=name,
+        port_type_label="",
+        port_type="10/100/1000TX",
+        enabled=True,
+        config_status=".",
+        config_mode="Auto",
+        trunk="",
+        flow_control=False,
+        extra=0,
+    )
+
+
+def test_ports_list_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_get(transport: object) -> PortConfigList:
+        return PortConfigList(
+            ports=[
+                _sample_port_row(1, "uplink"),
+                _sample_port_row(2),
+                _sample_port_row(3, "server-a"),
+            ]
+        )
+
+    monkeypatch.setattr(configuration_module, "get_portscfg", fake_get)
+    r = client.get("/api/v1/configuration/ports")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body["ports"]) == 3
+    assert body["ports"][0]["port"] == 1
+    assert body["ports"][0]["port_name"] == "uplink"
+    assert body["ports"][2]["port_name"] == "server-a"
+
+
+def test_ports_list_requires_auth(
+    settings: Settings, store: BackupStore
+) -> None:
+    fresh = create_app()
+    with TestClient(fresh) as c:
+        fresh.state.settings = settings
+        fresh.state.backup_store = store
+        r = c.get("/api/v1/configuration/ports")
+        assert r.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Ports — per-port form (read)
+# ---------------------------------------------------------------------------
+
+
+def test_port_form_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: dict[str, object] = {}
+
+    async def fake_get(transport: object, **kw: object) -> PortForm:
+        seen.update(kw)
+        return PortForm(
+            ports=[5],
+            port_name="server-a",
+            admin_enabled=True,
+            mode=PortMode.AUTO,
+            flow_control_enabled=False,
+        )
+
+    monkeypatch.setattr(configuration_module, "get_port_form", fake_get)
+    r = client.get("/api/v1/configuration/ports/5")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ports"] == [5]
+    assert body["port_name"] == "server-a"
+    assert body["admin_enabled"] is True
+    assert body["mode"] == int(PortMode.AUTO)
+    assert body["flow_control_enabled"] is False
+    # The router must pass the path param as a single-element list.
+    assert seen["ports"] == [5]
+
+
+def test_port_form_requires_auth(
+    settings: Settings, store: BackupStore
+) -> None:
+    fresh = create_app()
+    with TestClient(fresh) as c:
+        fresh.state.settings = settings
+        fresh.state.backup_store = store
+        r = c.get("/api/v1/configuration/ports/5")
+        assert r.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Ports — write (per-port)
+# ---------------------------------------------------------------------------
+
+
+_PORT_BODY = {
+    "request": {
+        "ports": [5],
+        "name": "server-a",
+        "admin_enabled": True,
+        "mode": int(PortMode.AUTO),
+        "flow_control_enabled": False,
+    }
+}
+
+
+def test_port_config_write_blocked_when_read_only(
+    read_only_settings: Settings,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_app()
+    app.state.settings = read_only_settings
+    app.state.backup_store = store
+    called = False
+
+    async def must_not_run(transport: object, **kw: object) -> ConfigWriteAck:
+        nonlocal called
+        called = True
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, "set_port_config", must_not_run)
+    _must_not_download(monkeypatch)
+
+    with TestClient(app) as c:
+        app.dependency_overrides[get_transport] = lambda: object()
+        app.dependency_overrides[get_backup_store] = lambda: store
+        r = c.put("/api/v1/configuration/ports/5", json=_PORT_BODY)
+        app.dependency_overrides.clear()
+    assert r.status_code == 403
+    assert called is False
+
+
+def test_port_config_write_creates_pre_write_backup(
+    client: TestClient,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    order: list[str] = []
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        order.append("set_port_config")
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, "set_port_config", fake_set)
+
+    original_save = store.save
+
+    def spy_save(*args: object, **kwargs: object) -> object:
+        order.append("save")
+        return original_save(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(store, "save", spy_save)
+
+    r = client.put("/api/v1/configuration/ports/5", json=_PORT_BODY)
+    assert r.status_code == 200, r.text
+    assert order == ["save", "set_port_config"]
+    listed = store.list()
+    assert len(listed) == 1
+    assert listed[0].trigger == "pre-write"
+
+
+def test_port_config_write_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+    seen: dict[str, object] = {}
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        seen.update(kw)
+        return ConfigWriteAck(ok=True, raw_body="OK~")
+
+    monkeypatch.setattr(configuration_module, "set_port_config", fake_set)
+    r = client.put("/api/v1/configuration/ports/5", json=_PORT_BODY)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True
+    assert body["raw_body"] == "OK~"
+    req = seen["request"]
+    assert req.ports == [5]  # type: ignore[attr-defined]
+    assert req.name == "server-a"  # type: ignore[attr-defined]
+    assert req.admin_enabled is True  # type: ignore[attr-defined]
+    assert int(req.mode) == int(PortMode.AUTO)  # type: ignore[attr-defined]
+    assert req.flow_control_enabled is False  # type: ignore[attr-defined]
+
+
+def test_port_config_write_path_overrides_body_ports(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The URL path is authoritative — a stale ``request.ports`` in the body
+    must be replaced with the path's port before the op runs."""
+    _install_download_config(monkeypatch, b"cfg\n")
+    seen: dict[str, object] = {}
+
+    async def fake_set(transport: object, **kw: object) -> ConfigWriteAck:
+        seen.update(kw)
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(configuration_module, "set_port_config", fake_set)
+
+    # Body says ports=[9]; URL says /ports/5 → op must see [5].
+    body = {
+        "request": {
+            "ports": [9],
+            "name": "mismatch",
+            "admin_enabled": True,
+            "mode": int(PortMode.AUTO),
+            "flow_control_enabled": False,
+        }
+    }
+    r = client.put("/api/v1/configuration/ports/5", json=body)
+    assert r.status_code == 200, r.text
+    req = seen["request"]
+    assert req.ports == [5]  # type: ignore[attr-defined]
+    assert req.name == "mismatch"  # type: ignore[attr-defined]

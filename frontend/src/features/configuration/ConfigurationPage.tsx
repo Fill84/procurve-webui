@@ -15,6 +15,7 @@
  */
 import { SystemInfoCard } from "./SystemInfoCard";
 import { IpConfigCard } from "./IpConfigCard";
+import { PortConfigTable } from "./PortConfigTable";
 
 export function ConfigurationPage() {
   return (
@@ -32,11 +33,8 @@ export function ConfigurationPage() {
       <div className="grid gap-4">
         <SystemInfoCard />
         <IpConfigCard />
+        <PortConfigTable />
 
-        <PlaceholderCard
-          title="Per-port configuration"
-          note="Coming in Task 3.5b — enable / disable, rename, speed/duplex, flow control per port."
-        />
         <PlaceholderCard
           title="Device features"
           note="Coming in Task 3.5c — IGMP and Spanning Tree toggles."

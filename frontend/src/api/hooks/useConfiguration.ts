@@ -1,15 +1,18 @@
 /**
  * React Query hooks for the Configuration tab (Task 3.5).
  *
- * Sub-task 3.5a covers system info + IP config. More hooks land in 3.5b
- * (ports), 3.5c (features), 3.5d (QoS), 3.5e (support).
+ * Sub-tasks 3.5a (system + IP) and 3.5b (ports). More hooks land in
+ * 3.5c (features), 3.5d (QoS), 3.5e (support).
  *
- * Backend endpoints (this sub-task):
- *   GET  /api/v1/configuration/system   -> SystemInfoPage
- *   PUT  /api/v1/configuration/system   -> ConfigWriteAck   (autobackup only)
- *   GET  /api/v1/configuration/ip       -> IpConfigPage
- *   PUT  /api/v1/configuration/ip       -> ConfigWriteAck   (autobackup + host confirm)
- *   PUT  /api/v1/configuration/gateway  -> ConfigWriteAck   (autobackup only)
+ * Backend endpoints:
+ *   GET  /api/v1/configuration/system         -> SystemInfoPage
+ *   PUT  /api/v1/configuration/system         -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/ip             -> IpConfigPage
+ *   PUT  /api/v1/configuration/ip             -> ConfigWriteAck   (autobackup + host confirm)
+ *   PUT  /api/v1/configuration/gateway        -> ConfigWriteAck   (autobackup only)
+ *   GET  /api/v1/configuration/ports          -> PortConfigList
+ *   GET  /api/v1/configuration/ports/{port}   -> PortForm
+ *   PUT  /api/v1/configuration/ports/{port}   -> ConfigWriteAck   (autobackup only)
  *
  * Every mutation invalidates:
  *   1. Its own resource query (so the UI refetches the fresh state), and
@@ -37,6 +40,14 @@ export type SetDefaultGatewayRequest =
   components["schemas"]["SetDefaultGatewayRequest"];
 export type SetDefaultGatewayBody =
   components["schemas"]["SetDefaultGatewayBody"];
+
+export type PortConfig = components["schemas"]["PortConfig"];
+export type PortConfigList = components["schemas"]["PortConfigList"];
+export type PortForm = components["schemas"]["PortForm"];
+export type PortMode = components["schemas"]["PortMode"];
+export type SetPortConfigRequest =
+  components["schemas"]["SetPortConfigRequest"];
+export type SetPortConfigBody = components["schemas"]["SetPortConfigBody"];
 
 // ---------------------------------------------------------------------------
 // Reads
@@ -106,6 +117,50 @@ export function useSetDefaultGateway() {
       ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["configuration", "ip"] });
+      void qc.invalidateQueries({ queryKey: ["backups"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Ports (read list + per-port form)
+// ---------------------------------------------------------------------------
+
+export function usePortsConfig() {
+  return useQuery<PortConfigList>({
+    queryKey: ["configuration", "ports"],
+    queryFn: () =>
+      apiGet<PortConfigList>("/api/v1/configuration/ports"),
+  });
+}
+
+export function usePortForm(port: number | null) {
+  return useQuery<PortForm>({
+    queryKey: ["configuration", "ports", port],
+    queryFn: () =>
+      apiGet<PortForm>(`/api/v1/configuration/ports/${port}`),
+    enabled: port !== null && port > 0,
+  });
+}
+
+export interface SetPortConfigArgs {
+  port: number;
+  body: SetPortConfigBody;
+}
+
+export function useSetPortConfig() {
+  const qc = useQueryClient();
+  return useMutation<ConfigWriteAck, ApiError, SetPortConfigArgs>({
+    mutationFn: ({ port, body }) =>
+      apiPut<ConfigWriteAck, SetPortConfigBody>(
+        `/api/v1/configuration/ports/${port}`,
+        body,
+      ),
+    onSuccess: (_data, variables) => {
+      void qc.invalidateQueries({ queryKey: ["configuration", "ports"] });
+      void qc.invalidateQueries({
+        queryKey: ["configuration", "ports", variables.port],
+      });
       void qc.invalidateQueries({ queryKey: ["backups"] });
     },
   });

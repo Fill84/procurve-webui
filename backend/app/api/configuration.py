@@ -1,23 +1,26 @@
-"""Configuration API (Task 3.5): system info + IP config (sub-task 3.5a).
+"""Configuration API (Task 3.5): system info + IP config + per-port.
 
 This router will grow across Task 3.5's five sub-tasks:
 
-* 3.5a (this file's initial state) — system info + IP config
-* 3.5b — per-port configuration (ports sub-tab)
+* 3.5a — system info + IP config
+* 3.5b (adds per-port read/write below)
 * 3.5c — device features (IGMP / STP)
 * 3.5d — QoS (cos*, dscptable, diffserv)
 * 3.5e — support URLs
 
-Endpoints (this sub-task)
--------------------------
-Reads (2):
-  GET  /api/v1/configuration/system  -> SystemInfoPage
-  GET  /api/v1/configuration/ip      -> IpConfigPage
+Endpoints
+---------
+Reads (4):
+  GET  /api/v1/configuration/system         -> SystemInfoPage
+  GET  /api/v1/configuration/ip             -> IpConfigPage
+  GET  /api/v1/configuration/ports          -> PortConfigList
+  GET  /api/v1/configuration/ports/{port}   -> PortForm
 
-Writes (3):
-  PUT  /api/v1/configuration/system   -> ConfigWriteAck   (autobackup only)
-  PUT  /api/v1/configuration/ip       -> ConfigWriteAck   (autobackup + host confirm, LOCKOUT-RISKY)
-  PUT  /api/v1/configuration/gateway  -> ConfigWriteAck   (autobackup only)
+Writes (4):
+  PUT  /api/v1/configuration/system         -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/ip             -> ConfigWriteAck   (autobackup + host confirm, LOCKOUT-RISKY)
+  PUT  /api/v1/configuration/gateway        -> ConfigWriteAck   (autobackup only)
+  PUT  /api/v1/configuration/ports/{port}   -> ConfigWriteAck   (autobackup only)
 
 Write-safety policy
 -------------------
@@ -37,6 +40,12 @@ which takes a pre-write backup before any switch write is attempted.
   survives). The pre-write backup is considered sufficient rollback. If
   operator feedback surfaces near-miss incidents we can tighten this to
   require confirmation later.
+* ``PUT /ports/{port}`` — no host confirmation. Per-port enable / name /
+  speed / flow-control changes are reversible via the pre-write backup
+  and are not lockout-risky in typical deployments. The path ``port``
+  is authoritative: we rebuild the request model so the URL and body
+  agree even if the caller submitted a stale ``request.ports`` list
+  (mirrors the Security tab's per-port endpoint).
 """
 from __future__ import annotations
 
@@ -55,11 +64,19 @@ from procurve_client.models.network import (
     SetSystemInfoRequest,
     SystemInfoPage,
 )
+from procurve_client.models.port import (
+    PortConfigList,
+    PortForm,
+    SetPortConfigRequest,
+)
 from procurve_client.operations.configuration import (
     get_ip_page,
+    get_port_form,
+    get_portscfg,
     get_system_page,
     set_default_gateway,
     set_ip_config,
+    set_port_config,
     set_system_info,
 )
 from procurve_client.transport import ProcurveTransport
@@ -103,6 +120,19 @@ class SetDefaultGatewayBody(BaseModel):
     request: SetDefaultGatewayRequest
 
 
+class SetPortConfigBody(BaseModel):
+    """Body for ``PUT /api/v1/configuration/ports/{port}``.
+
+    No ``confirm_switch_host`` — per-port tweaks are reversible via the
+    pre-write autobackup and are not lockout-risky. The route handler
+    rebuilds ``request.ports`` from the path ``{port}`` to prevent a stale
+    body targeting the wrong port; the body's ``ports`` field is ignored
+    in favour of the URL.
+    """
+
+    request: SetPortConfigRequest
+
+
 # ---------------------------------------------------------------------------
 # Reads
 # ---------------------------------------------------------------------------
@@ -120,6 +150,28 @@ async def read_ip(
     transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
 ) -> IpConfigPage:
     return await get_ip_page(transport)
+
+
+@router.get("/ports", response_model=PortConfigList)
+async def read_ports(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> PortConfigList:
+    """List every port's current configuration."""
+    return await get_portscfg(transport)
+
+
+@router.get("/ports/{port}", response_model=PortForm)
+async def read_port_form(
+    port: int,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+) -> PortForm:
+    """Fetch the edit-form state for a single port.
+
+    The underlying procurve op supports multi-port selection; Phase 3
+    exposes single-port reads only. Multi-port bulk edits can be added
+    later if the UI ever needs them.
+    """
+    return await get_port_form(transport, ports=[port])
 
 
 # ---------------------------------------------------------------------------
@@ -186,6 +238,30 @@ async def write_gateway(
         store=store,
         transport=transport,
         write=lambda: set_default_gateway(transport, request=body.request),
+    )
+
+
+@router.put("/ports/{port}", response_model=ConfigWriteAck)
+async def write_port_config(
+    port: int,
+    body: SetPortConfigBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> ConfigWriteAck:
+    """Write per-port configuration (enable / name / speed / flow-control).
+
+    The URL ``{port}`` is authoritative: we rebuild the request so the
+    path and body agree even if the caller submitted a stale body with
+    ``request.ports`` targeting a different port. Not lockout-risky —
+    the pre-write autobackup is sufficient rollback.
+    """
+    pinned = body.request.model_copy(update={"ports": [port]})
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_port_config(transport, request=pinned),
     )
 
 

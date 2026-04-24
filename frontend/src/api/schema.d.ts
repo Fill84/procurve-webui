@@ -308,6 +308,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/configuration/ports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Ports
+         * @description List every port's current configuration.
+         */
+        get: operations["read_ports_api_v1_configuration_ports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/configuration/ports/{port}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Port Form
+         * @description Fetch the edit-form state for a single port.
+         *
+         *     The underlying procurve op supports multi-port selection; Phase 3
+         *     exposes single-port reads only. Multi-port bulk edits can be added
+         *     later if the UI ever needs them.
+         */
+        get: operations["read_port_form_api_v1_configuration_ports__port__get"];
+        /**
+         * Write Port Config
+         * @description Write per-port configuration (enable / name / speed / flow-control).
+         *
+         *     The URL ``{port}`` is authoritative: we rebuild the request so the
+         *     path and body agree even if the caller submitted a stale body with
+         *     ``request.ports`` targeting a different port. Not lockout-risky —
+         *     the pre-write autobackup is sufficient rollback.
+         */
+        put: operations["write_port_config_api_v1_configuration_ports__port__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/configuration/gateway": {
         parameters: {
             query?: never;
@@ -1019,6 +1072,51 @@ export interface components {
             raw_html: string;
         };
         /**
+         * PortConfig
+         * @description One row from /cgi/get_portscfg (the Configuration tab's Ports list).
+         *
+         *     Structurally near-identical to `PortStatus` but semantically different:
+         *     position 5 is `config_status` (`.` = nothing to report) and position 6
+         *     is the *configured* mode, not the current negotiated one.
+         */
+        PortConfig: {
+            /** Port */
+            port: number;
+            /** Port Name */
+            port_name: string;
+            /**
+             * Port Type Label
+             * @default
+             */
+            port_type_label: string;
+            /** Port Type */
+            port_type: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Config Status */
+            config_status: string;
+            /** Config Mode */
+            config_mode: string;
+            /**
+             * Trunk
+             * @default
+             */
+            trunk: string;
+            /** Flow Control */
+            flow_control: boolean;
+            /**
+             * Extra
+             * @description Wire position 9; observed 0. Unknown.
+             * @default 0
+             */
+            extra: number;
+        };
+        /** PortConfigList */
+        PortConfigList: {
+            /** Ports */
+            ports: components["schemas"]["PortConfig"][];
+        };
+        /**
          * PortCounters
          * @description One row from /cgi/portc.
          *
@@ -1056,6 +1154,36 @@ export interface components {
             /** Ports */
             ports: components["schemas"]["PortCounters"][];
         };
+        /**
+         * PortForm
+         * @description Parsed result of /cgi/port_form?indeces=... — the per-port edit form.
+         *
+         *     `port_name` may be `""` when a single port is selected and has no name;
+         *     on multi-port selects where ports disagree it is empty too (the live UI
+         *     would render it as "differs across selection").
+         */
+        PortForm: {
+            /** Ports */
+            ports: number[];
+            /**
+             * Port Name
+             * @default
+             */
+            port_name: string;
+            /** Admin Enabled */
+            admin_enabled: boolean;
+            mode: components["schemas"]["PortMode"];
+            /** Flow Control Enabled */
+            flow_control_enabled: boolean;
+        };
+        /**
+         * PortMode
+         * @description Values from the <select name=hpSwitchPortFastEtherMode> on port_form.
+         *
+         *     Value `6` is unused (a legacy auto mode removed in this firmware).
+         * @enum {integer}
+         */
+        PortMode: 1 | 2 | 3 | 4 | 5 | 7 | 8 | 9 | 11;
         /**
          * PortSecurityMode
          * @description Values from `<select name=mode>` on `perport_form1.html`.
@@ -1315,6 +1443,44 @@ export interface components {
             message?: string | null;
             /** Raw Body */
             raw_body?: string | null;
+        };
+        /**
+         * SetPortConfigBody
+         * @description Body for ``PUT /api/v1/configuration/ports/{port}``.
+         *
+         *     No ``confirm_switch_host`` — per-port tweaks are reversible via the
+         *     pre-write autobackup and are not lockout-risky. The route handler
+         *     rebuilds ``request.ports`` from the path ``{port}`` to prevent a stale
+         *     body targeting the wrong port; the body's ``ports`` field is ignored
+         *     in favour of the URL.
+         */
+        SetPortConfigBody: {
+            request: components["schemas"]["SetPortConfigRequest"];
+        };
+        /**
+         * SetPortConfigRequest
+         * @description Parameters for /cgi/mod_ports.
+         */
+        SetPortConfigRequest: {
+            /** Ports */
+            ports: number[];
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Admin Enabled
+             * @default true
+             */
+            admin_enabled: boolean;
+            /** @default 9 */
+            mode: components["schemas"]["PortMode"];
+            /**
+             * Flow Control Enabled
+             * @default true
+             */
+            flow_control_enabled: boolean;
         };
         /**
          * SetSSLBody
@@ -2019,6 +2185,92 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SetIpConfigBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_ports_api_v1_configuration_ports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortConfigList"];
+                };
+            };
+        };
+    };
+    read_port_form_api_v1_configuration_ports__port__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                port: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortForm"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_port_config_api_v1_configuration_ports__port__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                port: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPortConfigBody"];
             };
         };
         responses: {
