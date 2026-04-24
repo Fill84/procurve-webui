@@ -6,6 +6,7 @@ never actually called. Override `get_transport` to a no-op sentinel.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
@@ -15,7 +16,13 @@ import app.api.status as status_module
 from app.deps import get_transport
 from app.main import create_app
 from app.settings import Settings
-from procurve_client.models.log import AlertEvent, AlertLog, DeviceStatusBanner
+from procurve_client.models.log import (
+    AlertDetail,
+    AlertEvent,
+    AlertLog,
+    DeviceStatusBanner,
+)
+from procurve_client.models.network import ConfigWriteAck
 from procurve_client.models.port import (
     PortCounters,
     PortCountersList,
@@ -27,11 +34,26 @@ from procurve_client.models.port import (
 
 
 @pytest.fixture
-def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
+def settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Settings:
     monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
+    monkeypatch.setenv("READ_ONLY", "false")
+    monkeypatch.setenv("BACKUPS_DIR", str(tmp_path / "backups"))
+    return Settings()
+
+
+@pytest.fixture
+def read_only_settings(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> Settings:
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
+    monkeypatch.setenv("SWITCH_PORT", "80")
+    monkeypatch.setenv("SESSION_SECRET", "a" * 32)
+    monkeypatch.setenv("SESSION_TTL_HOURS", "8")
+    monkeypatch.setenv("READ_ONLY", "true")
+    monkeypatch.setenv("BACKUPS_DIR", str(tmp_path / "backups"))
     return Settings()
 
 
@@ -205,3 +227,183 @@ def test_status_requires_auth(settings: Settings) -> None:
         # No dependency override -> get_transport runs and requires a session
         r = c.get("/api/v1/status/device")
         assert r.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Alert detail / ack / delete (Task: alert-log actions)
+# ---------------------------------------------------------------------------
+
+
+def test_get_alert_detail_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    detail = AlertDetail(
+        index=1,
+        ts_centiseconds=11094915,
+        title="Loss of Link",
+        severity=3,
+        affected_port=10,
+        type_code=11,
+        act_code=2,
+        description="The connection to the devices on port 10 has been lost.",
+        solution=["Reattach the cable.", "Troubleshoot the device."],
+        other_possibilities="The cable is damaged.",
+        raw_html="<html>...</html>",
+    )
+    captured: dict[str, object] = {}
+
+    async def fake(transport: object, *, index: int, ts_centiseconds: int) -> AlertDetail:
+        captured["index"] = index
+        captured["ts_centiseconds"] = ts_centiseconds
+        return detail
+
+    monkeypatch.setattr(status_module, "get_alert_detail", fake)
+    r = client.get("/api/v1/status/alerts/1?dt=11094915")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["title"] == "Loss of Link"
+    assert body["severity"] == 3
+    assert body["affected_port"] == 10
+    assert body["type_code"] == 11
+    assert body["act_code"] == 2
+    assert body["solution"] == ["Reattach the cable.", "Troubleshoot the device."]
+    # The endpoint forwards both query args.
+    assert captured["index"] == 1
+    assert captured["ts_centiseconds"] == 11094915
+
+
+def test_get_alert_detail_requires_auth(settings: Settings) -> None:
+    fresh = create_app()
+    with TestClient(fresh) as c:
+        fresh.state.settings = settings
+        r = c.get("/api/v1/status/alerts/1?dt=1")
+        assert r.status_code == 401
+
+
+def test_ack_alerts_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake(transport: object, *, events: list[AlertEvent]) -> ConfigWriteAck:
+        captured["events"] = events
+        return ConfigWriteAck(ok=True, raw_body="")
+
+    monkeypatch.setattr(status_module, "ack_alerts", fake)
+    r = client.post(
+        "/api/v1/status/alerts/ack",
+        json={
+            "events": [
+                {"row_id": "1", "ts_centiseconds": 11094915},
+                {"row_id": "2", "ts_centiseconds": 12000000},
+            ]
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True
+    events = captured["events"]
+    assert isinstance(events, list)
+    assert len(events) == 2
+    assert events[0].row_id == "1"
+    assert events[0].ts_centiseconds == 11094915
+    assert events[1].row_id == "2"
+    assert events[1].ts_centiseconds == 12000000
+
+
+def test_ack_alerts_blocked_when_read_only(
+    read_only_settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app = create_app()
+    app.state.settings = read_only_settings
+    called = False
+
+    async def must_not_run(transport: object, *, events: list[AlertEvent]) -> ConfigWriteAck:
+        nonlocal called
+        called = True
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(status_module, "ack_alerts", must_not_run)
+    with TestClient(app) as c:
+        app.dependency_overrides[get_transport] = lambda: object()
+        r = c.post(
+            "/api/v1/status/alerts/ack",
+            json={"events": [{"row_id": "1", "ts_centiseconds": 1}]},
+        )
+        app.dependency_overrides.clear()
+    assert r.status_code == 403
+    body = r.json()
+    detail = body.get("detail", body)
+    assert detail.get("error") == "read_only"
+    assert called is False
+
+
+def test_ack_alerts_requires_auth(settings: Settings) -> None:
+    fresh = create_app()
+    with TestClient(fresh) as c:
+        fresh.state.settings = settings
+        r = c.post(
+            "/api/v1/status/alerts/ack",
+            json={"events": [{"row_id": "1", "ts_centiseconds": 1}]},
+        )
+        assert r.status_code == 401
+
+
+def test_ack_alerts_rejects_empty_events(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The body schema requires `events` to have at least one entry."""
+
+    async def must_not_run(transport: object, *, events: list[AlertEvent]) -> ConfigWriteAck:
+        raise AssertionError("op must not run for empty events")
+
+    monkeypatch.setattr(status_module, "ack_alerts", must_not_run)
+    r = client.post("/api/v1/status/alerts/ack", json={"events": []})
+    assert r.status_code == 422
+
+
+def test_delete_alerts_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake(transport: object, *, events: list[AlertEvent]) -> ConfigWriteAck:
+        captured["events"] = events
+        return ConfigWriteAck(ok=True, raw_body=None)
+
+    monkeypatch.setattr(status_module, "delete_alerts", fake)
+    r = client.post(
+        "/api/v1/status/alerts/delete",
+        json={"events": [{"row_id": "5", "ts_centiseconds": 99}]},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["ok"] is True
+    events = captured["events"]
+    assert isinstance(events, list)
+    assert len(events) == 1
+    assert events[0].row_id == "5"
+    assert events[0].ts_centiseconds == 99
+
+
+def test_delete_alerts_blocked_when_read_only(
+    read_only_settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app = create_app()
+    app.state.settings = read_only_settings
+    called = False
+
+    async def must_not_run(transport: object, *, events: list[AlertEvent]) -> ConfigWriteAck:
+        nonlocal called
+        called = True
+        return ConfigWriteAck(ok=True)
+
+    monkeypatch.setattr(status_module, "delete_alerts", must_not_run)
+    with TestClient(app) as c:
+        app.dependency_overrides[get_transport] = lambda: object()
+        r = c.post(
+            "/api/v1/status/alerts/delete",
+            json={"events": [{"row_id": "1", "ts_centiseconds": 1}]},
+        )
+        app.dependency_overrides.clear()
+    assert r.status_code == 403
+    assert called is False

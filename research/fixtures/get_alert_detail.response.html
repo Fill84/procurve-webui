@@ -1,0 +1,73 @@
+<html>
+<head>
+<title>Loss of Link</title>
+<script language="JavaScript">
+    function home() {
+        var homeWindow = window.open('/');
+    }
+
+    var portName = "";
+
+    function hdr(ti,dt,pt,se) {
+        document.write ("<table width=100% cellspacing=0 cellpadding=5>" + 
+                        "<tr><td bgcolor=#003366 align=left> <table width=60% align=left><tr><td>" + 
+                        "<img src=../classes/status/" + se + "d.gif>&nbsp;&nbsp;" +
+                        "<font face=Helvetica color=#FFFFFF size=+1>" + ti);
+        if (pt != "0")
+        { 
+            document.write (" on port " + pt);
+            if(portName.length != 0)
+            {
+               document.write (" (" + portName + ")");
+            }
+        } 
+        document.write ("</font></td></tr></table><table align=right><tr><td>" +
+                        "<font face=Helvetica color=#FFFFFF size=+0> " + 
+                        "<a href='javascript:home();'><img src=../icon.gif border=0></a>" + 
+                        "</font></td><td>" +
+                        "<font face=Helvetica color=#FFFFFF size=+0> " + 
+                        dt + "</font>" + 
+                        "</td></tr></table>");
+        window.setTimeout ('parent.ffbf.location="../status/ffbuttons.html?index=1&type=11&pt=10&act=2&sfp=000000&se=3&dt=11094915"', 500);
+    }
+
+    function portMsg(act)  {
+        if (act == "3") {
+            document.write("<table with=100% cellspacing=0 cellpadding=5><tr><td><font face=Helvetica color=black size=-1><dl><dt><b>Port Disabled:</b>");
+            document.write("<dd> Port 10 was temporarily disabled to keep network operational.  Click on the button below to enable the port and acknowledge the event.</dl></font></td></tr></table>");
+        }
+    }  
+</script>
+
+</head>
+
+<body bgcolor=white>
+<script>hdr('Loss of Link', '11094915', 
+            '10', '3');</script>
+</td></tr><tr><td align=left>
+<font face=Helvetica color=black size=-1>
+<dl>
+<dt><b>Description:</b> 
+
+<dd>The connection to the devices on port 10 has been
+lost. 
+
+<p><dt><b>Solution:</b> 
+<ul>
+    <li>If the cable has been removed from the port, reattach the cable. 
+    <li>If the device attached by the cable is not active/on,
+        troubleshoot that device. 
+    <li>If the port has been disabled on the other device, re-enable the port
+        on the other device. 
+</ul>
+
+<p><dt><b>Other Possibilities:</b> 
+<dd>The cable is damaged or severed. If so, replace the cable.
+</dl>
+</font>
+</td></tr>
+</table>
+<script>portMsg('2'); </script>
+</body>
+</html>
+

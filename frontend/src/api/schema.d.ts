@@ -165,6 +165,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/status/alerts/{index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Alert Detail Endpoint
+         * @description Fetch the parsed detail page for a single alert event.
+         *
+         *     The `dt` query param doubles as an integrity token on the switch — pass
+         *     the `ts_centiseconds` of the event row from the alert-log response.
+         */
+        get: operations["get_alert_detail_endpoint_api_v1_status_alerts__index__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/status/alerts/ack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ack Alerts Endpoint
+         * @description Acknowledge one or more events in the switch fault log.
+         *
+         *     Mirrors the diagnostics ping/link-test exception: gated by
+         *     :func:`require_writable` but **NOT** wrapped in
+         *     :func:`write_with_autobackup`. The fault log is RAM-only state; there
+         *     is nothing in running-config to back up before the call.
+         */
+        post: operations["ack_alerts_endpoint_api_v1_status_alerts_ack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/status/alerts/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Alerts Endpoint
+         * @description Delete one or more events from the switch fault log.
+         *
+         *     Same write-safety policy as ack — read-only-gated, no auto-backup.
+         *     The UI must wrap this with a `window.confirm` (or modal) before firing,
+         *     matching the legacy applet's `confirm("Are you sure...")` prompt.
+         */
+        post: operations["delete_alerts_endpoint_api_v1_status_alerts_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -944,6 +1016,14 @@ export interface components {
          */
         AccessLevelCode: 1 | 2;
         /**
+         * AckAlertsBody
+         * @description Body for POST /api/v1/status/alerts/ack and /alerts/delete.
+         */
+        AckAlertsBody: {
+            /** Events */
+            events: components["schemas"]["AlertEventRef"][];
+        };
+        /**
          * AddWebManagerRequest
          * @description Add a new authorized-manager IP entry (`action=1` variant).
          *
@@ -981,6 +1061,40 @@ export interface components {
          */
         AddressSelection: "Continuous" | "Static" | "Port Access" | "Limited";
         /**
+         * AlertDetail
+         * @description Structured view of GET /cgi/ffdetail?index=<N>&dt=<ts>.
+         *
+         *     Source: research/protocol/status/get_alert_detail.md.
+         *     The wire is HTML; we extract title / hdr() args / ffbuttons setTimeout
+         *     discriminators / description-solution-other-possibilities sections.
+         *     Optional fields are ``None`` / empty list when missing — alert types
+         *     differ in which sections they include.
+         */
+        AlertDetail: {
+            /** Index */
+            index: number;
+            /** Ts Centiseconds */
+            ts_centiseconds: number;
+            /** Title */
+            title: string;
+            /** Severity */
+            severity: number;
+            /** Affected Port */
+            affected_port: number;
+            /** Type Code */
+            type_code: number;
+            /** Act Code */
+            act_code: number;
+            /** Description */
+            description?: string | null;
+            /** Solution */
+            solution?: string[];
+            /** Other Possibilities */
+            other_possibilities?: string | null;
+            /** Raw Html */
+            raw_html: string;
+        };
+        /**
          * AlertEvent
          * @description One row from the alert-log stream (/cgi/fflog?action=list).
          */
@@ -995,6 +1109,23 @@ export interface components {
             ts_centiseconds: number;
             /** Description */
             description: string;
+        };
+        /**
+         * AlertEventRef
+         * @description Minimal client-supplied identifier for an event we want to act on.
+         *
+         *     Only `row_id` and `ts_centiseconds` are required on the wire (see
+         *     research/protocol/status/ack_alerts.md). The full :class:`AlertEvent`
+         *     model carries `alert_name`/`category`/`description` too, but those are
+         *     not part of the ack/del query string. The endpoint adapts this minimal
+         *     shape into a full ``AlertEvent`` (with empty filler strings for the
+         *     unused fields) before delegating to the procurve_client op.
+         */
+        AlertEventRef: {
+            /** Row Id */
+            row_id: string;
+            /** Ts Centiseconds */
+            ts_centiseconds: number;
         };
         /**
          * AlertLog
@@ -2715,6 +2846,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PortUsageList"];
+                };
+            };
+        };
+    };
+    get_alert_detail_endpoint_api_v1_status_alerts__index__get: {
+        parameters: {
+            query: {
+                dt: number;
+            };
+            header?: never;
+            path: {
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ack_alerts_endpoint_api_v1_status_alerts_ack_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AckAlertsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_alerts_endpoint_api_v1_status_alerts_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AckAlertsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

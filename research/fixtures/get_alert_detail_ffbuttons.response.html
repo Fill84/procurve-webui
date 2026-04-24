@@ -1,0 +1,26 @@
+<html>
+<body bgcolor=white>
+<form>
+<hr>
+<table align=left><tr nowrap>
+<td><input type=button name=cancel value=" Cancel " onClick="top.close();"></td>
+<td>
+<script language="JavaScript">
+    if ("2" == "3") {
+        document.write ("<input type=button name=reenable value=' Re-Enable Port 10' onClick=parent.fff.location='../cgi/ffreenable?findex=1&indeces=10%2c&mode=1&index=10'>");
+
+    } else if ("2" == "2" && "11" != "11") {
+        document.write ("<input type=button value=' Retest ' onClick=parent.fff.location='../cgi/ffrtest?findex=1&index=1'>"); 
+    }
+</script>
+</td>
+</tr></table>
+<table align=right><tr><td>
+<input type=button name=ack value=" Acknowledge Event "
+    onClick="parent.fff.location='../cgi/ffaction?indeces=1&action=ack';">
+<input type=button name=del value=" Delete Event "
+    onClick="parent.fff.location='../cgi/ffaction?indeces=1&action=del';">
+</td></tr></table>
+</form>
+</body>
+</html>

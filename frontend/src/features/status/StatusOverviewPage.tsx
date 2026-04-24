@@ -7,6 +7,17 @@
  *      don't flicker an empty panel on first paint)
  *   2. A 4-tile summary grid: ports-up / ports-problematic / CPU / uptime
  *   3. Recent alerts table (newest first, capped at 10 rows)
+ *      with checkbox selection + Open / Ack / Delete action bar.
+ *
+ * Alert-log actions:
+ *   * Selection state is local (useState<Set<string>>) keyed by row_id —
+ *     this survives re-renders driven by the 30 s alert-log refetch.
+ *   * "Open Event" is enabled when exactly one row is selected; it opens
+ *     `AlertDetailDialog` which loads `/api/v1/status/alerts/{idx}?dt=<ts>`.
+ *   * Ack / Delete are enabled when ≥ 1 row is selected. Delete uses
+ *     `window.confirm` (no DangerConfirmDialog needed — fault-log mutations
+ *     are not lockout-capable). Both invalidate the `["status", "alert-log"]`
+ *     query so the table refreshes after the mutation completes.
  *
  * The identity hook is reused for uptime because the status banner endpoint
  * doesn't carry it — see DeviceStatusBanner in the generated schema. This
@@ -14,17 +25,21 @@
  * resolved from TopBar.
  */
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
+  useAcknowledgeAlerts,
+  useAlertLog,
+  useDeleteAlerts,
   useDeviceStatus,
   usePortStatus,
   usePortUsage,
-  useAlertLog,
 } from "@/api/hooks/useStatus";
 import { useIdentity } from "@/api/hooks/useIdentity";
 import { SwitchSvg } from "@/components/switch-panel/SwitchSvg";
 import { PortUtilizationChart } from "./PortUtilizationChart";
+import { AlertDetailDialog } from "./AlertDetailDialog";
 import { formatUptime } from "@/lib/format";
+import { formatAlertTimestamp } from "@/lib/format-alert";
 
 export function StatusOverviewPage() {
   const portsQuery = usePortStatus();
@@ -32,6 +47,8 @@ export function StatusOverviewPage() {
   const deviceQuery = useDeviceStatus();
   const alertsQuery = useAlertLog();
   const identityQuery = useIdentity();
+  const ackMutation = useAcknowledgeAlerts();
+  const delMutation = useDeleteAlerts();
 
   const ports = portsQuery.data?.ports;
 
@@ -53,6 +70,91 @@ export function StatusOverviewPage() {
       .sort((a, b) => b.ts_centiseconds - a.ts_centiseconds)
       .slice(0, 10);
   }, [alertsQuery.data]);
+
+  // Selection state. Keyed by row_id so it survives re-renders driven by
+  // the 30 s alert-log refetch, but we prune ids that no longer exist
+  // after each refetch so a delete doesn't leave dangling selections.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const validIds = useMemo(
+    () => new Set(recentAlerts.map((a) => a.row_id)),
+    [recentAlerts],
+  );
+  const effectiveSelected = useMemo(() => {
+    const out = new Set<string>();
+    for (const id of selectedIds) if (validIds.has(id)) out.add(id);
+    return out;
+  }, [selectedIds, validIds]);
+  const selectedCount = effectiveSelected.size;
+
+  const [detailTarget, setDetailTarget] = useState<{
+    index: number;
+    tsCenti: number;
+  } | null>(null);
+
+  const toggleId = (rowId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowId)) next.delete(rowId);
+      else next.add(rowId);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    if (effectiveSelected.size === recentAlerts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(recentAlerts.map((a) => a.row_id)));
+    }
+  };
+
+  const selectedRefs = useMemo(
+    () =>
+      recentAlerts
+        .filter((a) => effectiveSelected.has(a.row_id))
+        .map((a) => ({
+          row_id: a.row_id,
+          ts_centiseconds: a.ts_centiseconds,
+        })),
+    [recentAlerts, effectiveSelected],
+  );
+
+  const handleOpenEvent = () => {
+    if (selectedRefs.length !== 1) return;
+    const ref = selectedRefs[0]!;
+    const idx = Number.parseInt(ref.row_id, 10);
+    if (!Number.isFinite(idx)) return;
+    setDetailTarget({ index: idx, tsCenti: ref.ts_centiseconds });
+  };
+
+  const handleAck = () => {
+    if (selectedRefs.length === 0) return;
+    ackMutation.mutate(
+      { events: selectedRefs },
+      {
+        onSuccess: () => setSelectedIds(new Set()),
+      },
+    );
+  };
+
+  const handleDelete = () => {
+    if (selectedRefs.length === 0) return;
+    const msg =
+      selectedRefs.length === 1
+        ? "Delete the selected event?"
+        : `Delete the ${selectedRefs.length} selected events?`;
+    if (!window.confirm(msg)) return;
+    delMutation.mutate(
+      { events: selectedRefs },
+      {
+        onSuccess: () => setSelectedIds(new Set()),
+      },
+    );
+  };
+
+  const mutating = ackMutation.isPending || delMutation.isPending;
+  const mutationError =
+    (ackMutation.error instanceof Error ? ackMutation.error.message : null) ??
+    (delMutation.error instanceof Error ? delMutation.error.message : null);
 
   return (
     <div className="p-6">
@@ -162,6 +264,48 @@ export function StatusOverviewPage() {
             </span>
           )}
         </header>
+
+        {/* Action bar */}
+        {alertsQuery.data && recentAlerts.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/60 px-4 py-2">
+            <span className="text-xs text-neutral-600">
+              {selectedCount === 0
+                ? "Select rows to act on them."
+                : `${selectedCount} selected`}
+            </span>
+            <div className="ml-auto flex flex-wrap gap-2">
+              <ActionButton
+                onClick={handleOpenEvent}
+                disabled={selectedCount !== 1 || mutating}
+              >
+                Open Event
+              </ActionButton>
+              <ActionButton
+                onClick={handleAck}
+                disabled={selectedCount === 0 || mutating}
+                busy={ackMutation.isPending}
+                busyLabel="Acknowledging…"
+              >
+                Acknowledge selected
+              </ActionButton>
+              <ActionButton
+                onClick={handleDelete}
+                disabled={selectedCount === 0 || mutating}
+                busy={delMutation.isPending}
+                busyLabel="Deleting…"
+                tone="danger"
+              >
+                Delete selected
+              </ActionButton>
+            </div>
+          </div>
+        )}
+        {mutationError && (
+          <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900">
+            {mutationError}
+          </div>
+        )}
+
         {alertsQuery.isLoading && (
           <div className="p-4">
             <div className="h-24 animate-pulse rounded bg-neutral-100" />
@@ -185,6 +329,24 @@ export function StatusOverviewPage() {
             <table className="w-full text-sm">
               <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
                 <tr>
+                  <th className="w-10 px-4 py-2">
+                    <input
+                      type="checkbox"
+                      aria-label="Select all rows"
+                      checked={
+                        recentAlerts.length > 0 &&
+                        effectiveSelected.size === recentAlerts.length
+                      }
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate =
+                            effectiveSelected.size > 0 &&
+                            effectiveSelected.size < recentAlerts.length;
+                        }
+                      }}
+                      onChange={toggleAll}
+                    />
+                  </th>
                   <th className="px-4 py-2 font-semibold">When</th>
                   <th className="px-4 py-2 font-semibold">Category</th>
                   <th className="px-4 py-2 font-semibold">Alert</th>
@@ -192,33 +354,53 @@ export function StatusOverviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentAlerts.map((e) => (
-                  <tr
-                    key={e.row_id}
-                    className="border-t border-neutral-100 align-top"
-                  >
-                    <td className="px-4 py-2 font-mono text-xs text-neutral-600">
-                      {formatAlertTimestamp(
-                        e.ts_centiseconds,
-                        identityQuery.data?.uptime_centiseconds,
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-neutral-700">
-                      {e.category || "—"}
-                    </td>
-                    <td className="px-4 py-2 font-medium text-neutral-900">
-                      {e.alert_name}
-                    </td>
-                    <td className="px-4 py-2 text-neutral-700">
-                      {e.description}
-                    </td>
-                  </tr>
-                ))}
+                {recentAlerts.map((e) => {
+                  const checked = effectiveSelected.has(e.row_id);
+                  return (
+                    <tr
+                      key={e.row_id}
+                      className={`border-t border-neutral-100 align-top ${
+                        checked ? "bg-blue-50/40" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-2">
+                        <input
+                          type="checkbox"
+                          aria-label={`Select event ${e.row_id}`}
+                          checked={checked}
+                          onChange={() => toggleId(e.row_id)}
+                        />
+                      </td>
+                      <td className="px-4 py-2 font-mono text-xs text-neutral-600">
+                        {formatAlertTimestamp(
+                          e.ts_centiseconds,
+                          identityQuery.data?.uptime_centiseconds,
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-neutral-700">
+                        {e.category || "—"}
+                      </td>
+                      <td className="px-4 py-2 font-medium text-neutral-900">
+                        {e.alert_name}
+                      </td>
+                      <td className="px-4 py-2 text-neutral-700">
+                        {e.description}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </section>
+
+      <AlertDetailDialog
+        index={detailTarget?.index ?? null}
+        tsCenti={detailTarget?.tsCenti ?? null}
+        currentUptimeCenti={identityQuery.data?.uptime_centiseconds}
+        onClose={() => setDetailTarget(null)}
+      />
     </div>
   );
 }
@@ -272,53 +454,35 @@ function SummaryCard({
   );
 }
 
-/**
- * Render a human timestamp for an alert event.
- *
- * `ts_centiseconds` on this firmware is **sysUpTime** — centiseconds since
- * the switch last booted, not a wall-clock value. See
- * research/protocol/status/get_alert_log.md → "Timestamps are centiseconds,
- * not ms. Matches the Identity-tab uptime convention."
- *
- * To turn that into something a human recognises we anchor it to the
- * browser's wall clock at the moment the identity page was last read:
- *
- *     event_wall_ms = now_ms - (current_uptime_centi - alert_uptime_centi) * 10
- *
- * The `current_uptime_centi` comes from `useIdentity().uptime_centiseconds`,
- * and the drift between that read and "now" is small enough (tens of
- * seconds at most — useIdentity polls on mount) that the result is accurate
- * to the second.
- *
- * When identity hasn't loaded yet we render a relative form ("uptime+Xs")
- * so the caller still gets something sortable and self-consistent.
- */
-function formatAlertTimestamp(
-  tsCenti: number,
-  currentUptimeCenti: number | undefined,
-): string {
-  if (currentUptimeCenti === undefined) {
-    return `uptime+${Math.floor(tsCenti / 100)}s`;
-  }
-  const ageMs = Math.max(0, (currentUptimeCenti - tsCenti) * 10);
-  const wallMs = Date.now() - ageMs;
-  const d = new Date(wallMs);
-  if (!Number.isFinite(d.getTime())) return `t=${tsCenti}`;
-
-  const absolute = d
-    .toISOString()
-    .replace("T", " ")
-    .replace(/\.\d+Z$/, "Z");
-  return `${absolute} (${formatRelative(ageMs)})`;
-}
-
-function formatRelative(ageMs: number): string {
-  const s = Math.floor(ageMs / 1000);
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m} min ago`;
-  const h = Math.floor(m / 60);
-  if (h < 48) return `${h}h${m % 60 ? ` ${m % 60}m` : ""} ago`;
-  const days = Math.floor(h / 24);
-  return `${days}d ${h % 24}h ago`;
+function ActionButton({
+  onClick,
+  disabled,
+  busy = false,
+  busyLabel,
+  tone,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  busy?: boolean;
+  busyLabel?: string;
+  tone?: "danger";
+  children: ReactNode;
+}) {
+  const base =
+    "rounded-md border px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed";
+  const palette =
+    tone === "danger"
+      ? "border-red-300 text-red-800 hover:bg-red-50"
+      : "border-neutral-300 text-neutral-700 hover:bg-neutral-50";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`${base} ${palette}`}
+    >
+      {busy && busyLabel ? busyLabel : children}
+    </button>
+  );
 }
