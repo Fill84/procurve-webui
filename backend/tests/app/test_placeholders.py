@@ -1,14 +1,9 @@
-"""Tests for Phase 3+ placeholder routers.
+"""Regression guards: the Phase 2 placeholders are gone.
 
-Each remaining placeholder returns HTTP 501 with
-``{error: "not_implemented", phase: "3+"}``.
-
-Task 3.5a replaced the ``/api/v1/configuration`` placeholder with a real
-router, so the parametrize list is currently empty.  Future Phase 3+ work
-may re-populate this (unlikely — all remaining tabs already have real
-routers), in which case the parametrize list comes back to life.  Keeping
-the file alive (rather than deleting it outright) preserves the symmetry
-with ``placeholders.py``.
+All 4 placeholder tabs (configuration / security / diagnostics / support)
+now have real routers. This file exists to pin that down — if somebody
+reintroduces a 501 "not_implemented" response on one of these paths the
+CI should fail.
 """
 from __future__ import annotations
 
@@ -19,6 +14,8 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 from app.settings import Settings
+
+_PHASE2_PLACEHOLDER_BODY = {"error": "not_implemented", "phase": "3+"}
 
 
 @pytest.fixture
@@ -38,36 +35,27 @@ def client(settings: Settings) -> Iterator[TestClient]:
         yield c
 
 
-EXPECTED = {"error": "not_implemented", "phase": "3+"}
-
-# Remaining placeholder GET endpoints (empty: all tabs now have real routers).
-PLACEHOLDER_PATHS: list[str] = []
-
-
-@pytest.mark.skipif(
-    not PLACEHOLDER_PATHS, reason="no placeholder endpoints remain"
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/configuration",
+        "/api/v1/security",
+        "/api/v1/diagnostics",
+        "/api/v1/support",
+    ],
 )
-@pytest.mark.parametrize("path", PLACEHOLDER_PATHS or ["__never__"])
-def test_placeholder_returns_501(client: TestClient, path: str) -> None:
-    r = client.get(path)
-    assert r.status_code == 501
-    assert r.json() == EXPECTED
-
-
-def test_configuration_is_no_longer_a_placeholder(client: TestClient) -> None:
-    """Regression guard: a plain GET to /api/v1/configuration must not
-    return the 501 placeholder shape anymore.
-
-    The real configuration router does NOT expose ``GET /``; the
-    sub-tab endpoints live at ``/api/v1/configuration/system``,
-    ``/.../ip``, etc. So this URL now returns 404 (no route), 401 (if
-    auth kicks in first), or another real status — just not 501.
+def test_formerly_placeholder_path_is_no_longer_501(
+    client: TestClient, path: str
+) -> None:
+    """None of the four formerly-placeholder tabs may return the 501
+    not_implemented body anymore. They either expose real sub-endpoints
+    (404 on the bare prefix is fine) or require auth (401). 501 with the
+    Phase 2 marker is forbidden.
     """
-    r = client.get("/api/v1/configuration")
+    r = client.get(path)
     assert r.status_code != 501, r.text
-    body: object
     try:
         body = r.json()
     except ValueError:
         body = {}
-    assert body != EXPECTED
+    assert body != _PHASE2_PLACEHOLDER_BODY
