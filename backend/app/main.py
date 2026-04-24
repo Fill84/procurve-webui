@@ -16,9 +16,9 @@ from app.api.placeholders import (
     configuration_router,
     diagnostics_router,
     security_router,
-    support_router,
 )
 from app.api.status import router as status_router
+from app.api.support import router as support_router
 from app.auth import SessionStore
 from app.backup_store import BackupStore
 from app.errors import install_error_handlers

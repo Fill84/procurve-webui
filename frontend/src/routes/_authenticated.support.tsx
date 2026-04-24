@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComingLaterPage } from "@/features/coming-later/ComingLaterPage";
+import { SupportPage } from "@/features/support/SupportPage";
 
 export const Route = createFileRoute("/_authenticated/support")({
-  component: () => <ComingLaterPage tabName="Support" />,
+  component: SupportPage,
 });

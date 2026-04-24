@@ -318,8 +318,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Support Placeholder */
-        get: operations["support_placeholder_api_v1_support_get"];
+        /**
+         * Get Support
+         * @description Return the static Support-tab info. No switch I/O.
+         */
+        get: operations["get_support_api_v1_support_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -611,6 +614,39 @@ export interface components {
         PortStatusList: {
             /** Ports */
             ports: components["schemas"]["PortStatus"][];
+        };
+        /**
+         * SupportInfo
+         * @description The static support-link info that replaces the old Support tab.
+         *
+         *     The legacy URL is preserved for parity; `current_url` is the modern
+         *     replacement the new UI should actually link to. `available` is False
+         *     because the original procurve.com domain no longer resolves.
+         */
+        SupportInfo: {
+            /**
+             * Legacy Url
+             * @description The URL the Java applet's frameset originally loaded.
+             * @default http://www.procurve.com
+             */
+            legacy_url: string;
+            /**
+             * Current Url
+             * @description Suggested modern replacement (HPE Networking portal).
+             * @default https://www.hpe.com/us/en/networking.html
+             */
+            current_url: string;
+            /**
+             * Available
+             * @description False — the legacy procurve.com URL no longer resolves.
+             * @default false
+             */
+            available: boolean;
+            /**
+             * Note
+             * @default The legacy Support tab redirected to http://www.procurve.com, which is unreachable in 2026. Use `current_url` instead.
+             */
+            note: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -1094,7 +1130,7 @@ export interface operations {
             };
         };
     };
-    support_placeholder_api_v1_support_get: {
+    get_support_api_v1_support_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1109,7 +1145,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SupportInfo"];
                 };
             };
         };
