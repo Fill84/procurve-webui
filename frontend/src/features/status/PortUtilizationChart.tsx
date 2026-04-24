@@ -47,15 +47,16 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
 
   const sorted = [...usage].sort((a, b) => a.port - b.port);
 
-  // Chart geometry — defined in viewBox units, rendered at 100% width with
-  // `preserveAspectRatio="none"` so the bars stretch horizontally to fill
-  // whatever container we're in. Vertical proportions stay fixed because the
-  // Y axis is a percentage.
+  // Chart geometry — rendered at natural pixel dimensions so bars, labels,
+  // LEDs and strokes keep their intended proportions. The parent flex row
+  // plus `overflow-x-auto` handles viewports narrower than `chartWidth`.
+  // Earlier iteration used `preserveAspectRatio="none"` + w-full, which
+  // stretched glyphs and LED circles horizontally — ugly.
   const topPad = 14; // headroom so the "100%" Y-axis label is not clipped
   const chartHeight = 160; // px — plotting area
   const labelHeight = 20;
   const ledHeight = 24;
-  const barWidth = 28;
+  const barWidth = 34;
   const barGap = 14;
   const leftPad = 40; // room for Y-axis labels
   const rightPad = 12;
@@ -71,15 +72,14 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
         Port Utilization
       </h4>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-start">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start">
+        <div className="min-w-0 flex-1 overflow-x-auto">
           <svg
-            viewBox={`0 0 ${chartWidth} ${totalHeight}`}
-            preserveAspectRatio="none"
+            width={chartWidth}
+            height={totalHeight}
             role="img"
             aria-label="Port utilisation bar chart"
-            className="block w-full"
-            style={{ height: `${totalHeight}px` }}
+            className="block"
           >
             {/* Gridlines + Y-axis labels at 30, 70, 100 */}
             {[30, 70, 100].map((pct) => {
@@ -101,11 +101,6 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                     fontSize={10}
                     fill="#6b7280"
                     textAnchor="end"
-                    // Keep axis text readable when the chart is stretched
-                    // horizontally (preserveAspectRatio="none" would stretch
-                    // default text glyphs too).
-                    style={{ fontSize: "10px" }}
-                    transform={`translate(0 0)`}
                   >
                     {pct}%
                   </text>

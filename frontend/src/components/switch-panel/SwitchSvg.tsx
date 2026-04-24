@@ -106,7 +106,7 @@ export function SwitchSvg({ ports }: SwitchSvgProps) {
     <svg
       viewBox={`0 0 ${CHASSIS_WIDTH} ${CHASSIS_HEIGHT}`}
       xmlns="http://www.w3.org/2000/svg"
-      className="block w-full"
+      className="mx-auto block h-auto w-full max-w-5xl"
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label="Switch port panel"
