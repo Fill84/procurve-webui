@@ -49,7 +49,7 @@ TOTAL                                          2203     96    460     80  93.4%
 
 ## Live-test summary
 
-Run: `pytest -m "live and not roundtrip" -v` against 192.168.178.3 (ProCurve 2810-24G).
+Run: `pytest -m "live and not roundtrip" -v` against the live switch at `$SWITCH_HOST` (ProCurve 2810-24G).
 
 | Operation | Result | Note |
 |---|---|---|

@@ -16,7 +16,7 @@ pip install -e ".[dev]"
 
 ```bash
 pytest                         # unit + mocked-operation tests only
-pytest -m live                 # live reads against 192.168.178.3 (requires access)
+pytest -m live                 # live reads against 192.0.2.3 (requires access)
 pytest -m roundtrip            # write-verify-restore (requires user approval)
 ```
 
@@ -30,7 +30,7 @@ from procurve_client import ProcurveTransport
 from procurve_client.operations.backup import download_config
 
 async def main():
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         cfg = await download_config(t)
         print(cfg.size, cfg.sha256)
 ```

@@ -48,7 +48,7 @@ def test_upload_constants_match_phase0_contract():
 async def test_upload_config_blocked_when_read_only(monkeypatch):
     monkeypatch.setenv("READ_ONLY", "true")
     backup = _reference_backup()
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await upload_config(t, backup=backup)
 
@@ -57,10 +57,10 @@ async def test_upload_config_blocked_when_read_only(monkeypatch):
 async def test_upload_config_posts_multipart(monkeypatch):
     monkeypatch.setenv("READ_ONLY", "false")
     backup = _reference_backup()
-    route = respx.post("http://192.168.178.3/cgi/upload").mock(
+    route = respx.post("http://192.0.2.3/cgi/upload").mock(
         return_value=Response(200, text="OK")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await upload_config(t, backup=backup)
     assert route.called
     req = route.calls.last.request
@@ -84,10 +84,10 @@ async def test_upload_config_posts_multipart(monkeypatch):
 async def test_upload_config_includes_reboot_when_requested(monkeypatch):
     monkeypatch.setenv("READ_ONLY", "false")
     backup = _reference_backup()
-    route = respx.post("http://192.168.178.3/cgi/upload").mock(
+    route = respx.post("http://192.0.2.3/cgi/upload").mock(
         return_value=Response(200, text="OK")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await upload_config(t, backup=backup, reboot_after=True)
     body = route.calls.last.request.content
     assert b'name="reboot"' in body
@@ -104,10 +104,10 @@ async def test_upload_config_strips_cr_before_upload(monkeypatch):
     """
     monkeypatch.setenv("READ_ONLY", "false")
     backup = _reference_backup()
-    route = respx.post("http://192.168.178.3/cgi/upload").mock(
+    route = respx.post("http://192.0.2.3/cgi/upload").mock(
         return_value=Response(200, text="OK")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await upload_config(t, backup=backup)
     body = route.calls.last.request.content
 
@@ -135,10 +135,10 @@ async def test_upload_config_custom_configname(monkeypatch):
     monkeypatch.setenv("READ_ONLY", "false")
     backup = _reference_backup()
     with respx.mock:
-        route = respx.post("http://192.168.178.3/cgi/upload").mock(
+        route = respx.post("http://192.0.2.3/cgi/upload").mock(
             return_value=Response(200, text="OK")
         )
-        async with ProcurveTransport(host="192.168.178.3") as t:
+        async with ProcurveTransport(host="192.0.2.3") as t:
             await upload_config(t, backup=backup, configname="MyBackup")
         body = route.calls.last.request.content
         assert b"MyBackup" in body

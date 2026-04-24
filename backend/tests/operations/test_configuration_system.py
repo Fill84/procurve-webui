@@ -27,10 +27,10 @@ def _load_system_html() -> str:
 @respx.mock
 async def test_get_system_page_parses_mirror_html() -> None:
     body = _load_system_html()
-    respx.get("http://192.168.178.3/configuration/system.html").mock(
+    respx.get("http://192.0.2.3/configuration/system.html").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_system_page(t)
     assert page.name == "HP2810_01"
     assert page.location == "Kamer"
@@ -40,10 +40,10 @@ async def test_get_system_page_parses_mirror_html() -> None:
 
 @respx.mock
 async def test_get_system_page_missing_field_raises() -> None:
-    respx.get("http://192.168.178.3/configuration/system.html").mock(
+    respx.get("http://192.0.2.3/configuration/system.html").mock(
         return_value=Response(200, text="<html>no form here</html>")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_system_page(t)
 
@@ -53,10 +53,10 @@ async def test_set_system_info_preserves_apply_button_value(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/system").mock(
+    route = respx.get("http://192.0.2.3/cgi/system").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_system_info(
             t,
             request=SetSystemInfoRequest(
@@ -79,7 +79,7 @@ async def test_set_system_info_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_system_info(
                 t, request=SetSystemInfoRequest(name="x")

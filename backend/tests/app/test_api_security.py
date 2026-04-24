@@ -59,7 +59,7 @@ from procurve_client.models.security import (
 
 @pytest.fixture
 def settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Settings:
-    monkeypatch.setenv("SWITCH_HOST", "192.168.178.3")
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
@@ -72,7 +72,7 @@ def settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Settings:
 def read_only_settings(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> Settings:
-    monkeypatch.setenv("SWITCH_HOST", "192.168.178.3")
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
@@ -167,7 +167,7 @@ _SSL_REQUEST_BODY = {
         "port": 443,
         "cert_mode": 2,
     },
-    "confirm_switch_host": "192.168.178.3",
+    "confirm_switch_host": "192.0.2.3",
 }
 
 
@@ -304,7 +304,7 @@ _WEB_MGR_ADD_BODY = {
         "level": 2,
         "indeces": [],
     },
-    "confirm_switch_host": "192.168.178.3",
+    "confirm_switch_host": "192.0.2.3",
 }
 
 

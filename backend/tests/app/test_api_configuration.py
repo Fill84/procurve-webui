@@ -83,7 +83,7 @@ from procurve_client.models.qos import (
 
 @pytest.fixture
 def settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Settings:
-    monkeypatch.setenv("SWITCH_HOST", "192.168.178.3")
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
@@ -96,7 +96,7 @@ def settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Settings:
 def read_only_settings(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> Settings:
-    monkeypatch.setenv("SWITCH_HOST", "192.168.178.3")
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
@@ -312,7 +312,7 @@ def test_ip_read_happy_path(
         return IpConfigPage(
             vlan_id=1,
             mode=IpMode.MANUAL,
-            ip_address=IPv4Address("192.168.178.3"),
+            ip_address=IPv4Address("192.0.2.3"),
             subnet_mask="255.255.255.0",
             gateway=IPv4Address("192.168.178.1"),
         )
@@ -323,7 +323,7 @@ def test_ip_read_happy_path(
     body = r.json()
     assert body["vlan_id"] == 1
     assert body["mode"] == int(IpMode.MANUAL)
-    assert body["ip_address"] == "192.168.178.3"
+    assert body["ip_address"] == "192.0.2.3"
     assert body["subnet_mask"] == "255.255.255.0"
     assert body["gateway"] == "192.168.178.1"
 
@@ -350,7 +350,7 @@ _IP_BODY = {
         "vlan_id": 1,
         "mode": int(IpMode.MANUAL),
     },
-    "confirm_switch_host": "192.168.178.3",
+    "confirm_switch_host": "192.0.2.3",
 }
 
 

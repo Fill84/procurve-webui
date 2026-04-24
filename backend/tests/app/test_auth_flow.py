@@ -20,7 +20,7 @@ from app.settings import Settings
 
 @pytest.fixture
 def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
-    monkeypatch.setenv("SWITCH_HOST", "192.168.178.3")
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
@@ -38,13 +38,13 @@ def client(settings: Settings) -> Iterator[TestClient]:
 
 
 def _mock_probe_ok() -> respx.Route:
-    return respx.get("http://192.168.178.3/home.html").mock(
+    return respx.get("http://192.0.2.3/home.html").mock(
         return_value=Response(200, text="<html>ok</html>"),
     )
 
 
 def _mock_probe_unauthorized() -> respx.Route:
-    return respx.get("http://192.168.178.3/home.html").mock(
+    return respx.get("http://192.0.2.3/home.html").mock(
         return_value=Response(401, text="unauthorized"),
     )
 

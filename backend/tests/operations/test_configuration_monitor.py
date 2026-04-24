@@ -26,10 +26,10 @@ def _load_mirror(name: str) -> str:
 
 @respx.mock
 async def test_get_monitor_page_parses_mirror() -> None:
-    respx.get("http://192.168.178.3/configuration/monitor1.html").mock(
+    respx.get("http://192.0.2.3/configuration/monitor1.html").mock(
         return_value=Response(200, text=_load_mirror("monitor1.html"))
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_monitor_page(t)
     # probeStatus = 2 in the mirror → monitoring off.
     assert page.enabled is False
@@ -42,10 +42,10 @@ async def test_get_monitor_page_parses_mirror() -> None:
 
 @respx.mock
 async def test_get_monitor_page_missing_probe_status_raises() -> None:
-    respx.get("http://192.168.178.3/configuration/monitor1.html").mock(
+    respx.get("http://192.0.2.3/configuration/monitor1.html").mock(
         return_value=Response(200, text="<html>no probeStatus here</html>")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_monitor_page(t)
 
@@ -55,10 +55,10 @@ async def test_set_monitor_disable_emits_status_2(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/set_monitor").mock(
+    route = respx.get("http://192.0.2.3/cgi/set_monitor").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_monitor(t, request=SetMonitorRequest(enabled=False))
     q = route.calls.last.request.url.params
     assert q["portCopyStatus"] == "2"
@@ -71,10 +71,10 @@ async def test_set_monitor_enable_emits_status_4(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/set_monitor").mock(
+    route = respx.get("http://192.0.2.3/cgi/set_monitor").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_monitor(
             t,
             request=SetMonitorRequest(
@@ -101,6 +101,6 @@ async def test_set_monitor_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_monitor(t, request=SetMonitorRequest(enabled=False))

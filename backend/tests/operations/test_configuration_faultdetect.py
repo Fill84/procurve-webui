@@ -29,10 +29,10 @@ _MIRROR_PAGE_SAMPLE = """
 
 @respx.mock
 async def test_get_faultdetect_page_parses_ffs_and_dps() -> None:
-    respx.get("http://192.168.178.3/configuration/web_agent.html").mock(
+    respx.get("http://192.0.2.3/configuration/web_agent.html").mock(
         return_value=Response(200, text=_MIRROR_PAGE_SAMPLE)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_faultdetect_page(t)
     assert page.sensitivity is FaultSensitivity.HIGH
     assert page.dps == 1
@@ -40,20 +40,20 @@ async def test_get_faultdetect_page_parses_ffs_and_dps() -> None:
 
 @respx.mock
 async def test_get_faultdetect_page_unknown_ffs_raises() -> None:
-    respx.get("http://192.168.178.3/configuration/web_agent.html").mock(
+    respx.get("http://192.0.2.3/configuration/web_agent.html").mock(
         return_value=Response(200, text="ffs=999;\ndps=0;")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_faultdetect_page(t)
 
 
 @respx.mock
 async def test_get_faultdetect_page_missing_ffs_raises() -> None:
-    respx.get("http://192.168.178.3/configuration/web_agent.html").mock(
+    respx.get("http://192.0.2.3/configuration/web_agent.html").mock(
         return_value=Response(200, text="<html>no injection here</html>")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_faultdetect_page(t)
 
@@ -61,10 +61,10 @@ async def test_get_faultdetect_page_missing_ffs_raises() -> None:
 @respx.mock
 async def test_set_fault_detection_emits_ffs(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/web_agent").mock(
+    route = respx.get("http://192.0.2.3/cgi/web_agent").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         ack = await set_fault_detection(
             t, request=SetFaultDetectionRequest(sensitivity=FaultSensitivity.MEDIUM)
         )
@@ -77,7 +77,7 @@ async def test_set_fault_detection_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_fault_detection(
                 t, request=SetFaultDetectionRequest(sensitivity=FaultSensitivity.NEVER)

@@ -47,17 +47,23 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
 
   const sorted = [...usage].sort((a, b) => a.port - b.port);
 
-  // Chart geometry.
-  const chartHeight = 140; // px — plotting area
+  // Chart geometry — defined in viewBox units, rendered at 100% width with
+  // `preserveAspectRatio="none"` so the bars stretch horizontally to fill
+  // whatever container we're in. Vertical proportions stay fixed because the
+  // Y axis is a percentage.
+  const topPad = 14; // headroom so the "100%" Y-axis label is not clipped
+  const chartHeight = 160; // px — plotting area
   const labelHeight = 20;
   const ledHeight = 24;
   const barWidth = 28;
   const barGap = 14;
-  const leftPad = 36; // room for y-axis labels
-  const rightPad = 8;
-  const width =
+  const leftPad = 40; // room for Y-axis labels
+  const rightPad = 12;
+  const chartWidth =
     leftPad + rightPad + sorted.length * (barWidth + barGap) - barGap;
-  const height = chartHeight + labelHeight + ledHeight;
+  const totalHeight = topPad + chartHeight + labelHeight + ledHeight;
+  const plotTop = topPad;
+  const plotBottom = topPad + chartHeight;
 
   return (
     <div className="mt-4">
@@ -66,26 +72,28 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
       </h4>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-start">
-        <div className="overflow-x-auto">
+        <div className="min-w-0 flex-1">
           <svg
-            width={width}
-            height={height}
+            viewBox={`0 0 ${chartWidth} ${totalHeight}`}
+            preserveAspectRatio="none"
             role="img"
             aria-label="Port utilisation bar chart"
-            className="block"
+            className="block w-full"
+            style={{ height: `${totalHeight}px` }}
           >
             {/* Gridlines + Y-axis labels at 30, 70, 100 */}
             {[30, 70, 100].map((pct) => {
-              const y = chartHeight - (pct / 100) * chartHeight;
+              const y = plotBottom - (pct / 100) * chartHeight;
               return (
                 <g key={pct}>
                   <line
                     x1={leftPad}
-                    x2={width - rightPad}
+                    x2={chartWidth - rightPad}
                     y1={y}
                     y2={y}
                     stroke="#e5e7eb"
                     strokeWidth={1}
+                    vectorEffect="non-scaling-stroke"
                   />
                   <text
                     x={leftPad - 6}
@@ -93,6 +101,11 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                     fontSize={10}
                     fill="#6b7280"
                     textAnchor="end"
+                    // Keep axis text readable when the chart is stretched
+                    // horizontally (preserveAspectRatio="none" would stretch
+                    // default text glyphs too).
+                    style={{ fontSize: "10px" }}
+                    transform={`translate(0 0)`}
                   >
                     {pct}%
                   </text>
@@ -109,7 +122,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
               const h1 = (p.usage1 / 100) * chartHeight;
               const h2 = (p.usage2 / 100) * chartHeight;
               const h3 = (p.usage3 / 100) * chartHeight;
-              const y1 = chartHeight - h1;
+              const y1 = plotBottom - h1;
               const y2 = y1 - h2;
               const y3 = y2 - h3;
               const opacity = disabled ? 0.35 : 1;
@@ -119,7 +132,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                   {/* Empty-bar baseline rail for readability */}
                   <rect
                     x={x}
-                    y={0}
+                    y={plotTop}
                     width={barWidth}
                     height={chartHeight}
                     fill="#f9fafb"
@@ -159,16 +172,17 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                   <line
                     x1={x}
                     x2={x + barWidth}
-                    y1={chartHeight}
-                    y2={chartHeight}
+                    y1={plotBottom}
+                    y2={plotBottom}
                     stroke="#9ca3af"
                     strokeWidth={1}
+                    vectorEffect="non-scaling-stroke"
                   />
 
                   {/* Port number */}
                   <text
                     x={x + barWidth / 2}
-                    y={chartHeight + labelHeight - 6}
+                    y={plotBottom + labelHeight - 6}
                     fontSize={10}
                     fill="#374151"
                     textAnchor="middle"
@@ -179,13 +193,14 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                   {/* LED */}
                   {disabled ? (
                     <g
-                      transform={`translate(${x + barWidth / 2}, ${chartHeight + labelHeight + ledHeight / 2})`}
+                      transform={`translate(${x + barWidth / 2}, ${plotBottom + labelHeight + ledHeight / 2})`}
                     >
                       <circle
                         r={7}
                         fill="#ffffff"
                         stroke="#6b7280"
                         strokeWidth={1}
+                        vectorEffect="non-scaling-stroke"
                       />
                       <line
                         x1={-5}
@@ -194,16 +209,18 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                         y2={-5}
                         stroke="#6b7280"
                         strokeWidth={1.5}
+                        vectorEffect="non-scaling-stroke"
                       />
                     </g>
                   ) : (
                     <circle
                       cx={x + barWidth / 2}
-                      cy={chartHeight + labelHeight + ledHeight / 2}
+                      cy={plotBottom + labelHeight + ledHeight / 2}
                       r={6}
                       fill={LED_COLORS[p.state]}
                       stroke={p.state === "N" ? "#9ca3af" : "#065f46"}
                       strokeWidth={p.state === "N" ? 1 : 0.5}
+                      vectorEffect="non-scaling-stroke"
                     />
                   )}
 

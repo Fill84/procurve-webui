@@ -26,10 +26,10 @@ def _load_mirror(name: str) -> str:
 
 @respx.mock
 async def test_get_support_page_parses_mirror() -> None:
-    respx.get("http://192.168.178.3/configuration/support.html").mock(
+    respx.get("http://192.0.2.3/configuration/support.html").mock(
         return_value=Response(200, text=_load_mirror("support.html"))
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_support_page(t)
     assert page.support_url == "http://www.procurve.com"
     assert page.mgmt_url == "https://www.hpe.com/networking/support"
@@ -37,10 +37,10 @@ async def test_get_support_page_parses_mirror() -> None:
 
 @respx.mock
 async def test_get_support_page_missing_fields_raises() -> None:
-    respx.get("http://192.168.178.3/configuration/support.html").mock(
+    respx.get("http://192.0.2.3/configuration/support.html").mock(
         return_value=Response(200, text="<html>empty</html>")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_support_page(t)
 
@@ -50,10 +50,10 @@ async def test_set_support_emits_underscore_and_apply(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/support").mock(
+    route = respx.get("http://192.0.2.3/cgi/support").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_support(
             t,
             request=SetSupportRequest(
@@ -74,7 +74,7 @@ async def test_set_support_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_support(
                 t,

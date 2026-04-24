@@ -51,10 +51,10 @@ def _read_fixture(fixtures_dir: Path, name: str) -> str:
 @respx.mock
 async def test_get_cos_appt_empty_fixture(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_cos_appt.response.txt")
-    respx.get("http://192.168.178.3/cgi/cosapp").mock(
+    respx.get("http://192.0.2.3/cgi/cosapp").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         result = await get_cos_appt(t)
     assert result.entries == []
 
@@ -62,10 +62,10 @@ async def test_get_cos_appt_empty_fixture(fixtures_dir: Path) -> None:
 @respx.mock
 async def test_get_cos_appt_parses_synthetic_row() -> None:
     body = "http (80)~80~TCP~000000~No override\n"
-    respx.get("http://192.168.178.3/cgi/cosapp").mock(
+    respx.get("http://192.0.2.3/cgi/cosapp").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         result = await get_cos_appt(t)
     assert len(result.entries) == 1
     e = result.entries[0]
@@ -78,10 +78,10 @@ async def test_get_cos_appt_parses_synthetic_row() -> None:
 
 @respx.mock
 async def test_get_cos_appt_rejects_bad_protocol() -> None:
-    respx.get("http://192.168.178.3/cgi/cosapp").mock(
+    respx.get("http://192.0.2.3/cgi/cosapp").mock(
         return_value=Response(200, text="x~99~FOO~000000~pri\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_cos_appt(t)
 
@@ -91,10 +91,10 @@ async def test_get_cos_appt_rejects_bad_protocol() -> None:
 @respx.mock
 async def test_set_cos_appt_dscp_policy(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/cosappf").mock(
+    route = respx.get("http://192.0.2.3/cgi/cosappf").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_cos_appt(
             t,
             request=SetCosApptRequest(
@@ -120,10 +120,10 @@ async def test_set_cos_appt_user_defined_port(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/cosappf").mock(
+    route = respx.get("http://192.0.2.3/cgi/cosappf").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_cos_appt(
             t,
             request=SetCosApptRequest(
@@ -168,7 +168,7 @@ async def test_set_cos_appt_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_cos_appt(
                 t,
@@ -183,20 +183,20 @@ async def test_set_cos_appt_blocked_by_read_only(
 @respx.mock
 async def test_get_cos_userpri_empty_fixture(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_cos_userpri.response.txt")
-    respx.get("http://192.168.178.3/cgi/cosuser").mock(
+    respx.get("http://192.0.2.3/cgi/cosuser").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         r = await get_cos_userpri(t)
     assert r.entries == []
 
 
 @respx.mock
 async def test_get_cos_userpri_parses_synthetic_row() -> None:
-    respx.get("http://192.168.178.3/cgi/cosuser").mock(
+    respx.get("http://192.0.2.3/cgi/cosuser").mock(
         return_value=Response(200, text="10.0.0.5~Disabled~0-Normal Priority\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         r = await get_cos_userpri(t)
     assert len(r.entries) == 1
     assert r.entries[0].ip_address == IPv4Address("10.0.0.5")
@@ -211,10 +211,10 @@ async def test_set_cos_userpri_dscp_policy(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/cosuserf").mock(
+    route = respx.get("http://192.0.2.3/cgi/cosuserf").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_cos_userpri(
             t,
             request=SetCosUserPriRequest(
@@ -234,10 +234,10 @@ async def test_set_cos_userpri_dscp_policy(
 @respx.mock
 async def test_set_cos_userpri_delete(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/cosuserf").mock(
+    route = respx.get("http://192.0.2.3/cgi/cosuserf").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_cos_userpri(
             t,
             request=SetCosUserPriRequest(
@@ -258,10 +258,10 @@ async def test_set_cos_userpri_delete(monkeypatch: pytest.MonkeyPatch) -> None:
 @respx.mock
 async def test_set_costos_mode_diffserv(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/costos").mock(
+    route = respx.get("http://192.0.2.3/cgi/costos").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_costos_mode(
             t, request=SetCosTosModeRequest(mode=CosTosMode.DIFFSERV)
         )
@@ -275,10 +275,10 @@ async def test_set_costos_mode_diffserv(monkeypatch: pytest.MonkeyPatch) -> None
 @respx.mock
 async def test_get_cos_vlanpri_parses_fixture(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_cos_vlanpri.response.txt")
-    respx.get("http://192.168.178.3/cgi/cosvlan").mock(
+    respx.get("http://192.0.2.3/cgi/cosvlan").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         r = await get_cos_vlanpri(t)
     assert len(r.entries) == 1
     e = r.entries[0]
@@ -293,10 +293,10 @@ async def test_get_cos_vlanpri_parses_fixture(fixtures_dir: Path) -> None:
 @respx.mock
 async def test_set_cos_vlanpri_dscp_only(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/cosvlanf").mock(
+    route = respx.get("http://192.0.2.3/cgi/cosvlanf").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_cos_vlanpri(
             t, request=SetCosVlanPriRequest(vlan_id=1, dscp=46)
         )
@@ -323,10 +323,10 @@ def test_set_cos_vlanpri_both_defaults_ok() -> None:
 @respx.mock
 async def test_get_dscptable_parses_64_rows(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_dscptable.response.txt")
-    respx.get("http://192.168.178.3/cgi/dscptable_get").mock(
+    respx.get("http://192.0.2.3/cgi/dscptable_get").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         table = await get_dscptable(t)
     assert len(table.rows) == 64
     assert table.rows[0].row_index == 1
@@ -339,10 +339,10 @@ async def test_get_dscptable_parses_64_rows(fixtures_dir: Path) -> None:
 
 @respx.mock
 async def test_get_dscptable_short_row_raises() -> None:
-    respx.get("http://192.168.178.3/cgi/dscptable_get").mock(
+    respx.get("http://192.0.2.3/cgi/dscptable_get").mock(
         return_value=Response(200, text="1~000000\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_dscptable(t)
 
@@ -352,10 +352,10 @@ async def test_get_dscptable_short_row_raises() -> None:
 @respx.mock
 async def test_set_dscptable_maps_codepoint(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/dscptable_set").mock(
+    route = respx.get("http://192.0.2.3/cgi/dscptable_set").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_dscptable(
             t,
             request=SetDscpTableRequest(row_index=47, priority_8021p=5),
@@ -377,10 +377,10 @@ def test_set_dscptable_row_index_range() -> None:
 @respx.mock
 async def test_get_diffserv_parses_64_rows(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_diffserv.response.txt")
-    respx.get("http://192.168.178.3/cgi/diffserv_get").mock(
+    respx.get("http://192.0.2.3/cgi/diffserv_get").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         table = await get_diffserv(t)
     assert len(table.rows) == 64
     r1 = table.rows[0]
@@ -397,10 +397,10 @@ async def test_set_diffserv_rewrites_codepoint(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/diffserv_set").mock(
+    route = respx.get("http://192.0.2.3/cgi/diffserv_set").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_diffserv(
             t, request=SetDiffservRequest(row_index=11, dscp=46)
         )
@@ -414,10 +414,10 @@ async def test_set_diffserv_rewrites_codepoint(
 @respx.mock
 async def test_set_cosproto_empty_form(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/cosproto").mock(
+    route = respx.get("http://192.0.2.3/cgi/cosproto").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_cosproto(t)
     q = route.calls.last.request.url.params
     assert q["Apply"] == "Apply Changes"
@@ -428,9 +428,9 @@ async def test_set_cosproto_with_explicit_request(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/cosproto").mock(
+    route = respx.get("http://192.0.2.3/cgi/cosproto").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_cosproto(t, request=SetCosProtoRequest())
     assert route.called

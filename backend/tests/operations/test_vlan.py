@@ -45,7 +45,7 @@ from procurve_client.operations.vlan import (
 )
 from procurve_client.transport import ProcurveTransport
 
-HOST = "http://192.168.178.3"
+HOST = "http://192.0.2.3"
 
 
 def _fixture(name: str) -> str:
@@ -62,7 +62,7 @@ def _fixture(name: str) -> str:
 async def test_get_vlans_all_parses_live_fixture() -> None:
     body = _fixture("vlan__getVLANAll.response.txt")
     respx.get(f"{HOST}/cgi/getVLANAll").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_vlans_all(t)
     assert len(res.vlans) == 1
     v = res.vlans[0]
@@ -81,7 +81,7 @@ async def test_get_vlans_all_rejects_short_row() -> None:
     respx.get(f"{HOST}/cgi/getVLANAll").mock(
         return_value=Response(200, text="1~DEFAULT~STATIC~None\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_vlans_all(t)
 
@@ -89,7 +89,7 @@ async def test_get_vlans_all_rejects_short_row() -> None:
 @respx.mock
 async def test_get_vlans_all_rejects_empty_body() -> None:
     respx.get(f"{HOST}/cgi/getVLANAll").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_vlans_all(t)
 
@@ -98,7 +98,7 @@ async def test_get_vlans_all_rejects_empty_body() -> None:
 async def test_list_vlans_parses_live_fixture() -> None:
     body = _fixture("vlan__listVLANS.response.txt")
     respx.get(f"{HOST}/cgi/listVLANS").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await list_vlans(t)
     assert [(v.vlan_id, v.vlan_name) for v in res.vlans] == [
         (1, "DEFAULT_VLAN (Primary)"),
@@ -110,7 +110,7 @@ async def test_list_vlans_parses_multiple_pairs() -> None:
     respx.get(f"{HOST}/cgi/listVLANS").mock(
         return_value=Response(200, text="1~DEFAULT_VLAN (Primary)~10~Guests~20~Servers~\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await list_vlans(t)
     assert [(v.vlan_id, v.vlan_name) for v in res.vlans] == [
         (1, "DEFAULT_VLAN (Primary)"),
@@ -123,7 +123,7 @@ async def test_list_vlans_parses_multiple_pairs() -> None:
 async def test_get_vlan_mode_on_fixture() -> None:
     body = _fixture("vlan__getVLANMode.response.txt")
     respx.get(f"{HOST}/cgi/getVLANMode").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_vlan_mode(t)
     assert res.enabled is True
 
@@ -131,7 +131,7 @@ async def test_get_vlan_mode_on_fixture() -> None:
 @respx.mock
 async def test_get_vlan_mode_off_synthetic() -> None:
     respx.get(f"{HOST}/cgi/getVLANMode").mock(return_value=Response(200, text="OFF\n"))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_vlan_mode(t)
     assert res.enabled is False
 
@@ -139,7 +139,7 @@ async def test_get_vlan_mode_off_synthetic() -> None:
 @respx.mock
 async def test_get_vlan_mode_empty_body_raises() -> None:
     respx.get(f"{HOST}/cgi/getVLANMode").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_vlan_mode(t)
 
@@ -148,7 +148,7 @@ async def test_get_vlan_mode_empty_body_raises() -> None:
 async def test_get_gvrp_mode_off_fixture() -> None:
     body = _fixture("vlan__getGVRPMode.response.txt")
     respx.get(f"{HOST}/cgi/getGVRPMode").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_gvrp_mode(t)
     assert res.enabled is False
 
@@ -158,7 +158,7 @@ async def test_get_gvrp_ports_fixture_marks_garbage_as_none() -> None:
     """Fixture has GVRP=OFF, so ports 1-6 carry uninitialised int garbage."""
     body = _fixture("vlan__getGVRPPort.response.txt")
     respx.get(f"{HOST}/cgi/getGVRPPort").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_gvrp_ports(t)
     assert res.gvrp_enable is False
     by_name = {p.port_name: p for p in res.ports}
@@ -178,7 +178,7 @@ async def test_get_gvrp_ports_on_sentinel_is_true() -> None:
     respx.get(f"{HOST}/cgi/getGVRPPort").mock(
         return_value=Response(200, text="ON~1~1~0~2~2~1~\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_gvrp_ports(t)
     assert res.gvrp_enable is True
     assert [p.mode for p in res.ports] == [
@@ -193,7 +193,7 @@ async def test_get_vlan_ports_live_fixture() -> None:
     route = respx.get(f"{HOST}/cgi/getVLANPort").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_vlan_ports(t, vlan_id=1)
     assert route.calls.last.request.url.params["VLAN_ID"] == "1"
     assert res.vlan_id == 1
@@ -212,13 +212,13 @@ async def test_get_vlan_ports_rejects_invalid_mode() -> None:
     respx.get(f"{HOST}/cgi/getVLANPort").mock(
         return_value=Response(200, text="OFF~1~1~7~\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_vlan_ports(t, vlan_id=1)
 
 
 async def test_get_vlan_ports_rejects_out_of_range_vlan_id_before_transport() -> None:
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ValueError):
             await get_vlan_ports(t, vlan_id=5000)
 
@@ -226,7 +226,7 @@ async def test_get_vlan_ports_rejects_out_of_range_vlan_id_before_transport() ->
 @respx.mock
 async def test_get_vlan_protocol_empty_body_is_ok() -> None:
     respx.get(f"{HOST}/cgi/getVLANProtocol").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_vlan_protocol(t, vlan_id=1)
     assert res.vlan_id == 1
     assert res.protocols == []
@@ -237,7 +237,7 @@ async def test_get_vlan_protocol_parses_list() -> None:
     respx.get(f"{HOST}/cgi/getVLANProtocol").mock(
         return_value=Response(200, text="IP~IPX~AppleTalk~\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_vlan_protocol(t, vlan_id=2)
     assert res.protocols == ["IP", "IPX", "AppleTalk"]
 
@@ -307,7 +307,7 @@ async def test_add_vlan_wire_shape(monkeypatch: pytest.MonkeyPatch) -> None:
     route = respx.get(f"{HOST}/cgi/addVLAN").mock(
         return_value=Response(200, text="OK~1~DEFAULT_VLAN (Primary)~20~Guest~\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await add_vlan(t, request=AddVlanRequest(vlan_id=20, vlan_name="Guest"))
     q = route.calls.last.request.url.params
     assert q["VLAN_ID"] == "20"
@@ -330,7 +330,7 @@ async def test_add_vlan_error_response_raises(
             text="VLAN with this ID already exists~1~DEFAULT_VLAN (Primary)~\n",
         )
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(OperationError) as exc:
             await add_vlan(t, request=AddVlanRequest(vlan_id=1, vlan_name="Dup"))
     assert "already exists" in str(exc.value)
@@ -341,7 +341,7 @@ async def test_add_vlan_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await add_vlan(t, request=AddVlanRequest(vlan_id=20, vlan_name="Guest"))
 
@@ -352,7 +352,7 @@ async def test_delete_vlans_preserves_duplicate_keys(
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
     route = respx.get(f"{HOST}/cgi/delVLAN").mock(return_value=Response(200, text="OK~"))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await delete_vlans(t, request=DelVlanRequest(vlan_ids=[5, 6, 7]))
     url = str(route.calls.last.request.url)
     # httpx serialises list-valued dict entries as repeating query keys.
@@ -370,7 +370,7 @@ async def test_rename_vlan_wire_shape(
     route = respx.get(f"{HOST}/cgi/renVLAN").mock(
         return_value=Response(200, text="OK~1~DEFAULT_VLAN (Primary)~20~Guests~\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await rename_vlan(
             t, request=RenVlanRequest(vlan_id=20, vlan_name="Guests")
         )
@@ -388,7 +388,7 @@ async def test_set_primary_vlan_wire_shape(
     route = respx.get(f"{HOST}/cgi/setPrimary").mock(
         return_value=Response(200, text="OK\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_primary_vlan(
             t, request=SetPrimaryVlanRequest(vlan_id=20)
         )
@@ -404,7 +404,7 @@ async def test_set_vlan_ports_interleaves_port_and_mode(
     route = respx.get(f"{HOST}/cgi/setVLANPort").mock(
         return_value=Response(200, text="OK")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_vlan_ports(
             t,
             request=SetVlanPortsRequest(
@@ -431,7 +431,7 @@ async def test_set_vlan_ports_non_ok_body_raises(
     respx.get(f"{HOST}/cgi/setVLANPort").mock(
         return_value=Response(200, text="Cannot tag primary VLAN on trunk ports")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(OperationError) as exc:
             await set_vlan_ports(
                 t,
@@ -451,7 +451,7 @@ async def test_set_vlan_mode_uses_1_for_enable(
     route = respx.get(f"{HOST}/cgi/setVLANMode").mock(
         return_value=Response(200, text="OK")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_vlan_mode(t, request=SetVlanModeRequest(enabled=True))
     assert route.calls.last.request.url.params["MODE"] == "1"
 
@@ -464,7 +464,7 @@ async def test_set_vlan_mode_uses_2_for_disable(
     route = respx.get(f"{HOST}/cgi/setVLANMode").mock(
         return_value=Response(200, text="OK")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_vlan_mode(t, request=SetVlanModeRequest(enabled=False))
     assert route.calls.last.request.url.params["MODE"] == "2"
 
@@ -477,7 +477,7 @@ async def test_set_gvrp_mode_uses_1_for_enable(
     route = respx.get(f"{HOST}/cgi/setGVRPMode").mock(
         return_value=Response(200, text="OK")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_gvrp_mode(t, request=SetGvrpModeRequest(enabled=True))
     assert route.calls.last.request.url.params["MODE"] == "1"
 
@@ -490,7 +490,7 @@ async def test_set_gvrp_ports_interleaves_without_vlan_id(
     route = respx.get(f"{HOST}/cgi/setGVRPPort").mock(
         return_value=Response(200, text="OK")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_gvrp_ports(
             t,
             request=SetGvrpPortsRequest(
@@ -510,7 +510,7 @@ async def test_all_write_ops_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await delete_vlans(t, request=DelVlanRequest(vlan_ids=[5]))
         with pytest.raises(WriteDisabledError):

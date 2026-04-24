@@ -28,10 +28,10 @@ def _read_fixture(fixtures_dir: Path, name: str) -> str:
 @respx.mock
 async def test_get_device_status_parses_first_line(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_device_status.response.txt")
-    route = respx.get("http://192.168.178.3/cgi/fflog").mock(
+    route = respx.get("http://192.0.2.3/cgi/fflog").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         status = await get_device_status(t)
     assert route.called
     assert route.calls.last.request.url.params["action"] == "status"
@@ -45,10 +45,10 @@ async def test_get_device_status_parses_first_line(fixtures_dir: Path) -> None:
 @respx.mock
 async def test_get_device_status_full_4_fields() -> None:
     """When the switch emits a 4-field banner line, all fields are populated."""
-    respx.get("http://192.168.178.3/cgi/fflog").mock(
+    respx.get("http://192.0.2.3/cgi/fflog").mock(
         return_value=Response(200, text="1~42~% something went wrong~12345\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         status = await get_device_status(t)
     assert status.state == "1"
     assert status.index == "42"
@@ -59,8 +59,8 @@ async def test_get_device_status_full_4_fields() -> None:
 
 @respx.mock
 async def test_get_device_status_empty_body_raises() -> None:
-    respx.get("http://192.168.178.3/cgi/fflog").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    respx.get("http://192.0.2.3/cgi/fflog").mock(return_value=Response(200, text=""))
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_device_status(t)
 
@@ -70,10 +70,10 @@ async def test_get_device_status_empty_body_raises() -> None:
 @respx.mock
 async def test_get_alert_log_parses_meta_plus_rows(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_alert_log.response.txt")
-    route = respx.get("http://192.168.178.3/cgi/fflog").mock(
+    route = respx.get("http://192.0.2.3/cgi/fflog").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         log = await get_alert_log(t)
     assert route.calls.last.request.url.params["action"] == "list"
     assert log.latest_ts_centiseconds == 2842990
@@ -89,10 +89,10 @@ async def test_get_alert_log_parses_meta_plus_rows(fixtures_dir: Path) -> None:
 
 @respx.mock
 async def test_get_alert_log_empty_when_only_meta_line() -> None:
-    respx.get("http://192.168.178.3/cgi/fflog").mock(
+    respx.get("http://192.0.2.3/cgi/fflog").mock(
         return_value=Response(200, text="0~0\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         log = await get_alert_log(t)
     assert log.latest_ts_centiseconds == 0
     assert log.cursor_or_count == 0
@@ -101,10 +101,10 @@ async def test_get_alert_log_empty_when_only_meta_line() -> None:
 
 @respx.mock
 async def test_get_alert_log_malformed_row_raises() -> None:
-    respx.get("http://192.168.178.3/cgi/fflog").mock(
+    respx.get("http://192.0.2.3/cgi/fflog").mock(
         return_value=Response(200, text="0~0\nonly-three~fields~here\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_alert_log(t)
 
@@ -114,10 +114,10 @@ async def test_get_alert_log_malformed_row_raises() -> None:
 @respx.mock
 async def test_get_port_status_parses_all_24_ports(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_port_status.response.txt")
-    respx.get("http://192.168.178.3/cgi/get_ports").mock(
+    respx.get("http://192.0.2.3/cgi/get_ports").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         ports = await get_port_status(t)
     assert len(ports.ports) == 24
     p1 = ports.ports[0]
@@ -146,10 +146,10 @@ async def test_get_port_status_parses_all_24_ports(fixtures_dir: Path) -> None:
 
 @respx.mock
 async def test_get_port_status_raises_on_short_row() -> None:
-    respx.get("http://192.168.178.3/cgi/get_ports").mock(
+    respx.get("http://192.0.2.3/cgi/get_ports").mock(
         return_value=Response(200, text="1~name~ ~type~Yes~Up\n")  # only 6 fields
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_port_status(t)
 
@@ -159,10 +159,10 @@ async def test_get_port_status_raises_on_short_row() -> None:
 @respx.mock
 async def test_get_port_counters_parses_fixture(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_port_counters.response.txt")
-    respx.get("http://192.168.178.3/cgi/portc").mock(
+    respx.get("http://192.0.2.3/cgi/portc").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         counters = await get_port_counters(t)
     assert len(counters.ports) == 24
     p1 = counters.ports[0]
@@ -198,10 +198,10 @@ async def test_get_port_counters_parses_fixture(fixtures_dir: Path) -> None:
 async def test_get_port_usage_parses_fixture(fixtures_dir: Path) -> None:
     """The live fixture has the 7-field (with speed) layout."""
     body = _read_fixture(fixtures_dir, "get_port_usage.response.txt")
-    route = respx.get("http://192.168.178.3/cgi/port_usage").mock(
+    route = respx.get("http://192.0.2.3/cgi/port_usage").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         usage = await get_port_usage(t)
     assert route.calls.last.request.url.params["LAST_PORT"] == "0"
     assert route.calls.last.request.url.params["NUM_PORTS"] == "-1"
@@ -222,10 +222,10 @@ async def test_get_port_usage_parses_fixture(fixtures_dir: Path) -> None:
 
 @respx.mock
 async def test_get_port_usage_cursor_params() -> None:
-    route = respx.get("http://192.168.178.3/cgi/port_usage").mock(
+    route = respx.get("http://192.0.2.3/cgi/port_usage").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         usage = await get_port_usage(t, last_port=24, num_ports=26)
     assert usage.ports == []
     assert route.calls.last.request.url.params["LAST_PORT"] == "24"
@@ -239,10 +239,10 @@ async def test_get_port_usage_accepts_6_field_row_without_speed() -> None:
     # confirm this shape ever appears — defensive support for the applet's
     # documented hasMoreTokens() check.
     body = "1~1~G~10~20~30\n2~2~W~0~0~0\n"
-    respx.get("http://192.168.178.3/cgi/port_usage").mock(
+    respx.get("http://192.0.2.3/cgi/port_usage").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         usage = await get_port_usage(t)
     assert len(usage.ports) == 2
     assert usage.ports[0].speed is None
@@ -252,9 +252,9 @@ async def test_get_port_usage_accepts_6_field_row_without_speed() -> None:
 
 @respx.mock
 async def test_get_port_usage_rejects_bad_state() -> None:
-    respx.get("http://192.168.178.3/cgi/port_usage").mock(
+    respx.get("http://192.0.2.3/cgi/port_usage").mock(
         return_value=Response(200, text="1~1~X~0~0~0~1Gbs\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_port_usage(t)

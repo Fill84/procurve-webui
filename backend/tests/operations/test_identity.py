@@ -18,10 +18,10 @@ def identity_html(fixtures_dir: Path) -> str:
 
 @respx.mock
 async def test_read_identity_page_parses_fixture(identity_html: str) -> None:
-    respx.get("http://192.168.178.3/identity/identity.html").mock(
+    respx.get("http://192.0.2.3/identity/identity.html").mock(
         return_value=Response(200, text=identity_html, headers={"Content-Type": "text/html"})
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         identity = await read_identity_page(t)
 
     assert identity.system_name == "HP2810_01"
@@ -37,17 +37,20 @@ async def test_read_identity_page_parses_fixture(identity_html: str) -> None:
     assert identity.serial_number == "CN814XI06X"
     assert "N.11.78" in identity.firmware_version
     assert "ROM N.10.01" in identity.firmware_version
+    # Fixture was captured from the live switch at 192.168.178.3 — that value
+    # is baked into the HTML response, so the assertion matches the bytes, not
+    # the mock transport host.
     assert identity.ip_address == IPv4Address("192.168.178.3")
     assert identity.management_server_url == "https://www.hpe.com/networking/support"
 
 
 @respx.mock
 async def test_read_identity_page_missing_marker_raises() -> None:
-    respx.get("http://192.168.178.3/identity/identity.html").mock(
+    respx.get("http://192.0.2.3/identity/identity.html").mock(
         return_value=Response(200, text="<html>not the identity page</html>",
                               headers={"Content-Type": "text/html"})
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await read_identity_page(t)
 
@@ -70,10 +73,10 @@ async def test_read_identity_page_maps_empty_url_to_none() -> None:
 <tr><th>IP Address:</th><td>10.0.0.1</td></tr>
 <tr><th>Management Server:</th><td>""" + 'link("")' + """</td></tr>
 </body></html>"""
-    respx.get("http://192.168.178.3/identity/identity.html").mock(
+    respx.get("http://192.0.2.3/identity/identity.html").mock(
         return_value=Response(200, text=synthetic, headers={"Content-Type": "text/html"})
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         identity = await read_identity_page(t)
     assert identity.management_server_url is None
     assert identity.ip_address == IPv4Address("10.0.0.1")

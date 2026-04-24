@@ -23,10 +23,10 @@ def _read_fixture(fixtures_dir: Path, name: str) -> str:
 @respx.mock
 async def test_get_bobports_parses_fixture(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_bobports.response.txt")
-    respx.get("http://192.168.178.3/cgi/get_bobports").mock(
+    respx.get("http://192.0.2.3/cgi/get_bobports").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         resp = await get_bobports(t)
     assert resp.device.codename == "Pilsner"
     assert resp.device.port_count == 24
@@ -54,10 +54,10 @@ async def test_get_bobports_parses_fixture(fixtures_dir: Path) -> None:
 
 @respx.mock
 async def test_get_bobports_empty_body_raises() -> None:
-    respx.get("http://192.168.178.3/cgi/get_bobports").mock(
+    respx.get("http://192.0.2.3/cgi/get_bobports").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_bobports(t)
 
@@ -65,10 +65,10 @@ async def test_get_bobports_empty_body_raises() -> None:
 @respx.mock
 async def test_get_bobports_skips_none_placeholder() -> None:
     body = "Pilsner~2\nnone~GigT~~0~0~\n1~GigT~1~1~1~\n"
-    respx.get("http://192.168.178.3/cgi/get_bobports").mock(
+    respx.get("http://192.0.2.3/cgi/get_bobports").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         resp = await get_bobports(t)
     assert [p.port for p in resp.ports] == [1]
 
@@ -77,10 +77,10 @@ async def test_get_bobports_skips_none_placeholder() -> None:
 async def test_get_bobports_short_row_raises() -> None:
     # Only 3 fields after the device line — too short for a port row.
     body = "Pilsner~1\n1~GigT~onlylabel~\n"
-    respx.get("http://192.168.178.3/cgi/get_bobports").mock(
+    respx.get("http://192.0.2.3/cgi/get_bobports").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_bobports(t)
 
@@ -90,7 +90,7 @@ async def test_get_bobports_short_row_raises() -> None:
 @respx.mock
 async def test_set_bobports_blocked_by_read_only(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_bobports(
                 t, request=SetBobPortsRequest(enable=True, ports=[1, 2])
@@ -101,10 +101,10 @@ async def test_set_bobports_blocked_by_read_only(monkeypatch: pytest.MonkeyPatch
 async def test_set_bobports_emits_csv_indeces(monkeypatch: pytest.MonkeyPatch) -> None:
     """Multi-port writes emit a literal-comma indeces list and ifAdminStatus=1/2."""
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/set_bobports").mock(
+    route = respx.get("http://192.0.2.3/cgi/set_bobports").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         ack = await set_bobports(
             t, request=SetBobPortsRequest(enable=False, ports=[5, 6, 7])
         )
@@ -116,10 +116,10 @@ async def test_set_bobports_emits_csv_indeces(monkeypatch: pytest.MonkeyPatch) -
 @respx.mock
 async def test_set_bobports_single_port_no_comma(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/set_bobports").mock(
+    route = respx.get("http://192.0.2.3/cgi/set_bobports").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_bobports(
             t, request=SetBobPortsRequest(enable=True, ports=[24])
         )

@@ -3,7 +3,7 @@
 Modern replacement web UI for the HP ProCurve 2810-24G (J9021A) switch.
 Built because the original Java-applet UI no longer runs in modern browsers.
 
-**Target switch:** `http://192.168.178.3` (model J9021A, firmware N.11.78)
+**Target switch:** set `SWITCH_HOST` in `.env` (model J9021A, firmware N.11.78)
 
 ## Status
 

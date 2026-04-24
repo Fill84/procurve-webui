@@ -43,7 +43,7 @@ from procurve_client.parsing import parse_running_config
 
 @pytest.fixture
 def settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Settings:
-    monkeypatch.setenv("SWITCH_HOST", "192.168.178.3")
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
@@ -56,7 +56,7 @@ def settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Settings:
 def read_only_settings(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> Settings:
-    monkeypatch.setenv("SWITCH_HOST", "192.168.178.3")
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
@@ -344,7 +344,7 @@ def test_device_reset_blocked_when_read_only(
         app.dependency_overrides[get_backup_store] = lambda: store
         r = c.post(
             "/api/v1/diagnostics/device-reset",
-            json={"confirm_switch_host": "192.168.178.3"},
+            json={"confirm_switch_host": "192.0.2.3"},
         )
         app.dependency_overrides.clear()
     assert r.status_code == 403
@@ -407,7 +407,7 @@ def test_device_reset_creates_pre_write_backup_before_call(
 
     r = client.post(
         "/api/v1/diagnostics/device-reset",
-        json={"confirm_switch_host": "192.168.178.3"},
+        json={"confirm_switch_host": "192.0.2.3"},
     )
     assert r.status_code == 200, r.text
     # Backup saved before reset was dispatched.
@@ -429,7 +429,7 @@ def test_device_reset_happy_path(
     )
     r = client.post(
         "/api/v1/diagnostics/device-reset",
-        json={"confirm_switch_host": "192.168.178.3"},
+        json={"confirm_switch_host": "192.0.2.3"},
     )
     assert r.status_code == 200, r.text
     body = r.json()

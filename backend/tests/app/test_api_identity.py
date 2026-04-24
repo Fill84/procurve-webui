@@ -21,7 +21,7 @@ from procurve_client.models.device import DeviceIdentity
 
 @pytest.fixture
 def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
-    monkeypatch.setenv("SWITCH_HOST", "192.168.178.3")
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
     monkeypatch.setenv("SWITCH_PORT", "80")
     monkeypatch.setenv("SESSION_SECRET", "a" * 32)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
@@ -54,7 +54,7 @@ def _fake_identity() -> DeviceIdentity:
         base_mac="00:1D:B3:B7:0E:00",
         serial_number="SG123ABCDE",
         firmware_version="N.11.78, ROM N.10.01",
-        ip_address=IPv4Address("192.168.178.3"),
+        ip_address=IPv4Address("192.0.2.3"),
         management_server_url=None,
     )
 
@@ -75,7 +75,7 @@ def test_get_identity_happy_path(
         body = r.json()
         assert body["system_name"] == "HP2810_01"
         assert body["base_mac"] == "00:1D:B3:B7:0E:00"
-        assert body["ip_address"] == "192.168.178.3"
+        assert body["ip_address"] == "192.0.2.3"
         assert body["management_server_url"] is None
     finally:
         app.dependency_overrides.clear()

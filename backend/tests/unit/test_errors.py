@@ -32,9 +32,9 @@ def test_carries_message_and_context():
 
 
 def test_transport_error_carries_host():
-    exc = TransportError("timeout", host="192.168.178.3")
+    exc = TransportError("timeout", host="192.0.2.3")
     assert str(exc) == "timeout"
-    assert exc.host == "192.168.178.3"
+    assert exc.host == "192.0.2.3"
 
 
 def test_write_disabled_error_default_message():

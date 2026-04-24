@@ -26,10 +26,10 @@ def _load_mirror(name: str) -> str:
 
 @respx.mock
 async def test_get_devfeatures_page_parses_mirror() -> None:
-    respx.get("http://192.168.178.3/configuration/features2.html").mock(
+    respx.get("http://192.0.2.3/configuration/features2.html").mock(
         return_value=Response(200, text=_load_mirror("features2.html"))
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_devfeatures_page(t)
     # _igmp=1 → True, _st=2 → False per the mirror.
     assert page.igmp is True
@@ -39,10 +39,10 @@ async def test_get_devfeatures_page_parses_mirror() -> None:
 @respx.mock
 async def test_get_devfeatures_page_invalid_oid_yields_none() -> None:
     body = "<html><script>var _igmp = Invalid OID ;\nvar _st = 1 ;</script></html>"
-    respx.get("http://192.168.178.3/configuration/features2.html").mock(
+    respx.get("http://192.0.2.3/configuration/features2.html").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_devfeatures_page(t)
     assert page.igmp is None
     assert page.spanning_tree is True
@@ -54,20 +54,20 @@ async def test_get_devfeatures_page_unknown_flag_raises() -> None:
     return None — firmware revisions that introduce new values should
     surface as a parser bug rather than masquerade as Invalid OID."""
     body = '<html><script>var _igmp = 3 ;\nvar _st = 1 ;</script></html>'
-    respx.get("http://192.168.178.3/configuration/features2.html").mock(
+    respx.get("http://192.0.2.3/configuration/features2.html").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_devfeatures_page(t)
 
 
 @respx.mock
 async def test_get_devfeatures_page_missing_vars_raises() -> None:
-    respx.get("http://192.168.178.3/configuration/features2.html").mock(
+    respx.get("http://192.0.2.3/configuration/features2.html").mock(
         return_value=Response(200, text="<html>no feature vars</html>")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_devfeatures_page(t)
 
@@ -77,10 +77,10 @@ async def test_set_device_features_single_vlan_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/feature_set").mock(
+    route = respx.get("http://192.0.2.3/cgi/feature_set").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_device_features(
             t,
             request=SetDeviceFeaturesRequest(
@@ -101,10 +101,10 @@ async def test_set_device_features_global_stp_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/globalfeature_set").mock(
+    route = respx.get("http://192.0.2.3/cgi/globalfeature_set").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_device_features(
             t,
             request=SetDeviceFeaturesRequest(
@@ -124,10 +124,10 @@ async def test_set_device_features_per_vlan_igmp_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/vlanfeature_set").mock(
+    route = respx.get("http://192.0.2.3/cgi/vlanfeature_set").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_device_features(
             t,
             request=SetDeviceFeaturesRequest(
@@ -147,7 +147,7 @@ async def test_set_device_features_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_device_features(
                 t, request=SetDeviceFeaturesRequest(igmp=True)

@@ -50,7 +50,7 @@ from procurve_client.operations.security import (
 )
 from procurve_client.transport import ProcurveTransport
 
-HOST = "http://192.168.178.3"
+HOST = "http://192.0.2.3"
 
 
 def _fixture(name: str) -> str:
@@ -69,7 +69,7 @@ async def test_get_web_access_page_live_fixture() -> None:
     respx.get(f"{HOST}/security/web_access.html").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_web_access_page(t)
     # Firmware always renders both username values as empty.
     assert page.operator_username == ""
@@ -89,7 +89,7 @@ async def test_get_web_access_page_synthetic_populated() -> None:
     respx.get(f"{HOST}/security/web_access.html").mock(
         return_value=Response(200, text=synthetic)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_web_access_page(t)
     assert page.operator_username == "operator"
     assert page.manager_username == "admin"
@@ -104,7 +104,7 @@ async def test_get_web_access_page_synthetic_populated() -> None:
 async def test_get_web_managers_live_fixture() -> None:
     body = _fixture("security__get_web_managers.response.txt")
     respx.get(f"{HOST}/cgi/webMgr").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_web_managers(t)
     assert len(res.entries) == 2
     e0 = res.entries[0]
@@ -118,7 +118,7 @@ async def test_get_web_managers_live_fixture() -> None:
 @respx.mock
 async def test_get_web_managers_empty_list() -> None:
     respx.get(f"{HOST}/cgi/webMgr").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_web_managers(t)
     assert res.entries == []
 
@@ -128,7 +128,7 @@ async def test_get_web_managers_error_sentinel_raises() -> None:
     respx.get(f"{HOST}/cgi/webMgr").mock(
         return_value=Response(200, text="error~unexpected\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(OperationError):
             await get_web_managers(t)
 
@@ -140,7 +140,7 @@ async def test_get_web_managers_unknown_access_level_raises() -> None:
             200, text="1~192.168.178.22~255.255.255.255~SuperAdmin\n"
         )
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_web_managers(t)
 
@@ -155,7 +155,7 @@ async def test_get_perports_live_fixture() -> None:
     body = _fixture("security__get_perports.response.txt")
     # The URL preserves the empty `?GR=` key.
     respx.get(f"{HOST}/cgi/perports").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_perports(t)
     # 14 ports in the captured fixture.
     assert len(res.rows) == 14
@@ -177,7 +177,7 @@ async def test_get_perports_live_fixture() -> None:
 @respx.mock
 async def test_get_perports_empty_body() -> None:
     respx.get(f"{HOST}/cgi/perports").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_perports(t)
     assert res.rows == []
 
@@ -187,7 +187,7 @@ async def test_get_perports_group_param_preserved() -> None:
     route = respx.get(f"{HOST}/cgi/perports").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await get_perports(t, group="3")
     url = str(route.calls.last.request.url)
     assert url.endswith("?GR=3")
@@ -198,7 +198,7 @@ async def test_get_perports_empty_group_still_emits_key() -> None:
     route = respx.get(f"{HOST}/cgi/perports").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await get_perports(t)
     url = str(route.calls.last.request.url)
     assert url.endswith("?GR=")
@@ -215,7 +215,7 @@ async def test_get_intrusion_live_fixture_empty() -> None:
     # Live fixture is a single `\n` byte — empty log.
     assert body == "\n"
     respx.get(f"{HOST}/cgi/intrusion").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_intrusion(t)
     assert res.entries == []
 
@@ -231,7 +231,7 @@ async def test_get_intrusion_populated_synthetic() -> None:
             ),
         )
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_intrusion(t)
     assert len(res.entries) == 2
     assert res.entries[0].port == 5
@@ -245,7 +245,7 @@ async def test_get_intrusion_error_sentinel_raises() -> None:
     respx.get(f"{HOST}/cgi/intrusion").mock(
         return_value=Response(200, text="error~log unavailable\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(OperationError):
             await get_intrusion(t)
 
@@ -270,7 +270,7 @@ async def test_get_ssl_state_live_fixtures() -> None:
     respx.get(f"{HOST}/security/ssl_menu.html").mock(
         return_value=Response(200, text=menu_body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         state = await get_ssl_state(t)
     # Live fixture: sslStatus=1 (Off), certificateStatus=1 (create/self-signed).
     assert state.ssl_enabled is False
@@ -298,7 +298,7 @@ async def test_get_ssl_state_enabled_with_installed_cert() -> None:
     respx.get(f"{HOST}/security/ssl_menu.html").mock(
         return_value=Response(200, text="<script>var crtStat = 2 ;</script>")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         state = await get_ssl_state(t)
     assert state.ssl_enabled is True
     assert state.ssl_port == 8443
@@ -319,7 +319,7 @@ async def test_get_ssl_state_missing_status_raises() -> None:
     respx.get(f"{HOST}/security/ssl_menu.html").mock(
         return_value=Response(200, text="<script>var crtStat = 1 ;</script>")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_ssl_state(t)
 
@@ -333,7 +333,7 @@ async def test_set_device_passwords_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_device_passwords(
                 t,
@@ -353,7 +353,7 @@ async def test_set_device_passwords_url_shape(
     route = respx.get(f"{HOST}/security/web_access.html").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_device_passwords(
             t,
             request=SetDevicePasswordsRequest(
@@ -388,7 +388,7 @@ async def test_set_device_passwords_explicit_confirm_mismatch_passes_through(
     route = respx.get(f"{HOST}/security/web_access.html").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_device_passwords(
             t,
             request=SetDevicePasswordsRequest(
@@ -417,7 +417,7 @@ async def test_set_web_manager_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_web_manager(
                 t,
@@ -436,7 +436,7 @@ async def test_set_web_manager_add_wire_shape(
     route = respx.get(f"{HOST}/cgi/webMgr").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_web_manager(
             t,
             request=AddWebManagerRequest(
@@ -463,7 +463,7 @@ async def test_set_web_manager_replace_wire_shape(
     route = respx.get(f"{HOST}/cgi/webMgr").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_web_manager(
             t,
             request=ReplaceWebManagerRequest(
@@ -487,7 +487,7 @@ async def test_set_web_manager_delete_omits_addr_fields(
     route = respx.get(f"{HOST}/cgi/webMgr").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_web_manager(
             t, request=DeleteWebManagerRequest(indeces=[2])
         )
@@ -507,7 +507,7 @@ async def test_set_web_manager_error_response_captured(
     respx.get(f"{HOST}/cgi/webMgr").mock(
         return_value=Response(200, text="error~Access denied\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_web_manager(
             t, request=DeleteWebManagerRequest(indeces=[1])
         )
@@ -524,7 +524,7 @@ async def test_set_perport_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_perport(
                 t,
@@ -542,7 +542,7 @@ async def test_set_perport_wire_shape(monkeypatch: pytest.MonkeyPatch) -> None:
     route = respx.get(f"{HOST}/cgi/perport").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_perport(
             t,
             request=SetPerportRequest(
@@ -573,7 +573,7 @@ async def test_set_perport_error_response(
     respx.get(f"{HOST}/cgi/perport").mock(
         return_value=Response(200, text="error~port is trunked\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_perport(
             t,
             request=SetPerportRequest(
@@ -595,7 +595,7 @@ async def test_reset_intrusion_flags_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await reset_intrusion_flags(t)
 
@@ -608,7 +608,7 @@ async def test_reset_intrusion_flags_bare_get(
     route = respx.get(f"{HOST}/cgi/intrusion_clear").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await reset_intrusion_flags(t)
     url = str(route.calls.last.request.url)
     # Submit button has no name attr → no query string.
@@ -626,7 +626,7 @@ async def test_reset_intrusion_flags_error_raises(
     respx.get(f"{HOST}/cgi/intrusion_clear").mock(
         return_value=Response(200, text="error~not authorized\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(OperationError):
             await reset_intrusion_flags(t)
 
@@ -640,7 +640,7 @@ async def test_set_ssl_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_ssl(
                 t,
@@ -660,7 +660,7 @@ async def test_set_ssl_minimal_wire_shape_installed_cert(
     route = respx.get(f"{HOST}/cgi/setssl").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_ssl(
             t,
             request=SetSSLRequest(
@@ -687,7 +687,7 @@ async def test_set_ssl_full_cert_create(
     route = respx.get(f"{HOST}/cgi/setssl").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_ssl(
             t,
             request=SetSSLRequest(
@@ -727,7 +727,7 @@ async def test_set_ssl_off_omits_cert_fields(
     route = respx.get(f"{HOST}/cgi/setssl").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_ssl(
             t,
             request=SetSSLRequest(
@@ -760,7 +760,7 @@ async def test_all_forbidden_writes_blocked_by_default(
 ) -> None:
     """Default READ_ONLY=true (unset env) must block all FORBIDDEN writes."""
     monkeypatch.delenv("READ_ONLY", raising=False)
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_device_passwords(
                 t, request=SetDevicePasswordsRequest()

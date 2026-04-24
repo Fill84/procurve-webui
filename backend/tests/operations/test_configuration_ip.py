@@ -33,16 +33,18 @@ def _load_mirror(name: str) -> str:
 
 @respx.mock
 async def test_get_ip_page_parses_both_frames() -> None:
-    respx.get("http://192.168.178.3/configuration/ip2.html").mock(
+    respx.get("http://192.0.2.3/configuration/ip2.html").mock(
         return_value=Response(200, text=_load_mirror("ip2.html"))
     )
-    respx.get("http://192.168.178.3/configuration/ip1.html").mock(
+    respx.get("http://192.0.2.3/configuration/ip1.html").mock(
         return_value=Response(200, text=_load_mirror("ip1.html"))
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         page = await get_ip_page(t)
     assert page.vlan_id == 97
     assert page.mode is IpMode.DHCP
+    # Fixture was captured from the live switch at 192.168.178.3 — the HTML
+    # response has that value baked in, so the assertion matches the bytes.
     assert page.ip_address == IPv4Address("192.168.178.3")
     assert page.subnet_mask == "255.255.255.0"
     assert page.gateway == IPv4Address("192.168.178.1")
@@ -50,13 +52,13 @@ async def test_get_ip_page_parses_both_frames() -> None:
 
 @respx.mock
 async def test_get_ip_page_missing_vlan_hidden_raises() -> None:
-    respx.get("http://192.168.178.3/configuration/ip2.html").mock(
+    respx.get("http://192.0.2.3/configuration/ip2.html").mock(
         return_value=Response(200, text="<html>nope</html>")
     )
-    respx.get("http://192.168.178.3/configuration/ip1.html").mock(
+    respx.get("http://192.0.2.3/configuration/ip1.html").mock(
         return_value=Response(200, text=_load_mirror("ip1.html"))
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_ip_page(t)
 
@@ -66,10 +68,10 @@ async def test_set_ip_config_emits_expected_params(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/ip").mock(
+    route = respx.get("http://192.0.2.3/cgi/ip").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_ip_config(
             t,
             request=SetIpConfigRequest(
@@ -90,7 +92,7 @@ async def test_set_ip_config_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_ip_config(
                 t,
@@ -107,10 +109,10 @@ async def test_set_default_gateway_emits_rt_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/gateway").mock(
+    route = respx.get("http://192.0.2.3/cgi/gateway").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_default_gateway(
             t,
             request=SetDefaultGatewayRequest(gateway=IPv4Address("10.0.0.1")),
@@ -125,10 +127,10 @@ async def test_set_default_gateway_clear_with_zero_addr(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/gateway").mock(
+    route = respx.get("http://192.0.2.3/cgi/gateway").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_default_gateway(
             t,
             request=SetDefaultGatewayRequest(

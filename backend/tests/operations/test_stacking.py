@@ -32,7 +32,7 @@ from procurve_client.operations.stacking import (
 )
 from procurve_client.transport import ProcurveTransport
 
-HOST = "http://192.168.178.3"
+HOST = "http://192.0.2.3"
 
 
 def _fixture(name: str) -> str:
@@ -49,7 +49,7 @@ def _fixture(name: str) -> str:
 async def test_get_memsinfo_live_fixture_non_stacked() -> None:
     body = _fixture("stacking__get_memsinfo.response.txt")
     respx.get(f"{HOST}/cgi/get_memsinfo").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_memsinfo(t)
     assert res.member_count == 0
     # Commander-self record still present on non-stacked.
@@ -74,7 +74,7 @@ async def test_get_memsinfo_multiple_members_synthetic() -> None:
             ),
         )
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_memsinfo(t)
     assert res.member_count == 2
     assert len(res.members) == 3
@@ -87,7 +87,7 @@ async def test_get_memsinfo_non_integer_count_raises() -> None:
     respx.get(f"{HOST}/cgi/get_memsinfo").mock(
         return_value=Response(200, text="bogus~0~\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_memsinfo(t)
 
@@ -95,7 +95,7 @@ async def test_get_memsinfo_non_integer_count_raises() -> None:
 @respx.mock
 async def test_get_memsinfo_empty_body_raises() -> None:
     respx.get(f"{HOST}/cgi/get_memsinfo").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_memsinfo(t)
 
@@ -110,7 +110,7 @@ async def test_get_stack_cfg_commander_synthetic() -> None:
     respx.get(f"{HOST}/cgi/get_stack_cfg").mock(
         return_value=Response(200, text="commander~enable~60~enable~MyStack~~enable~disable\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_stack_cfg(t)
     assert res.stack_admin_state == "commander"
     assert res.disc_admin_state == "enable"
@@ -127,7 +127,7 @@ async def test_get_stack_cfg_error_response_raises() -> None:
     respx.get(f"{HOST}/cgi/get_stack_cfg").mock(
         return_value=Response(200, text="error~Stacking subsystem not ready\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(OperationError) as exc:
             await get_stack_cfg(t)
     assert "Stacking subsystem not ready" in str(exc.value)
@@ -138,7 +138,7 @@ async def test_get_stack_cfg_short_body_raises() -> None:
     respx.get(f"{HOST}/cgi/get_stack_cfg").mock(
         return_value=Response(200, text="commander~enable~60\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_stack_cfg(t)
 
@@ -152,7 +152,7 @@ async def test_get_stack_cfg_short_body_raises() -> None:
 async def test_get_members_live_fixture_empty() -> None:
     body = _fixture("stacking__get_members.response.txt")
     respx.get(f"{HOST}/cgi/get_members").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_members(t)
     assert res.members == []
 
@@ -169,7 +169,7 @@ async def test_get_members_populated_synthetic() -> None:
             ),
         )
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_members(t)
     assert len(res.members) == 3
     assert res.members[0].switch_num == 1
@@ -182,7 +182,7 @@ async def test_get_members_error_response_raises() -> None:
     respx.get(f"{HOST}/cgi/get_members").mock(
         return_value=Response(200, text="error~Stacking not enabled\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(OperationError):
             await get_members(t)
 
@@ -196,7 +196,7 @@ async def test_get_members_error_response_raises() -> None:
 async def test_get_candidates_live_fixture_empty() -> None:
     body = _fixture("stacking__get_candidates.response.txt")
     respx.get(f"{HOST}/cgi/get_candidates").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_candidates(t)
     assert res.candidates == []
 
@@ -212,7 +212,7 @@ async def test_get_candidates_populated_synthetic() -> None:
             ),
         )
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_candidates(t)
     assert len(res.candidates) == 2
     # Leading space on the second device_type should be trimmed per applet.
@@ -228,7 +228,7 @@ async def test_get_candidates_populated_synthetic() -> None:
 async def test_get_view_all_live_fixture_non_stacked() -> None:
     body = _fixture("stacking__get_view_all.response.txt")
     respx.get(f"{HOST}/cgi/get_view_all").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_view_all(t)
     assert len(res.switches) == 1
     row = res.switches[0]
@@ -250,7 +250,7 @@ async def test_get_view_all_populated_synthetic() -> None:
             ),
         )
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_view_all(t)
     assert len(res.switches) == 2
     assert res.switches[0].stack_name == "Lab"
@@ -265,7 +265,7 @@ async def test_get_view_all_populated_synthetic() -> None:
 async def test_get_cmd_name_live_fixture_non_stacked() -> None:
     body = _fixture("stacking__get_cmd_name.response.txt")
     respx.get(f"{HOST}/cgi/get_cmd_name").mock(return_value=Response(200, text=body))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_cmd_name(t)
     assert res.is_stacked is False
     assert res.system_name == "HP2810_01"
@@ -279,7 +279,7 @@ async def test_get_cmd_name_stacked_commander_synthetic() -> None:
     respx.get(f"{HOST}/cgi/get_cmd_name").mock(
         return_value=Response(200, text="Lab-Commander 00 1d b3 b7 0e 00\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_cmd_name(t)
     assert res.is_stacked is True
     assert res.system_name == "Lab-Commander"
@@ -290,7 +290,7 @@ async def test_get_cmd_name_stacked_commander_synthetic() -> None:
 @respx.mock
 async def test_get_cmd_name_empty_body_raises() -> None:
     respx.get(f"{HOST}/cgi/get_cmd_name").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_cmd_name(t)
 
@@ -306,7 +306,7 @@ async def test_get_applet_length_commander_live_fixture() -> None:
     respx.get(f"{HOST}/cgi/get_applet_length").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_applet_length(t)
     assert res.applet_length == 150
 
@@ -316,14 +316,14 @@ async def test_get_applet_length_member_uses_sw_prefix() -> None:
     route = respx.get(f"{HOST}/sw3/cgi/get_applet_length").mock(
         return_value=Response(200, text="200\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await get_applet_length(t, member_num=3)
     assert res.applet_length == 200
     assert "/sw3/cgi/get_applet_length" in str(route.calls.last.request.url)
 
 
 async def test_get_applet_length_rejects_out_of_range_member() -> None:
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ValueError):
             await get_applet_length(t, member_num=99)
 
@@ -333,7 +333,7 @@ async def test_get_applet_length_non_integer_raises() -> None:
     respx.get(f"{HOST}/cgi/get_applet_length").mock(
         return_value=Response(200, text="not-a-number\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_applet_length(t)
 
@@ -341,7 +341,7 @@ async def test_get_applet_length_non_integer_raises() -> None:
 @respx.mock
 async def test_get_applet_length_empty_body_raises() -> None:
     respx.get(f"{HOST}/cgi/get_applet_length").mock(return_value=Response(200, text=""))
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_applet_length(t)
 
@@ -400,7 +400,7 @@ async def test_set_stack_cfg_emits_applet_key_order(
     route = respx.get(f"{HOST}/cgi/set_stack_cfg").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         # sf before sn, js before ma — and all before ag / aj.
         res = await set_stack_cfg(
             t,
@@ -421,7 +421,7 @@ async def test_set_stack_cfg_disable_only(
     route = respx.get(f"{HOST}/cgi/set_stack_cfg").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_stack_cfg(t, request=SetStackCfgRequest(sf=2))
     url = str(route.calls.last.request.url)
     assert url.endswith("?sf=2")
@@ -436,7 +436,7 @@ async def test_set_stack_cfg_empty_request_is_noop(
     route = respx.get(f"{HOST}/cgi/set_stack_cfg").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_stack_cfg(t, request=SetStackCfgRequest())
     assert res.ok is True
     assert route.call_count == 0
@@ -452,7 +452,7 @@ async def test_set_stack_cfg_error_response_raises(
             200, text="error~Stacking must be enabled before creating a stack.\n"
         )
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(OperationError) as exc:
             await set_stack_cfg(t, request=SetStackCfgRequest(cs=1, sn="X"))
     assert "Stacking must be enabled" in str(exc.value)
@@ -471,7 +471,7 @@ async def test_set_members_wire_shape_preserves_trailing_commas(
     route = respx.get(f"{HOST}/cgi/set_members").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_members(
             t,
             request=SetMembersRequest(
@@ -497,7 +497,7 @@ async def test_set_members_empty_password_still_emits_key(
     route = respx.get(f"{HOST}/cgi/set_members").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_members(
             t,
             request=SetMembersRequest(
@@ -521,7 +521,7 @@ async def test_set_members_auto_rollback_on_error(
     del_route = respx.get(f"{HOST}/cgi/delete_members").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_members(
             t,
             request=SetMembersRequest(
@@ -552,7 +552,7 @@ async def test_set_members_rollback_can_be_disabled(
     del_route = respx.get(f"{HOST}/cgi/delete_members").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await set_members(
             t,
             request=SetMembersRequest(
@@ -572,7 +572,7 @@ async def test_set_members_rejects_length_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ValueError):
             await set_members(
                 t,
@@ -597,7 +597,7 @@ async def test_delete_members_wire_shape_preserves_trailing_comma(
     route = respx.get(f"{HOST}/cgi/delete_members").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await delete_members(
             t,
             request=DeleteMembersRequest(switch_nums=[2, 5, 7]),
@@ -615,7 +615,7 @@ async def test_delete_members_single_element_still_has_trailing_comma(
     route = respx.get(f"{HOST}/cgi/delete_members").mock(
         return_value=Response(200, text="")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await delete_members(
             t,
             request=DeleteMembersRequest(switch_nums=[3]),
@@ -631,7 +631,7 @@ async def test_delete_members_surfaces_error_body(
     respx.get(f"{HOST}/cgi/delete_members").mock(
         return_value=Response(200, text="error~Invalid member number 17.\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         res = await delete_members(
             t,
             request=DeleteMembersRequest(switch_nums=[7]),
@@ -651,7 +651,7 @@ async def test_all_write_ops_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_stack_cfg(t, request=SetStackCfgRequest(sf=2))
         with pytest.raises(WriteDisabledError):

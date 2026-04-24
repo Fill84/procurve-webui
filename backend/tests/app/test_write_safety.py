@@ -27,7 +27,7 @@ def _make_settings(
     tmp_path: Path,
     *,
     read_only: bool,
-    switch_host: str = "192.168.178.3",
+    switch_host: str = "192.0.2.3",
 ) -> Settings:
     monkeypatch.setenv("SWITCH_HOST", switch_host)
     monkeypatch.setenv("SWITCH_PORT", "80")
@@ -88,7 +88,7 @@ def test_require_host_confirmation_mismatch_raises_400(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     settings = _make_settings(
-        monkeypatch, tmp_path, read_only=False, switch_host="192.168.178.3"
+        monkeypatch, tmp_path, read_only=False, switch_host="192.0.2.3"
     )
     with pytest.raises(HTTPException) as exc_info:
         write_safety.require_host_confirmation("10.0.0.1", settings)
@@ -102,12 +102,12 @@ def test_require_host_confirmation_matches_passes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     settings = _make_settings(
-        monkeypatch, tmp_path, read_only=False, switch_host="192.168.178.3"
+        monkeypatch, tmp_path, read_only=False, switch_host="192.0.2.3"
     )
     # Exact match — no exception.
-    write_safety.require_host_confirmation("192.168.178.3", settings)
+    write_safety.require_host_confirmation("192.0.2.3", settings)
     # Leading/trailing whitespace is tolerated via .strip().
-    write_safety.require_host_confirmation("  192.168.178.3  ", settings)
+    write_safety.require_host_confirmation("  192.0.2.3  ", settings)
 
 
 def test_require_host_confirmation_rejects_none_and_empty(

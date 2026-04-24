@@ -32,10 +32,10 @@ def _read_fixture(fixtures_dir: Path, name: str) -> str:
 @respx.mock
 async def test_get_portscfg_parses_all_24_ports(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_portscfg.response.txt")
-    respx.get("http://192.168.178.3/cgi/get_portscfg").mock(
+    respx.get("http://192.0.2.3/cgi/get_portscfg").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         ports = await get_portscfg(t)
     assert len(ports.ports) == 24
     p1 = ports.ports[0]
@@ -59,10 +59,10 @@ async def test_get_portscfg_parses_all_24_ports(fixtures_dir: Path) -> None:
 
 @respx.mock
 async def test_get_portscfg_short_row_raises() -> None:
-    respx.get("http://192.168.178.3/cgi/get_portscfg").mock(
+    respx.get("http://192.0.2.3/cgi/get_portscfg").mock(
         return_value=Response(200, text="1~name~ ~type~Yes~.\n")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_portscfg(t)
 
@@ -70,10 +70,10 @@ async def test_get_portscfg_short_row_raises() -> None:
 @respx.mock
 async def test_get_portscfg_rejects_bad_enabled() -> None:
     body = "1~n~ ~100/1000T~Maybe~.~Auto~ ~Enable~0\n"
-    respx.get("http://192.168.178.3/cgi/get_portscfg").mock(
+    respx.get("http://192.0.2.3/cgi/get_portscfg").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_portscfg(t)
 
@@ -81,10 +81,10 @@ async def test_get_portscfg_rejects_bad_enabled() -> None:
 @respx.mock
 async def test_get_portscfg_rejects_bad_flow_control() -> None:
     body = "1~n~ ~100/1000T~Yes~.~Auto~ ~Foo~0\n"
-    respx.get("http://192.168.178.3/cgi/get_portscfg").mock(
+    respx.get("http://192.0.2.3/cgi/get_portscfg").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_portscfg(t)
 
@@ -94,10 +94,10 @@ async def test_get_portscfg_rejects_bad_flow_control() -> None:
 @respx.mock
 async def test_get_port_form_parses_fixture(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_port_form.response.txt")
-    route = respx.get("http://192.168.178.3/cgi/port_form").mock(
+    route = respx.get("http://192.0.2.3/cgi/port_form").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         form = await get_port_form(t, ports=[1])
     assert route.calls.last.request.url.params["indeces"] == "1"
     assert form.ports == [1]
@@ -110,16 +110,16 @@ async def test_get_port_form_parses_fixture(fixtures_dir: Path) -> None:
 @respx.mock
 async def test_get_port_form_multi_port_indeces_csv(fixtures_dir: Path) -> None:
     body = _read_fixture(fixtures_dir, "get_port_form.response.txt")
-    route = respx.get("http://192.168.178.3/cgi/port_form").mock(
+    route = respx.get("http://192.0.2.3/cgi/port_form").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await get_port_form(t, ports=[1, 2, 3])
     assert route.calls.last.request.url.params["indeces"] == "1,2,3"
 
 
 async def test_get_port_form_rejects_empty_ports() -> None:
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ValueError):
             await get_port_form(t, ports=[])
 
@@ -127,10 +127,10 @@ async def test_get_port_form_rejects_empty_ports() -> None:
 @respx.mock
 async def test_get_port_form_missing_admin_raises() -> None:
     body = "<html><Input Type='hidden' Name='indeces' Value='1'></html>"
-    respx.get("http://192.168.178.3/cgi/port_form").mock(
+    respx.get("http://192.0.2.3/cgi/port_form").mock(
         return_value=Response(200, text=body)
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(ParseError):
             await get_port_form(t, ports=[1])
 
@@ -142,10 +142,10 @@ async def test_set_port_config_emits_expected_params(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/mod_ports").mock(
+    route = respx.get("http://192.0.2.3/cgi/mod_ports").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_port_config(
             t,
             request=SetPortConfigRequest(
@@ -170,10 +170,10 @@ async def test_set_port_config_disable_flow_control(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "false")
-    route = respx.get("http://192.168.178.3/cgi/mod_ports").mock(
+    route = respx.get("http://192.0.2.3/cgi/mod_ports").mock(
         return_value=Response(200, text="OK~")
     )
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         await set_port_config(
             t,
             request=SetPortConfigRequest(
@@ -195,7 +195,7 @@ async def test_set_port_config_blocked_by_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("READ_ONLY", "true")
-    async with ProcurveTransport(host="192.168.178.3") as t:
+    async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_port_config(
                 t, request=SetPortConfigRequest(ports=[1])
