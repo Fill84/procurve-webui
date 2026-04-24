@@ -18,14 +18,17 @@ import { useMemo } from "react";
 import {
   useDeviceStatus,
   usePortStatus,
+  usePortUsage,
   useAlertLog,
 } from "@/api/hooks/useStatus";
 import { useIdentity } from "@/api/hooks/useIdentity";
 import { SwitchSvg } from "@/components/switch-panel/SwitchSvg";
+import { PortUtilizationChart } from "./PortUtilizationChart";
 import { formatUptime } from "@/lib/format";
 
 export function StatusOverviewPage() {
   const portsQuery = usePortStatus();
+  const usageQuery = usePortUsage();
   const deviceQuery = useDeviceStatus();
   const alertsQuery = useAlertLog();
   const identityQuery = useIdentity();
@@ -59,6 +62,7 @@ export function StatusOverviewPage() {
           type="button"
           onClick={() => {
             portsQuery.refetch();
+            usageQuery.refetch();
             deviceQuery.refetch();
             alertsQuery.refetch();
             identityQuery.refetch();
@@ -88,6 +92,27 @@ export function StatusOverviewPage() {
             <SwitchSvg ports={ports} />
             <Legend />
           </>
+        )}
+      </section>
+
+      {/* Port utilisation chart (parity with the legacy applet) */}
+      <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+        {usageQuery.isLoading && (
+          <div className="h-40 animate-pulse rounded bg-neutral-100" />
+        )}
+        {usageQuery.isError && (
+          <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            Failed to load port utilisation:{" "}
+            {usageQuery.error instanceof Error
+              ? usageQuery.error.message
+              : String(usageQuery.error)}
+          </div>
+        )}
+        {usageQuery.data && (
+          <PortUtilizationChart
+            usage={usageQuery.data.ports}
+            portStatus={ports}
+          />
         )}
       </section>
 

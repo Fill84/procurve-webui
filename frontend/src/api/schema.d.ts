@@ -140,6 +140,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/status/port-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Port Usage Endpoint
+         * @description Per-port utilisation for the chassis bar chart on Status Overview.
+         *
+         *     Returns three segments per port (``usage1``/``usage2``/``usage3`` for
+         *     unicast-or-all-tx / non-unicast-rx / error-packets-rx respectively —
+         *     same semantics as the legacy Java applet) plus a ``state`` letter used
+         *     for the LED row beneath the chart.
+         */
+        get: operations["get_port_usage_endpoint_api_v1_status_port_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -1756,6 +1781,38 @@ export interface components {
             ports: components["schemas"]["PortStatus"][];
         };
         /**
+         * PortUsage
+         * @description One row from /cgi/port_usage.
+         *
+         *     Three `usage*` slots are segments of a stacked bar the applet renders;
+         *     their individual semantics are not documented by HP. Callers can sum
+         *     them via `total_usage_pct` for overall utilisation percent.
+         */
+        PortUsage: {
+            /** Port */
+            port: number;
+            /** Label */
+            label: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "G" | "W" | "N" | "R";
+            /** Usage1 */
+            usage1: number;
+            /** Usage2 */
+            usage2: number;
+            /** Usage3 */
+            usage3: number;
+            /** Speed */
+            speed?: string | null;
+        };
+        /** PortUsageList */
+        PortUsageList: {
+            /** Ports */
+            ports: components["schemas"]["PortUsage"][];
+        };
+        /**
          * QosWriteAck
          * @description HTTP-200 acknowledgement for a QoS write endpoint.
          *
@@ -2638,6 +2695,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AlertLog"];
+                };
+            };
+        };
+    };
+    get_port_usage_endpoint_api_v1_status_port_usage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortUsageList"];
                 };
             };
         };

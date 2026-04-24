@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends
 
 from app.deps import get_transport
 from procurve_client.models.log import AlertLog, DeviceStatusBanner
-from procurve_client.models.port import PortCountersList, PortStatusList
+from procurve_client.models.port import PortCountersList, PortStatusList, PortUsageList
 from procurve_client.operations.status import (
     get_alert_log,
     get_device_status,
     get_port_counters,
     get_port_status,
+    get_port_usage,
 )
 from procurve_client.transport import ProcurveTransport
 
@@ -43,3 +44,17 @@ async def get_alert_log_endpoint(
     transport: ProcurveTransport = Depends(get_transport),  # noqa: B008 — FastAPI pattern
 ) -> AlertLog:
     return await get_alert_log(transport)
+
+
+@router.get("/port-usage", response_model=PortUsageList)
+async def get_port_usage_endpoint(
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008 — FastAPI pattern
+) -> PortUsageList:
+    """Per-port utilisation for the chassis bar chart on Status Overview.
+
+    Returns three segments per port (``usage1``/``usage2``/``usage3`` for
+    unicast-or-all-tx / non-unicast-rx / error-packets-rx respectively —
+    same semantics as the legacy Java applet) plus a ``state`` letter used
+    for the LED row beneath the chart.
+    """
+    return await get_port_usage(transport)

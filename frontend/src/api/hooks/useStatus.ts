@@ -21,6 +21,7 @@ import type { components } from "@/api/schema";
 type DeviceStatusBanner = components["schemas"]["DeviceStatusBanner"];
 type PortStatusList = components["schemas"]["PortStatusList"];
 type PortCountersList = components["schemas"]["PortCountersList"];
+type PortUsageList = components["schemas"]["PortUsageList"];
 type AlertLog = components["schemas"]["AlertLog"];
 
 export function useDeviceStatus() {
@@ -44,6 +45,14 @@ export function usePortCounters() {
     queryKey: ["status", "counters"],
     queryFn: () => apiGet<PortCountersList>("/api/v1/status/counters"),
     refetchInterval: 10_000,
+  });
+}
+
+export function usePortUsage() {
+  return useQuery<PortUsageList>({
+    queryKey: ["status", "port-usage"],
+    queryFn: () => apiGet<PortUsageList>("/api/v1/status/port-usage"),
+    refetchInterval: 5_000,
   });
 }
 

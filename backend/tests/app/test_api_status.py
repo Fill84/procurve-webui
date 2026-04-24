@@ -21,6 +21,8 @@ from procurve_client.models.port import (
     PortCountersList,
     PortStatus,
     PortStatusList,
+    PortUsage,
+    PortUsageList,
 )
 
 
@@ -155,6 +157,44 @@ def test_get_alert_log_happy_path(
     body = r.json()
     assert body["cursor_or_count"] == 1
     assert body["events"][0]["alert_name"] == "cold-start"
+
+
+def test_get_port_usage_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    usage = PortUsageList(
+        ports=[
+            PortUsage(
+                port=1,
+                label="",
+                state="G",
+                usage1=10,
+                usage2=5,
+                usage3=0,
+                speed="1000",
+            ),
+            PortUsage(
+                port=2,
+                label="",
+                state="N",
+                usage1=0,
+                usage2=0,
+                usage3=0,
+                speed=None,
+            ),
+        ]
+    )
+
+    async def fake(transport: object) -> PortUsageList:
+        return usage
+
+    monkeypatch.setattr(status_module, "get_port_usage", fake)
+    r = client.get("/api/v1/status/port-usage")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body["ports"]) == 2
+    assert body["ports"][0]["usage1"] == 10
+    assert body["ports"][0]["state"] == "G"
 
 
 def test_status_requires_auth(settings: Settings) -> None:
