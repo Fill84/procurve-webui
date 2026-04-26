@@ -56,7 +56,7 @@ def _resolve_dist_dir() -> Path:
 
 
 def create_app(dist_dir: Path | None = None) -> FastAPI:
-    app = FastAPI(title="procurve-webui", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="procurve-webui", version="0.1.1", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[],

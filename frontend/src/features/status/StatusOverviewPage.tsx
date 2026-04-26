@@ -7,17 +7,25 @@
  *      don't flicker an empty panel on first paint)
  *   2. A 4-tile summary grid: ports-up / ports-problematic / CPU / uptime
  *   3. Recent alerts table (newest first, capped at 10 rows)
- *      with checkbox selection + Open / Ack / Delete action bar.
+ *      with checkbox selection + Ack / Delete action bar.
  *
  * Alert-log actions:
  *   * Selection state is local (useState<Set<string>>) keyed by row_id —
  *     this survives re-renders driven by the 30 s alert-log refetch.
- *   * "Open Event" is enabled when exactly one row is selected; it opens
- *     `AlertDetailDialog` which loads `/api/v1/status/alerts/{idx}?dt=<ts>`.
- *   * Ack / Delete are enabled when ≥ 1 row is selected. Delete uses
- *     `window.confirm` (no DangerConfirmDialog needed — fault-log mutations
- *     are not lockout-capable). Both invalidate the `["status", "alert-log"]`
- *     query so the table refreshes after the mutation completes.
+ *   * Clicking anywhere on a row (outside the checkbox) opens
+ *     `AlertDetailDialog`, which loads `/api/v1/status/alerts/{idx}?dt=<ts>`.
+ *     The checkbox is the selection affordance; the rest of the row is
+ *     the "open" affordance. There is no separate Open Event button.
+ *   * Ack / Delete are enabled when ≥ 1 row is selected. Delete shows a
+ *     `ConfirmDialog` first (no DangerConfirmDialog — fault-log mutations
+ *     are not lockout-capable, so typed-IP friction would be excessive).
+ *     Both invalidate the `["status", "alert-log"]` query so the table
+ *     refreshes after the mutation completes.
+ *   * Ack on this firmware does NOT remove rows — the switch keeps acked
+ *     events in the list (per ack_alerts.md: it's a "seen" flag, not a
+ *     deletion). To make a successful ack visible we surface a transient
+ *     "N event(s) acknowledged" banner; otherwise the user clicks Ack and
+ *     sees no observable change in the table, which reads as "broken".
  *
  * The identity hook is reused for uptime because the status banner endpoint
  * doesn't carry it — see DeviceStatusBanner in the generated schema. This
@@ -25,7 +33,7 @@
  * resolved from TopBar.
  */
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useAcknowledgeAlerts,
   useAlertLog,
@@ -36,6 +44,7 @@ import {
 } from "@/api/hooks/useStatus";
 import { useIdentity } from "@/api/hooks/useIdentity";
 import { SwitchSvg } from "@/components/switch-panel/SwitchSvg";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { PortUtilizationChart } from "./PortUtilizationChart";
 import { AlertDetailDialog } from "./AlertDetailDialog";
 import { formatUptime } from "@/lib/format";
@@ -91,6 +100,22 @@ export function StatusOverviewPage() {
     tsCenti: number;
   } | null>(null);
 
+  // Confirm-dialog state for the destructive Delete action. We open this
+  // instead of `window.confirm` so the dialog matches the rest of the app's
+  // chrome (and renders consistently in the dev container's headless tests).
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // Transient post-ack feedback. The fault log keeps acked rows visible, so
+  // without this banner a successful Acknowledge produces no observable UI
+  // change and reads as "didn't work". `null` means no message; the count
+  // is reset after a few seconds so the banner doesn't linger.
+  const [ackedCount, setAckedCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (ackedCount === null) return;
+    const id = window.setTimeout(() => setAckedCount(null), 5000);
+    return () => window.clearTimeout(id);
+  }, [ackedCount]);
+
   const toggleId = (rowId: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -118,35 +143,46 @@ export function StatusOverviewPage() {
     [recentAlerts, effectiveSelected],
   );
 
-  const handleOpenEvent = () => {
-    if (selectedRefs.length !== 1) return;
-    const ref = selectedRefs[0]!;
-    const idx = Number.parseInt(ref.row_id, 10);
+  const openDetailFor = (rowId: string, tsCenti: number) => {
+    const idx = Number.parseInt(rowId, 10);
     if (!Number.isFinite(idx)) return;
-    setDetailTarget({ index: idx, tsCenti: ref.ts_centiseconds });
+    setDetailTarget({ index: idx, tsCenti });
   };
 
   const handleAck = () => {
     if (selectedRefs.length === 0) return;
+    const count = selectedRefs.length;
     ackMutation.mutate(
       { events: selectedRefs },
       {
-        onSuccess: () => setSelectedIds(new Set()),
+        onSuccess: () => {
+          setSelectedIds(new Set());
+          setAckedCount(count);
+        },
       },
     );
   };
 
   const handleDelete = () => {
     if (selectedRefs.length === 0) return;
-    const msg =
-      selectedRefs.length === 1
-        ? "Delete the selected event?"
-        : `Delete the ${selectedRefs.length} selected events?`;
-    if (!window.confirm(msg)) return;
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedRefs.length === 0) {
+      setDeleteConfirmOpen(false);
+      return;
+    }
     delMutation.mutate(
       { events: selectedRefs },
       {
-        onSuccess: () => setSelectedIds(new Set()),
+        onSuccess: () => {
+          setSelectedIds(new Set());
+          setDeleteConfirmOpen(false);
+        },
+        onError: () => {
+          // Keep the dialog open so the user sees the error in-context.
+        },
       },
     );
   };
@@ -270,16 +306,10 @@ export function StatusOverviewPage() {
           <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/60 px-4 py-2">
             <span className="text-xs text-neutral-600">
               {selectedCount === 0
-                ? "Select rows to act on them."
+                ? "Click a row to view details, or tick rows to ack/delete."
                 : `${selectedCount} selected`}
             </span>
             <div className="ml-auto flex flex-wrap gap-2">
-              <ActionButton
-                onClick={handleOpenEvent}
-                disabled={selectedCount !== 1 || mutating}
-              >
-                Open Event
-              </ActionButton>
               <ActionButton
                 onClick={handleAck}
                 disabled={selectedCount === 0 || mutating}
@@ -303,6 +333,16 @@ export function StatusOverviewPage() {
         {mutationError && (
           <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900">
             {mutationError}
+          </div>
+        )}
+        {ackedCount !== null && (
+          <div
+            role="status"
+            className="border-b border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900"
+          >
+            {ackedCount === 1
+              ? "1 event acknowledged. The switch keeps acked events in the log."
+              : `${ackedCount} events acknowledged. The switch keeps acked events in the log.`}
           </div>
         )}
 
@@ -359,16 +399,30 @@ export function StatusOverviewPage() {
                   return (
                     <tr
                       key={e.row_id}
-                      className={`border-t border-neutral-100 align-top ${
-                        checked ? "bg-blue-50/40" : ""
+                      onClick={() => openDetailFor(e.row_id, e.ts_centiseconds)}
+                      onKeyDown={(ev) => {
+                        if (ev.key === "Enter" || ev.key === " ") {
+                          ev.preventDefault();
+                          openDetailFor(e.row_id, e.ts_centiseconds);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Open event ${e.alert_name || e.row_id}`}
+                      className={`cursor-pointer border-t border-neutral-100 align-top hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none ${
+                        checked ? "bg-blue-50/40 hover:bg-blue-50/60" : ""
                       }`}
                     >
-                      <td className="px-4 py-2">
+                      <td
+                        className="px-4 py-2"
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           aria-label={`Select event ${e.row_id}`}
                           checked={checked}
                           onChange={() => toggleId(e.row_id)}
+                          onClick={(ev) => ev.stopPropagation()}
                         />
                       </td>
                       <td className="px-4 py-2 font-mono text-xs text-neutral-600">
@@ -400,6 +454,39 @@ export function StatusOverviewPage() {
         tsCenti={detailTarget?.tsCenti ?? null}
         currentUptimeCenti={identityQuery.data?.uptime_centiseconds}
         onClose={() => setDetailTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title={
+          selectedRefs.length === 1
+            ? "Delete event"
+            : `Delete ${selectedRefs.length} events`
+        }
+        body={
+          <p>
+            {selectedRefs.length === 1
+              ? "The selected event will be removed from the switch fault log. This cannot be undone."
+              : `The ${selectedRefs.length} selected events will be removed from the switch fault log. This cannot be undone.`}
+          </p>
+        }
+        confirmLabel={
+          selectedRefs.length === 1 ? "Delete event" : "Delete events"
+        }
+        busyLabel="Deleting…"
+        tone="danger"
+        busy={delMutation.isPending}
+        error={
+          delMutation.error instanceof Error ? (
+            <div className="rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-900">
+              {delMutation.error.message}
+            </div>
+          ) : null
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (!delMutation.isPending) setDeleteConfirmOpen(false);
+        }}
       />
     </div>
   );

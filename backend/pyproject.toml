@@ -1,6 +1,6 @@
 [project]
 name = "procurve-client"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python protocol client for HP ProCurve 2810-24G (J9021A) switch"
 requires-python = ">=3.12"
 readme = "README.md"
