@@ -95,6 +95,38 @@ export function SupportPage() {
                   </span>
                 </dd>
               </div>
+              <div className="contents">
+                <dt className="text-sm text-neutral-500">Project repo</dt>
+                <dd className="text-sm">
+                  <a
+                    href="https://github.com/Fill84/procurve-webui"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="font-mono text-blue-700 underline hover:text-blue-900 break-all"
+                  >
+                    github.com/Fill84/procurve-webui
+                  </a>
+                  <span className="ml-2 text-xs text-neutral-500">
+                    source &amp; contributions
+                  </span>
+                </dd>
+              </div>
+              <div className="contents">
+                <dt className="text-sm text-neutral-500">Report an issue</dt>
+                <dd className="text-sm">
+                  <a
+                    href="https://github.com/Fill84/procurve-webui/issues/new"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="font-mono text-blue-700 underline hover:text-blue-900 break-all"
+                  >
+                    github.com/Fill84/procurve-webui/issues/new
+                  </a>
+                  <span className="ml-2 text-xs text-neutral-500">
+                    bug reports &amp; feature requests
+                  </span>
+                </dd>
+              </div>
             </dl>
             <p className="mt-4 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
               {data.note}
