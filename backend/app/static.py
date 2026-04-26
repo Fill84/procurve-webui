@@ -50,7 +50,20 @@ def mount_static(app: FastAPI, dist_dir: Path) -> None:
         name="assets",
     )
 
-    # Client-side routing: any unmatched GET falls through to index.html.
+    # Client-side routing: any unmatched GET first tries to serve a real file
+    # from dist/ (favicon.svg, robots.txt, etc.) and otherwise falls through
+    # to index.html so React Router can handle deep links on hard-refresh.
+    dist_root = dist_dir.resolve()
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str) -> FileResponse:
+        if full_path:
+            candidate = (dist_dir / full_path).resolve()
+            try:
+                candidate.relative_to(dist_root)
+            except ValueError:
+                pass
+            else:
+                if candidate.is_file():
+                    return FileResponse(candidate)
         return FileResponse(dist_dir / "index.html")
