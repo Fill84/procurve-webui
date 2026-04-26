@@ -37,5 +37,14 @@ Thumbs.db
 research/tools/*.jar
 research/decompiled/
 
-# Keep backups and mirror in git? YES — they are source-of-truth for Phase 0+
-# (so no rule here to exclude them)
+# Vendor binary — do not redistribute (see research/applet/README.md).
+research/applet/*.jar
+
+# Switch config backups carry operator-specific data; recreate locally only.
+research/backups/**/*.pcc
+backups/
+
+# Mirror is kept in git — it's plain switch HTML/CSS/GIF and useful as Phase 0
+# reference; comment out if you ever need to scrub a sensitive page.
+# research/mirror/
+
