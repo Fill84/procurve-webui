@@ -8,9 +8,8 @@
  *   2. Gate [Save] behind the shared DangerConfirmDialog — the user must
  *      type the current switch IP to confirm.
  *
- * We don't render a password form here. Per
- * ``memory/feedback_switch_write_safety.md`` the device-password write has no
- * HTTP surface at all.
+ * Password changes live in DevicePasswordsCard (separate card, separate
+ * lockout-risk profile).
  */
 import { useEffect, useState } from "react";
 import { DangerConfirmDialog } from "@/components/ui/DangerConfirmDialog";

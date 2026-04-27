@@ -1,16 +1,16 @@
 /**
  * Security page (Task 3.4).
  *
- * Vertical stack of five cards:
- *   1. WebAccessCard        — HTTP/HTTPS toggle + SSL port (lockout-risky)
- *   2. WebManagersCard      — Authorized-Manager IP whitelist (lockout-risky)
- *   3. PerPortSecurityCard  — Per-port learn-mode + action table
- *   4. IntrusionLogCard     — Intrusion events + reset-flags
- *   5. SslStateCard         — Read-only SSL state summary
- *
- * There is NO card for device passwords. The password-setting operation
- * has no HTTP surface at all (see memory/feedback_switch_write_safety.md).
+ * Vertical stack of six cards. The three lockout-risky writes are grouped
+ * at the top, then the per-port table, then the read-only summaries:
+ *   1. DevicePasswordsCard  — Operator + Manager credentials (lockout-risky, worst)
+ *   2. WebAccessCard        — HTTP/HTTPS toggle + SSL port (lockout-risky)
+ *   3. WebManagersCard      — Authorized-Manager IP whitelist (lockout-risky)
+ *   4. PerPortSecurityCard  — Per-port learn-mode + action table
+ *   5. IntrusionLogCard     — Intrusion events + reset-flags
+ *   6. SslStateCard         — Read-only SSL state summary
  */
+import { DevicePasswordsCard } from "./DevicePasswordsCard";
 import { WebAccessCard } from "./WebAccessCard";
 import { WebManagersCard } from "./WebManagersCard";
 import { PerPortSecurityCard } from "./PerPortSecurityCard";
@@ -23,13 +23,15 @@ export function SecurityPage() {
       <div className="mb-6">
         <h2 className="text-lg font-semibold">Security</h2>
         <p className="mt-0.5 text-xs text-neutral-500">
-          Manage web-access mode, authorized managers, per-port security, and
-          the SSL subsystem. Password changes are intentionally not exposed
-          here — run them manually from the legacy applet when needed.
+          Manage device passwords, web-access mode, authorized managers,
+          per-port security, and the SSL subsystem. Lockout-risky writes
+          require typing the switch IP to confirm and take a pre-write
+          backup automatically.
         </p>
       </div>
 
       <div className="grid gap-4">
+        <DevicePasswordsCard />
         <WebAccessCard />
         <WebManagersCard />
         <PerPortSecurityCard />

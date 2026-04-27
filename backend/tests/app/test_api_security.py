@@ -15,9 +15,11 @@ SAFETY INVARIANTS VERIFIED HERE
 - Per-port + intrusion-reset writes do NOT require host confirmation.
 - All four writes go through ``write_with_autobackup`` (pre-write
   backup appears on disk before the op runs).
-- ``POST /api/v1/security/device-passwords`` does NOT exist — this proves
-  the password-change operation has no HTTP surface, per
-  ``memory/feedback_switch_write_safety.md``.
+- ``PUT /api/v1/security/device-passwords`` is the most lockout-risky
+  write of the three: a wrong Manager password is recoverable only via
+  a physical factory-reset. It carries the same gates as the other two
+  lockout-risky writes (host-confirm + pre-write autobackup + READ_ONLY
+  guard) plus loud UI warnings about the cleartext-in-URL firmware flaw.
 """
 from __future__ import annotations
 
@@ -44,6 +46,7 @@ from procurve_client.models.security import (
     PerportsResponse,
     PortSecurityRow,
     ResetIntrusionFlagsResponse,
+    SetDevicePasswordsResponse,
     SetPerportResponse,
     SetSSLResponse,
     SetWebManagerResponse,
@@ -682,29 +685,147 @@ def test_ssl_state_read_happy_path(
 
 
 # ---------------------------------------------------------------------------
-# SAFETY GATE: device-passwords endpoint MUST NOT EXIST
+# Device passwords (write — most lockout-risky: host confirmation + autobackup)
 # ---------------------------------------------------------------------------
 
 
-def test_device_passwords_endpoint_does_not_exist_returns_404(
-    client: TestClient,
+_DEVICE_PASSWORDS_BODY = {
+    "request": {
+        "operator_username": "operator",
+        "operator_password": "op-secret",
+        "manager_username": "manager",
+        "manager_password": "mgr-secret",
+    },
+    "confirm_switch_host": "192.0.2.3",
+}
+
+
+def test_device_passwords_write_blocked_when_read_only(
+    read_only_settings: Settings,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Per memory/feedback_switch_write_safety.md, ``set_device_passwords``
-    has NO HTTP surface. If someone adds one in the future, this test
-    breaks and Phase 3 review catches the lockout-risk regression.
-    """
-    # Try every plausible path a future contributor might add.
-    for method, path in [
-        ("GET", "/api/v1/security/device-passwords"),
-        ("POST", "/api/v1/security/device-passwords"),
-        ("PUT", "/api/v1/security/device-passwords"),
-        ("PATCH", "/api/v1/security/device-passwords"),
-        ("GET", "/api/v1/security/passwords"),
-        ("POST", "/api/v1/security/passwords"),
-        ("PUT", "/api/v1/security/passwords"),
-    ]:
-        r = client.request(method, path, json={})
-        assert r.status_code == 404, (
-            f"{method} {path} returned {r.status_code} — "
-            "password-setting must NOT have an HTTP surface"
+    app = create_app()
+    app.state.settings = read_only_settings
+    app.state.backup_store = store
+    called = False
+
+    async def must_not_run(
+        transport: object, **kw: object
+    ) -> SetDevicePasswordsResponse:
+        nonlocal called
+        called = True
+        return SetDevicePasswordsResponse(applied=True)
+
+    monkeypatch.setattr(security_module, "set_device_passwords", must_not_run)
+    _must_not_download(monkeypatch)
+
+    with TestClient(app) as c:
+        app.dependency_overrides[get_transport] = lambda: object()
+        app.dependency_overrides[get_backup_store] = lambda: store
+        r = c.put(
+            "/api/v1/security/device-passwords", json=_DEVICE_PASSWORDS_BODY
         )
+        app.dependency_overrides.clear()
+    assert r.status_code == 403
+    detail = r.json().get("detail", r.json())
+    assert detail.get("error") == "read_only"
+    assert called is False
+
+
+def test_device_passwords_write_requires_host_confirmation(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    called = False
+
+    async def must_not_run(
+        transport: object, **kw: object
+    ) -> SetDevicePasswordsResponse:
+        nonlocal called
+        called = True
+        return SetDevicePasswordsResponse(applied=True)
+
+    monkeypatch.setattr(security_module, "set_device_passwords", must_not_run)
+    _must_not_download(monkeypatch)
+
+    bad = {**_DEVICE_PASSWORDS_BODY, "confirm_switch_host": "10.0.0.1"}
+    r = client.put("/api/v1/security/device-passwords", json=bad)
+    assert r.status_code == 400
+    detail = r.json().get("detail", r.json())
+    assert detail.get("error") == "host_mismatch"
+    assert called is False
+
+
+def test_device_passwords_write_creates_pre_write_backup(
+    client: TestClient,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_download_config(monkeypatch, b"hostname HP2810_01\n")
+    order: list[str] = []
+
+    async def fake_set(
+        transport: object, **kw: object
+    ) -> SetDevicePasswordsResponse:
+        order.append("set_device_passwords")
+        return SetDevicePasswordsResponse(applied=True)
+
+    monkeypatch.setattr(security_module, "set_device_passwords", fake_set)
+
+    original_save = store.save
+
+    def spy_save(*args: object, **kwargs: object) -> object:
+        order.append("save")
+        return original_save(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(store, "save", spy_save)
+
+    r = client.put(
+        "/api/v1/security/device-passwords", json=_DEVICE_PASSWORDS_BODY
+    )
+    assert r.status_code == 200, r.text
+    assert order == ["save", "set_device_passwords"]
+    listed = store.list()
+    assert len(listed) == 1
+    assert listed[0].trigger == "pre-write"
+
+
+def test_device_passwords_write_happy_path(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_download_config(monkeypatch, b"cfg\n")
+
+    async def fake_set(
+        transport: object, **kw: object
+    ) -> SetDevicePasswordsResponse:
+        return SetDevicePasswordsResponse(applied=True)
+
+    monkeypatch.setattr(security_module, "set_device_passwords", fake_set)
+    r = client.put(
+        "/api/v1/security/device-passwords", json=_DEVICE_PASSWORDS_BODY
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["applied"] is True
+
+
+def test_device_passwords_write_secret_not_in_response_repr(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The ``SecretStr`` wrapping in the request model means stringifying
+    the request never leaks the password. This is a sanity check that
+    the API response itself does not echo the cleartext back either.
+    """
+    _install_download_config(monkeypatch, b"cfg\n")
+
+    async def fake_set(
+        transport: object, **kw: object
+    ) -> SetDevicePasswordsResponse:
+        return SetDevicePasswordsResponse(applied=True, raw_body=None)
+
+    monkeypatch.setattr(security_module, "set_device_passwords", fake_set)
+    r = client.put(
+        "/api/v1/security/device-passwords", json=_DEVICE_PASSWORDS_BODY
+    )
+    assert r.status_code == 200, r.text
+    assert "op-secret" not in r.text
+    assert "mgr-secret" not in r.text

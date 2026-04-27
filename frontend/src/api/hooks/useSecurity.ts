@@ -9,6 +9,7 @@
  *   GET  /api/v1/security/ssl-state               -> SSLState
  *   PUT  /api/v1/security/web-access              -> SetSSLResponse (lockout-risky)
  *   POST /api/v1/security/web-managers            -> SetWebManagerResponse (lockout-risky)
+ *   PUT  /api/v1/security/device-passwords        -> SetDevicePasswordsResponse (lockout-risky)
  *   PUT  /api/v1/security/per-port/{port}         -> SetPerportResponse
  *   POST /api/v1/security/intrusion/reset         -> ResetIntrusionFlagsResponse
  *
@@ -16,9 +17,6 @@
  *   1. Its own resource query (so the UI refetches the fresh state), and
  *   2. ["backups"]  (the pre-write autobackup is now on disk — the Backups
  *      tab should show it next time the user opens it).
- *
- * There is NO hook for device-passwords. That operation is explicitly
- * unreachable from the backend (see test_device_passwords_endpoint_does_not_exist_returns_404).
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost, apiPut, type ApiError } from "@/api/client";
@@ -45,6 +43,13 @@ export type ReplaceWebManagerRequest =
   components["schemas"]["ReplaceWebManagerRequest"];
 export type DeleteWebManagerRequest =
   components["schemas"]["DeleteWebManagerRequest"];
+
+export type SetDevicePasswordsBody =
+  components["schemas"]["SetDevicePasswordsBody"];
+export type SetDevicePasswordsRequest =
+  components["schemas"]["SetDevicePasswordsRequest"];
+export type SetDevicePasswordsResponse =
+  components["schemas"]["SetDevicePasswordsResponse"];
 
 export type SetPerportBody = components["schemas"]["SetPerportBody"];
 export type SetPerportRequest = components["schemas"]["SetPerportRequest"];
@@ -129,6 +134,25 @@ export function useSetWebManager() {
       ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["security", "web-managers"] });
+      void qc.invalidateQueries({ queryKey: ["backups"] });
+    },
+  });
+}
+
+export function useSetDevicePasswords() {
+  const qc = useQueryClient();
+  return useMutation<
+    SetDevicePasswordsResponse,
+    ApiError,
+    SetDevicePasswordsBody
+  >({
+    mutationFn: (body) =>
+      apiPut<SetDevicePasswordsResponse, SetDevicePasswordsBody>(
+        "/api/v1/security/device-passwords",
+        body,
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["security", "web-access"] });
       void qc.invalidateQueries({ queryKey: ["backups"] });
     },
   });

@@ -1,5 +1,5 @@
 """Security API (Task 3.4): web access, authorized managers, per-port security,
-intrusion log, SSL state.
+intrusion log, SSL state, device passwords.
 
 Endpoints
 ---------
@@ -10,35 +10,30 @@ Reads (5):
   GET  /api/v1/security/intrusion     -> IntrusionLogResponse
   GET  /api/v1/security/ssl-state     -> SSLState
 
-Writes (4):
-  PUT  /api/v1/security/web-access    -> SetSSLResponse       (LOCKOUT-RISKY)
-  POST /api/v1/security/web-managers  -> SetWebManagerResponse (LOCKOUT-RISKY)
-  PUT  /api/v1/security/per-port/{port}          -> SetPerportResponse
-  POST /api/v1/security/intrusion/reset          -> ResetIntrusionFlagsResponse
-
-Explicitly NOT exposed
-----------------------
-There is **no** HTTP surface for ``set_device_passwords``. Changing Manager
-/ Operator credentials is a PHYSICAL-RECOVERY-ONLY lockout risk (the 2810
-firmware ships the password cleartext in the URL query string, so enabling
-it through a web UI would be doubly dangerous). The Phase 3 UI never
-invokes that operation — the user types it manually into the legacy applet
-when they choose, with a verified backup in hand.
-
-The negative test ``test_device_passwords_endpoint_does_not_exist_returns_404``
-guards this block.
+Writes (5):
+  PUT  /api/v1/security/web-access        -> SetSSLResponse              (LOCKOUT-RISKY)
+  POST /api/v1/security/web-managers      -> SetWebManagerResponse       (LOCKOUT-RISKY)
+  PUT  /api/v1/security/device-passwords  -> SetDevicePasswordsResponse  (LOCKOUT-RISKY)
+  PUT  /api/v1/security/per-port/{port}   -> SetPerportResponse
+  POST /api/v1/security/intrusion/reset   -> ResetIntrusionFlagsResponse
 
 Write-safety policy
 -------------------
-All four writes go through :func:`app.write_safety.write_with_autobackup`,
+All five writes go through :func:`app.write_safety.write_with_autobackup`,
 which takes a pre-write backup *before* any switch write is issued.
 
-The two lockout-risky writes (web-access / web-managers) additionally
-require :func:`require_host_confirmation` — the caller must type the
-current ``SWITCH_HOST`` into ``confirm_switch_host`` before the request is
-accepted. The other two (per-port, intrusion-reset) do not reach that
-bar: per-port tweaks are reversible via the pre-write backup, and
-intrusion-reset only clears cosmetic alert flags.
+The three lockout-risky writes (web-access / web-managers / device-passwords)
+additionally require :func:`require_host_confirmation` — the caller must
+type the current ``SWITCH_HOST`` into ``confirm_switch_host`` before the
+request is accepted. The other two (per-port, intrusion-reset) do not
+reach that bar: per-port tweaks are reversible via the pre-write backup,
+and intrusion-reset only clears cosmetic alert flags.
+
+``device-passwords`` is the most lockout-risky write of the three: a
+mistyped Manager password is recoverable only via a physical
+factory-reset of the switch. The firmware also transmits the new password
+cleartext in the URL query string — a 2810 protocol flaw that we mirror
+faithfully. The UI must surface both risks before submitting.
 """
 from __future__ import annotations
 
@@ -53,6 +48,8 @@ from procurve_client.models.security import (
     IntrusionLogResponse,
     PerportsResponse,
     ResetIntrusionFlagsResponse,
+    SetDevicePasswordsRequest,
+    SetDevicePasswordsResponse,
     SetPerportRequest,
     SetPerportResponse,
     SetSSLRequest,
@@ -70,6 +67,7 @@ from procurve_client.operations.security import (
     get_web_access_page,
     get_web_managers,
     reset_intrusion_flags,
+    set_device_passwords,
     set_perport,
     set_ssl,
     set_web_manager,
@@ -103,6 +101,19 @@ class SetWebManagerBody(BaseModel):
     """
 
     request: SetWebManagerRequest
+    confirm_switch_host: str
+
+
+class SetDevicePasswordsBody(BaseModel):
+    """Body for ``PUT /api/v1/security/device-passwords``.
+
+    ``request`` carries the four credential pairs (Operator + Manager
+    username / password / confirm). ``confirm_switch_host`` gates against
+    casual mis-clicks — recovery from a wrong Manager password is
+    physical-factory-reset only.
+    """
+
+    request: SetDevicePasswordsRequest
     confirm_switch_host: str
 
 
@@ -205,6 +216,35 @@ async def write_web_managers(
         store=store,
         transport=transport,
         write=lambda: set_web_manager(transport, request=body.request),
+    )
+
+
+@router.put("/device-passwords", response_model=SetDevicePasswordsResponse)
+async def write_device_passwords(
+    body: SetDevicePasswordsBody,
+    transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
+    settings: Settings = Depends(get_app_settings),  # noqa: B008
+    store: BackupStore = Depends(get_backup_store),  # noqa: B008
+) -> SetDevicePasswordsResponse:
+    """Change Operator and Manager credentials.
+
+    LOCKOUT RISK (most severe of the three): if you mistype the Manager
+    password — or supply a non-matching confirm — recovery requires a
+    physical factory-reset of the switch. There is no software path back
+    in. The firmware also ships the new password cleartext in the URL
+    query string (a 2810 protocol flaw mirrored faithfully); send this
+    request only over a trusted link or with HTTPS terminated upstream.
+
+    Gated like the other lockout-risky writes: ``confirm_switch_host``
+    must match ``settings.switch_host``, and a pre-write backup is taken
+    before the credential change is issued.
+    """
+    require_host_confirmation(body.confirm_switch_host, settings)
+    return await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: set_device_passwords(transport, request=body.request),
     )
 
 

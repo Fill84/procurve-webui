@@ -868,6 +868,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/security/device-passwords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Device Passwords
+         * @description Change Operator and Manager credentials.
+         *
+         *     LOCKOUT RISK (most severe of the three): if you mistype the Manager
+         *     password — or supply a non-matching confirm — recovery requires a
+         *     physical factory-reset of the switch. There is no software path back
+         *     in. The firmware also ships the new password cleartext in the URL
+         *     query string (a 2810 protocol flaw mirrored faithfully); send this
+         *     request only over a trusted link or with HTTPS terminated upstream.
+         *
+         *     Gated like the other lockout-risky writes: ``confirm_switch_host``
+         *     must match ``settings.switch_host``, and a pre-write backup is taken
+         *     before the credential change is issued.
+         */
+        put: operations["write_device_passwords_api_v1_security_device_passwords_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security/per-port/{port}": {
         parameters: {
             query?: never;
@@ -2223,6 +2254,75 @@ export interface components {
             igmp?: boolean | null;
             /** Spanning Tree */
             spanning_tree?: boolean | null;
+        };
+        /**
+         * SetDevicePasswordsBody
+         * @description Body for ``PUT /api/v1/security/device-passwords``.
+         *
+         *     ``request`` carries the four credential pairs (Operator + Manager
+         *     username / password / confirm). ``confirm_switch_host`` gates against
+         *     casual mis-clicks — recovery from a wrong Manager password is
+         *     physical-factory-reset only.
+         */
+        SetDevicePasswordsBody: {
+            request: components["schemas"]["SetDevicePasswordsRequest"];
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /**
+         * SetDevicePasswordsRequest
+         * @description Arguments for the FORBIDDEN password-change GET.
+         *
+         *     `operator_password` / `manager_password` use `SecretStr` so the
+         *     cleartext is never included in `repr()` / log emissions. The
+         *     confirm fields default to equal-the-primary semantically; callers
+         *     can override explicitly for byte-exact parity with the legacy form.
+         *
+         *     All fields travel as query-string params on a GET — a protocol
+         *     flaw in the 2810 firmware, mirrored faithfully.
+         */
+        SetDevicePasswordsRequest: {
+            /**
+             * Operator Username
+             * @default
+             */
+            operator_username: string;
+            /**
+             * Operator Password
+             * Format: password
+             * @default
+             */
+            operator_password: string;
+            /** Operator Password Confirm */
+            operator_password_confirm?: string | null;
+            /**
+             * Manager Username
+             * @default
+             */
+            manager_username: string;
+            /**
+             * Manager Password
+             * Format: password
+             * @default
+             */
+            manager_password: string;
+            /** Manager Password Confirm */
+            manager_password_confirm?: string | null;
+        };
+        /**
+         * SetDevicePasswordsResponse
+         * @description Return shape for `/security/web_access.html` (write path).
+         */
+        SetDevicePasswordsResponse: {
+            /**
+             * Applied
+             * @default true
+             */
+            applied: boolean;
+            /** Message */
+            message?: string | null;
+            /** Raw Body */
+            raw_body?: string | null;
         };
         /**
          * SetDiffservBody
@@ -4158,6 +4258,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SSLState"];
+                };
+            };
+        };
+    };
+    write_device_passwords_api_v1_security_device_passwords_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDevicePasswordsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDevicePasswordsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
