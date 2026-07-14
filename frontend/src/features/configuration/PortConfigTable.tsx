@@ -45,24 +45,24 @@ export function PortConfigTable() {
   const rows = ports.data?.ports ?? [];
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Per-port configuration
         </h4>
         {ports.isLoading && (
-          <span className="text-xs text-neutral-500">Loading…</span>
+          <span className="text-xs text-muted-foreground">Loading…</span>
         )}
       </div>
 
       {ports.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mb-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load port config</p>
           <p className="mt-1 break-all">{ports.error.message}</p>
           <button
             type="button"
             onClick={() => ports.refetch()}
-            className="mt-2 rounded-md border border-red-400 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100"
+            className="mt-2 rounded-md border border-red-400 dark:border-red-900 bg-card px-3 py-1.5 text-sm font-medium text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             Retry
           </button>
@@ -70,12 +70,12 @@ export function PortConfigTable() {
       )}
 
       {lastResult && (
-        <p className="mb-3 text-sm italic text-neutral-700">{lastResult}</p>
+        <p className="mb-3 text-sm italic text-foreground">{lastResult}</p>
       )}
 
-      <div className="overflow-x-auto rounded border border-neutral-200">
+      <div className="overflow-x-auto rounded border border-border">
         <table className="min-w-full text-sm">
-          <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-600">
+          <thead className="bg-muted text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-3 py-2 text-left">Port</th>
               <th className="px-3 py-2 text-left">Name</th>
@@ -86,12 +86,12 @@ export function PortConfigTable() {
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-200">
+          <tbody className="divide-y divide-border">
             {rows.length === 0 && !ports.isLoading && (
               <tr>
                 <td
                   colSpan={7}
-                  className="px-3 py-3 text-center text-neutral-500"
+                  className="px-3 py-3 text-center text-muted-foreground"
                 >
                   No ports reported.
                 </td>
@@ -144,7 +144,7 @@ function PortRow({
         <button
           type="button"
           onClick={onEdit}
-          className="rounded border border-neutral-300 bg-white px-2 py-1 text-xs font-medium hover:bg-neutral-50"
+          className="rounded border border-border bg-card px-2 py-1 text-xs font-medium hover:bg-muted"
         >
           Edit…
         </button>
@@ -235,13 +235,13 @@ function EditPortDialog({
       onClick={() => !mutation.isPending && onClose()}
     >
       <div
-        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+        className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h5 className="text-base font-semibold text-neutral-900">
+        <h5 className="text-base font-semibold text-foreground">
           Edit port {port}
         </h5>
-        <p className="mt-0.5 text-xs text-neutral-500">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           A pre-write backup is taken automatically before the change is
           applied.
         </p>
@@ -251,14 +251,14 @@ function EditPortDialog({
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-8 animate-pulse rounded border border-neutral-200 bg-neutral-100"
+                className="h-8 animate-pulse rounded border border-border bg-muted"
               />
             ))}
           </div>
         )}
 
         {form.error instanceof Error && (
-          <div className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <div className="mt-4 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
             <p className="font-medium">Failed to load port form</p>
             <p className="mt-1 break-all">{form.error.message}</p>
           </div>
@@ -269,7 +269,7 @@ function EditPortDialog({
             <div>
               <label
                 htmlFor="port-name"
-                className="block text-xs font-medium text-neutral-700"
+                className="block text-xs font-medium text-foreground"
               >
                 Port name
               </label>
@@ -279,9 +279,9 @@ function EditPortDialog({
                 value={name}
                 maxLength={64}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Must not contain <code className="font-mono">~</code>.
               </p>
             </div>
@@ -298,7 +298,7 @@ function EditPortDialog({
             <div>
               <label
                 htmlFor="port-mode"
-                className="block text-xs font-medium text-neutral-700"
+                className="block text-xs font-medium text-foreground"
               >
                 Speed / duplex
               </label>
@@ -306,7 +306,7 @@ function EditPortDialog({
                 id="port-mode"
                 value={mode}
                 onChange={(e) => setMode(Number(e.target.value) as PortMode)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 {MODE_OPTIONS.map((m) => (
                   <option key={m} value={m}>
@@ -326,7 +326,7 @@ function EditPortDialog({
               <span>
                 Flow control enabled
                 {flowControlForbidden && (
-                  <span className="ml-1 text-xs text-neutral-500">
+                  <span className="ml-1 text-xs text-muted-foreground">
                     (not allowed with half-duplex modes)
                   </span>
                 )}
@@ -336,7 +336,7 @@ function EditPortDialog({
         )}
 
         {errorMessage && (
-          <div className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <div className="mt-4 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
             <p className="font-semibold">Save failed</p>
             <p className="mt-1 break-all">{errorMessage}</p>
           </div>
@@ -347,7 +347,7 @@ function EditPortDialog({
             type="button"
             onClick={onClose}
             disabled={mutation.isPending}
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
           >
             Cancel
           </button>

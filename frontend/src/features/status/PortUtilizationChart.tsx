@@ -68,7 +68,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
 
   return (
     <div className="mt-4">
-      <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-600">
+      <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Port Utilization
       </h4>
 
@@ -79,7 +79,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
             height={totalHeight}
             role="img"
             aria-label="Port utilisation bar chart"
-            className="block"
+            className="block mx-auto"
           >
             {/* Gridlines + Y-axis labels at 30, 70, 100 */}
             {[30, 70, 100].map((pct) => {
@@ -91,7 +91,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                     x2={chartWidth - rightPad}
                     y1={y}
                     y2={y}
-                    stroke="#e5e7eb"
+                    stroke="hsl(var(--border))"
                     strokeWidth={1}
                     vectorEffect="non-scaling-stroke"
                   />
@@ -99,7 +99,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                     x={leftPad - 6}
                     y={y + 3}
                     fontSize={10}
-                    fill="#6b7280"
+                    fill="hsl(var(--muted-foreground))"
                     textAnchor="end"
                   >
                     {pct}%
@@ -130,7 +130,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                     y={plotTop}
                     width={barWidth}
                     height={chartHeight}
-                    fill="#f9fafb"
+                    fill="hsl(var(--muted))"
                   />
                   {p.usage1 > 0 && (
                     <rect
@@ -169,7 +169,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                     x2={x + barWidth}
                     y1={plotBottom}
                     y2={plotBottom}
-                    stroke="#9ca3af"
+                    stroke="hsl(var(--border))"
                     strokeWidth={1}
                     vectorEffect="non-scaling-stroke"
                   />
@@ -179,7 +179,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                     x={x + barWidth / 2}
                     y={plotBottom + labelHeight - 6}
                     fontSize={10}
-                    fill="#374151"
+                    fill="hsl(var(--foreground))"
                     textAnchor="middle"
                   >
                     {p.port}
@@ -192,8 +192,8 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                     >
                       <circle
                         r={7}
-                        fill="#ffffff"
-                        stroke="#6b7280"
+                        fill="hsl(var(--card))"
+                        stroke="hsl(var(--muted-foreground))"
                         strokeWidth={1}
                         vectorEffect="non-scaling-stroke"
                       />
@@ -202,7 +202,7 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
                         y1={5}
                         x2={5}
                         y2={-5}
-                        stroke="#6b7280"
+                        stroke="hsl(var(--muted-foreground))"
                         strokeWidth={1.5}
                         vectorEffect="non-scaling-stroke"
                       />
@@ -246,8 +246,8 @@ export function PortUtilizationChart({ usage, portStatus }: Props) {
 
 function UtilizationLegend() {
   return (
-    <div className="flex flex-col gap-1 rounded border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
-      <div className="mb-1 font-semibold uppercase tracking-wide text-neutral-500">
+    <div className="flex flex-col gap-1 rounded border border-border bg-muted p-3 text-xs text-foreground">
+      <div className="mb-1 font-semibold uppercase tracking-wide text-muted-foreground">
         Legend
       </div>
       <LegendSwatch color={COLOR_USAGE1} label="% Unicast Rx or All Tx" />
@@ -264,15 +264,15 @@ function UtilizationLegend() {
       <div className="flex items-center gap-1.5">
         <span
           aria-hidden
-          className="inline-block h-3 w-3 rounded-full border border-neutral-400"
+          className="inline-block h-3 w-3 rounded-full border border-border"
           style={{ backgroundColor: LED_COLORS.N }}
         />
         Port Not Connected
       </div>
       <div className="flex items-center gap-1.5">
         <svg width={12} height={12} viewBox="-6 -6 12 12" aria-hidden>
-          <circle r={5} fill="#ffffff" stroke="#6b7280" strokeWidth={1} />
-          <line x1={-4} y1={4} x2={4} y2={-4} stroke="#6b7280" strokeWidth={1.2} />
+          <circle r={5} fill="hsl(var(--card))" stroke="hsl(var(--muted-foreground))" strokeWidth={1} />
+          <line x1={-4} y1={4} x2={4} y2={-4} stroke="hsl(var(--muted-foreground))" strokeWidth={1.2} />
         </svg>
         Port Disabled
       </div>

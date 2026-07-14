@@ -21,43 +21,43 @@ export function IntrusionLogCard() {
   };
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Intrusion log
         </h4>
         <button
           type="button"
           onClick={handleReset}
           disabled={reset.isPending}
-          className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-50"
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted disabled:opacity-50"
         >
           {reset.isPending ? "Resetting…" : "Reset flags"}
         </button>
       </div>
 
       {intrusion.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           Failed to fetch intrusion log: {intrusion.error.message}
         </div>
       )}
 
       {errorMessage && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           <p className="font-semibold">Reset failed</p>
           <p className="mt-1 break-all">{errorMessage}</p>
         </div>
       )}
 
       {reset.isSuccess && !errorMessage && (
-        <p className="mb-3 text-sm italic text-neutral-700">
+        <p className="mb-3 text-sm italic text-foreground">
           Intrusion flags cleared.
         </p>
       )}
 
-      <div className="overflow-x-auto rounded border border-neutral-200">
+      <div className="overflow-x-auto rounded border border-border">
         <table className="min-w-full text-sm">
-          <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-600">
+          <thead className="bg-muted text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-3 py-2 text-left">Port</th>
               <th className="px-3 py-2 text-left">Name</th>
@@ -65,12 +65,12 @@ export function IntrusionLogCard() {
               <th className="px-3 py-2 text-left">Timestamp</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-200">
+          <tbody className="divide-y divide-border">
             {entries.length === 0 && !intrusion.isLoading && (
               <tr>
                 <td
                   colSpan={4}
-                  className="px-3 py-3 text-center text-neutral-500"
+                  className="px-3 py-3 text-center text-muted-foreground"
                 >
                   No intrusion events recorded.
                 </td>

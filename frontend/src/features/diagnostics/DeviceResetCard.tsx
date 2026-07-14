@@ -66,11 +66,11 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
     <>
       Expected:{" "}
       {ipReady ? (
-        <span className="font-mono text-neutral-700">{expectedIp}</span>
+        <span className="font-mono text-foreground">{expectedIp}</span>
       ) : identity.isLoading ? (
         <span className="italic">loading identity…</span>
       ) : (
-        <span className="italic text-red-700">
+        <span className="italic text-red-700 dark:text-red-300">
           unknown — identity not loaded
         </span>
       )}
@@ -78,7 +78,7 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
   );
 
   const body = (
-    <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+    <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
       <p className="font-semibold">Factory reset</p>
       <p className="mt-1">
         This reboots the switch and restores factory defaults — including
@@ -94,19 +94,19 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
 
   return (
     <>
-      <section className="rounded-lg border border-red-300 bg-red-50/50 p-6 shadow-sm">
+      <section className="rounded-lg border border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/40 p-6 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-red-700">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
               Danger zone
             </h4>
-            <p className="mt-2 text-sm text-red-900">
+            <p className="mt-2 text-sm text-red-900 dark:text-red-300">
               Reset the switch to factory defaults. This reboots the device,
               drops traffic, and removes network configuration including the
               management IP.
             </p>
             {lastResult && (
-              <p className="mt-2 text-sm italic text-neutral-700">
+              <p className="mt-2 text-sm italic text-foreground">
                 {lastResult}
               </p>
             )}
@@ -114,7 +114,7 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
           <button
             type="button"
             onClick={openDialog}
-            className="whitespace-nowrap rounded-md border border-red-600 bg-white px-3 py-1.5 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-100"
+            className="whitespace-nowrap rounded-md border border-red-600 bg-card px-3 py-1.5 text-sm font-semibold text-red-700 dark:text-red-300 shadow-sm hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             Reset to factory defaults…
           </button>
@@ -136,7 +136,7 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
         busy={reset.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
               <p className="font-semibold">Reset failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

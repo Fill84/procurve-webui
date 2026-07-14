@@ -68,24 +68,24 @@ export function DeviceFeaturesCard() {
   const canSave = !mutation.isPending && dirty;
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Device features
         </h4>
         {query.isLoading && (
-          <span className="text-xs text-neutral-500">Loading…</span>
+          <span className="text-xs text-muted-foreground">Loading…</span>
         )}
       </div>
 
       {query.error instanceof Error && (
-        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load device features</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
             type="button"
             onClick={() => query.refetch()}
-            className="mt-2 rounded-md border border-red-400 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100"
+            className="mt-2 rounded-md border border-red-400 dark:border-red-900 bg-card px-3 py-1.5 text-sm font-medium text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             Retry
           </button>
@@ -95,8 +95,8 @@ export function DeviceFeaturesCard() {
       {query.data && (
         <>
           <dl className="mb-4 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
-            <dt className="text-neutral-500">VLAN count</dt>
-            <dd className="font-mono text-neutral-700">
+            <dt className="text-muted-foreground">VLAN count</dt>
+            <dd className="font-mono text-foreground">
               {query.data.vlan_count}
             </dd>
           </dl>
@@ -107,11 +107,11 @@ export function DeviceFeaturesCard() {
                 type="checkbox"
                 checked={igmp}
                 onChange={(e) => setIgmp(e.target.checked)}
-                className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
               />
-              <span className="font-medium text-neutral-800">IGMP snooping</span>
+              <span className="font-medium text-foreground">IGMP snooping</span>
               {query.data.igmp === null && (
-                <span className="text-xs text-neutral-400">
+                <span className="text-xs text-muted-foreground">
                   (not reported by switch)
                 </span>
               )}
@@ -121,13 +121,13 @@ export function DeviceFeaturesCard() {
                 type="checkbox"
                 checked={stp}
                 onChange={(e) => setStp(e.target.checked)}
-                className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
               />
-              <span className="font-medium text-neutral-800">
+              <span className="font-medium text-foreground">
                 Spanning Tree
               </span>
               {query.data.spanning_tree === null && (
-                <span className="text-xs text-neutral-400">
+                <span className="text-xs text-muted-foreground">
                   (not reported by switch)
                 </span>
               )}
@@ -153,20 +153,20 @@ export function DeviceFeaturesCard() {
                   setLastResult(null);
                   mutation.reset();
                 }}
-                className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline"
+                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
                 Revert
               </button>
             )}
             {lastResult && (
-              <span className="text-sm italic text-neutral-700">
+              <span className="text-sm italic text-foreground">
                 {lastResult}
               </span>
             )}
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
               <p className="font-semibold">Save failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

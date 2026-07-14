@@ -17,7 +17,7 @@ export function DiagnosticsPage() {
     <div className="p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold">Diagnostics</h2>
-        <p className="mt-0.5 text-xs text-neutral-500">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Run ping/link tests, fetch the current running-config, or (with care)
           reset the switch to factory defaults.
         </p>

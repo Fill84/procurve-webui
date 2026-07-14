@@ -49,6 +49,7 @@ import { PortUtilizationChart } from "./PortUtilizationChart";
 import { AlertDetailDialog } from "./AlertDetailDialog";
 import { formatUptime } from "@/lib/format";
 import { formatAlertTimestamp } from "@/lib/format-alert";
+import { useLiveUptime } from "@/lib/utils";
 
 export function StatusOverviewPage() {
   const portsQuery = usePortStatus();
@@ -79,6 +80,12 @@ export function StatusOverviewPage() {
       .sort((a, b) => b.ts_centiseconds - a.ts_centiseconds)
       .slice(0, 10);
   }, [alertsQuery.data]);
+
+  // Call hook unconditionally, outside of JSX
+  const liveUptime = useLiveUptime(
+    formatUptime,
+    identityQuery.data?.uptime_centiseconds ?? 0,
+  );
 
   // Selection state. Keyed by row_id so it survives re-renders driven by
   // the 30 s alert-log refetch, but we prune ids that no longer exist
@@ -206,19 +213,19 @@ export function StatusOverviewPage() {
             identityQuery.refetch();
           }}
           disabled={portsQuery.isFetching || deviceQuery.isFetching}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+          className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
         >
           {portsQuery.isFetching ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
       {/* Chassis */}
-      <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+      <section className="mb-6 rounded-lg border border-border bg-card p-4 shadow-sm">
         {portsQuery.isLoading && (
-          <div className="h-40 animate-pulse rounded bg-neutral-100" />
+          <div className="h-40 animate-pulse rounded bg-muted" />
         )}
         {portsQuery.isError && (
-          <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <div className="rounded border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
             Failed to load port status:{" "}
             {portsQuery.error instanceof Error
               ? portsQuery.error.message
@@ -234,12 +241,12 @@ export function StatusOverviewPage() {
       </section>
 
       {/* Port utilisation chart (parity with the legacy applet) */}
-      <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+      <section className="mb-6 rounded-lg border border-border bg-card p-4 shadow-sm">
         {usageQuery.isLoading && (
-          <div className="h-40 animate-pulse rounded bg-neutral-100" />
+          <div className="h-40 animate-pulse rounded bg-muted" />
         )}
         {usageQuery.isError && (
-          <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <div className="rounded border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
             Failed to load port utilisation:{" "}
             {usageQuery.error instanceof Error
               ? usageQuery.error.message
@@ -282,20 +289,20 @@ export function StatusOverviewPage() {
           label="Uptime"
           value={
             identityQuery.data
-              ? formatUptime(identityQuery.data.uptime_centiseconds)
+              ? liveUptime
               : "—"
           }
         />
       </section>
 
       {/* Recent alerts */}
-      <section className="rounded-lg border border-neutral-200 bg-white shadow-sm">
-        <header className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+      <section className="rounded-lg border border-border bg-card shadow-sm">
+        <header className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Recent alerts
           </h3>
           {alertsQuery.data && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-muted-foreground">
               Showing {recentAlerts.length} of {alertsQuery.data.events.length}
             </span>
           )}
@@ -303,8 +310,8 @@ export function StatusOverviewPage() {
 
         {/* Action bar */}
         {alertsQuery.data && recentAlerts.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/60 px-4 py-2">
-            <span className="text-xs text-neutral-600">
+          <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/60 px-4 py-2">
+            <span className="text-xs text-muted-foreground">
               {selectedCount === 0
                 ? "Click a row to view details, or tick rows to ack/delete."
                 : `${selectedCount} selected`}
@@ -331,14 +338,14 @@ export function StatusOverviewPage() {
           </div>
         )}
         {mutationError && (
-          <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900">
+          <div className="border-b border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-2 text-sm text-red-900 dark:text-red-300">
             {mutationError}
           </div>
         )}
         {ackedCount !== null && (
           <div
             role="status"
-            className="border-b border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900"
+            className="border-b border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
           >
             {ackedCount === 1
               ? "1 event acknowledged. The switch keeps acked events in the log."
@@ -348,11 +355,11 @@ export function StatusOverviewPage() {
 
         {alertsQuery.isLoading && (
           <div className="p-4">
-            <div className="h-24 animate-pulse rounded bg-neutral-100" />
+            <div className="h-24 animate-pulse rounded bg-muted" />
           </div>
         )}
         {alertsQuery.isError && (
-          <div className="p-4 text-sm text-red-900">
+          <div className="p-4 text-sm text-red-900 dark:text-red-300">
             Failed to load alert log:{" "}
             {alertsQuery.error instanceof Error
               ? alertsQuery.error.message
@@ -360,14 +367,14 @@ export function StatusOverviewPage() {
           </div>
         )}
         {alertsQuery.data && recentAlerts.length === 0 && (
-          <div className="p-4 text-sm text-neutral-500">
+          <div className="p-4 text-sm text-muted-foreground">
             No alerts reported.
           </div>
         )}
         {alertsQuery.data && recentAlerts.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
+              <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="w-10 px-4 py-2">
                     <input
@@ -409,9 +416,8 @@ export function StatusOverviewPage() {
                       tabIndex={0}
                       role="button"
                       aria-label={`Open event ${e.alert_name || e.row_id}`}
-                      className={`cursor-pointer border-t border-neutral-100 align-top hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none ${
-                        checked ? "bg-blue-50/40 hover:bg-blue-50/60" : ""
-                      }`}
+                      className={`cursor-pointer border-t border-border align-top hover:bg-muted focus:bg-muted focus:outline-none ${checked ? "bg-blue-50/40 dark:bg-blue-950/40 hover:bg-blue-50/60 dark:hover:bg-blue-950/40" : ""
+                        }`}
                     >
                       <td
                         className="px-4 py-2"
@@ -425,19 +431,19 @@ export function StatusOverviewPage() {
                           onClick={(ev) => ev.stopPropagation()}
                         />
                       </td>
-                      <td className="px-4 py-2 font-mono text-xs text-neutral-600">
+                      <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
                         {formatAlertTimestamp(
                           e.ts_centiseconds,
                           identityQuery.data?.uptime_centiseconds,
                         )}
                       </td>
-                      <td className="px-4 py-2 text-neutral-700">
+                      <td className="px-4 py-2 text-foreground">
                         {e.category || "—"}
                       </td>
-                      <td className="px-4 py-2 font-medium text-neutral-900">
+                      <td className="px-4 py-2 font-medium text-foreground">
                         {e.alert_name}
                       </td>
-                      <td className="px-4 py-2 text-neutral-700">
+                      <td className="px-4 py-2 text-foreground">
                         {e.description}
                       </td>
                     </tr>
@@ -478,7 +484,7 @@ export function StatusOverviewPage() {
         busy={delMutation.isPending}
         error={
           delMutation.error instanceof Error ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-900">
+            <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-2 text-sm text-red-900 dark:text-red-300">
               {delMutation.error.message}
             </div>
           ) : null
@@ -494,7 +500,7 @@ export function StatusOverviewPage() {
 
 function Legend() {
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-neutral-600">
+    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
       <LegendDot color="#22c55e" label="Up" />
       <LegendDot color="#f59e0b" label="Down (enabled)" />
       <LegendDot color="#a3a3a3" label="Disabled / no data" />
@@ -527,16 +533,16 @@ function SummaryCard({
   tone?: "ok" | "warn";
 }) {
   const valueColor =
-    tone === "warn" ? "text-amber-700" : "text-neutral-900";
+    tone === "warn" ? "text-amber-700 dark:text-amber-300" : "text-foreground";
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+    <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
       <div className={`mt-1 text-2xl font-semibold ${valueColor}`}>
         {value}
       </div>
-      {sub && <div className="mt-1 text-xs text-neutral-500">{sub}</div>}
+      {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}
     </div>
   );
 }
@@ -560,8 +566,8 @@ function ActionButton({
     "rounded-md border px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed";
   const palette =
     tone === "danger"
-      ? "border-red-300 text-red-800 hover:bg-red-50"
-      : "border-neutral-300 text-neutral-700 hover:bg-neutral-50";
+      ? "border-red-300 dark:border-red-900 text-red-800 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40"
+      : "border-border text-foreground hover:bg-muted";
   return (
     <button
       type="button"

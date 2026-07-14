@@ -45,9 +45,9 @@ export function LivePortChart({ port, bufferSize = 240 }: LivePortChartProps) {
   const showDisconnectedState = !connected && samples.length === 0;
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white shadow-sm">
-      <header className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+    <section className="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
+      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Live packet rate
         </h3>
         <div className="flex items-center gap-3">
@@ -56,7 +56,7 @@ export function LivePortChart({ port, bufferSize = 240 }: LivePortChartProps) {
             <button
               type="button"
               onClick={reconnect}
-              className="rounded-md border border-neutral-300 px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+              className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted"
             >
               Reconnect
             </button>
@@ -65,42 +65,50 @@ export function LivePortChart({ port, bufferSize = 240 }: LivePortChartProps) {
       </header>
       <div className="p-4">
         {showDisconnectedState ? (
-          <div className="flex h-[300px] flex-col items-center justify-center text-sm text-neutral-500">
+          <div className="flex h-[300px] flex-col items-center justify-center text-sm text-muted-foreground">
             <p>Live feed disconnected.</p>
             <button
               type="button"
               onClick={reconnect}
-              className="mt-3 rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+              className="mt-3 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               Reconnect
             </button>
           </div>
         ) : samples.length === 0 ? (
-          <div className="flex h-[300px] items-center justify-center text-sm text-neutral-500">
+          <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
             Waiting for first sample…
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={samples} margin={{ top: 5, right: 16, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="t"
                 type="number"
                 domain={["dataMin", "dataMax"]}
                 tickFormatter={(t: number) => formatClock(t)}
                 minTickGap={40}
-                stroke="#737373"
-                tick={{ fontSize: 11 }}
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               />
               <YAxis
                 allowDecimals={false}
-                stroke="#737373"
-                tick={{ fontSize: 11 }}
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                 width={56}
               />
               <Tooltip
                 labelFormatter={(t) => formatClock(t as number)}
                 formatter={(v) => (typeof v === "number" ? v.toFixed(1) : String(v))}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--popover))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "0.5rem",
+                  color: "hsl(var(--popover-foreground))",
+                }}
+                labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                itemStyle={{ color: "hsl(var(--popover-foreground))" }}
               />
               <Line
                 type="monotone"
@@ -121,10 +129,10 @@ export function LivePortChart({ port, bufferSize = 240 }: LivePortChartProps) {
             </LineChart>
           </ResponsiveContainer>
         )}
-        <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-neutral-600">
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
           <LegendSwatch color="#16a34a" label="Packets in/s" />
           <LegendSwatch color="#2563eb" label="Packets out/s" />
-          <span className="ml-auto text-neutral-500">
+          <span className="ml-auto text-muted-foreground">
             {samples.length} / {bufferSize} samples
           </span>
         </div>
@@ -139,15 +147,15 @@ function ConnectionPill({ connected }: { connected: boolean }) {
       className={
         "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium " +
         (connected
-          ? "bg-green-100 text-green-800"
-          : "bg-neutral-200 text-neutral-700")
+          ? "bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300"
+          : "bg-muted text-muted-foreground")
       }
     >
       <span
         aria-hidden
         className={
           "inline-block h-2 w-2 rounded-full " +
-          (connected ? "bg-green-600" : "bg-neutral-500")
+          (connected ? "bg-green-600" : "bg-muted-foreground")
         }
       />
       {connected ? "Live" : "Disconnected"}

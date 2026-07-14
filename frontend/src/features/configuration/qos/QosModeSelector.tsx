@@ -71,14 +71,14 @@ export function QosModeSelector({ mode, onModeChange }: QosModeSelectorProps) {
     mutation.error instanceof Error ? mutation.error.message : null;
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           QoS master mode
         </h4>
       </div>
 
-      <p className="mb-3 text-xs text-neutral-600">
+      <p className="mb-3 text-xs text-muted-foreground">
         The 2810 firmware does not expose the current mode as a read — the
         selection below controls both which sub-tables are visible and what
         the switch applies to inbound traffic. If unsure, pick the mode you
@@ -92,8 +92,8 @@ export function QosModeSelector({ mode, onModeChange }: QosModeSelectorProps) {
             className={
               "flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 text-sm " +
               (pending === opt.value
-                ? "border-blue-500 bg-blue-50"
-                : "border-neutral-300 bg-white hover:bg-neutral-50")
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40"
+                : "border-border bg-card hover:bg-muted")
             }
           >
             <input
@@ -105,10 +105,10 @@ export function QosModeSelector({ mode, onModeChange }: QosModeSelectorProps) {
               className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500"
             />
             <span className="flex-1">
-              <span className="block font-medium text-neutral-800">
+              <span className="block font-medium text-foreground">
                 {opt.label}
               </span>
-              <span className="mt-0.5 block text-xs text-neutral-500">
+              <span className="mt-0.5 block text-xs text-muted-foreground">
                 {opt.hint}
               </span>
             </span>
@@ -133,18 +133,18 @@ export function QosModeSelector({ mode, onModeChange }: QosModeSelectorProps) {
               setLastResult(null);
               mutation.reset();
             }}
-            className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline"
+            className="text-sm text-muted-foreground hover:text-foreground hover:underline"
           >
             Revert
           </button>
         )}
         {lastResult && (
-          <span className="text-sm italic text-neutral-700">{lastResult}</span>
+          <span className="text-sm italic text-foreground">{lastResult}</span>
         )}
       </div>
 
       {errorMessage && (
-        <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-semibold">Apply failed</p>
           <p className="mt-1 break-all">{errorMessage}</p>
         </div>

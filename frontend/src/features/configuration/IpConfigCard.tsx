@@ -117,7 +117,7 @@ export function IpConfigCard() {
 
   const body = (
     <div className="space-y-3">
-      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+      <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
         <p className="font-semibold">Lockout risk</p>
         <p className="mt-1">
           Changing the management IP / VLAN / DHCP mode can disconnect you
@@ -126,14 +126,14 @@ export function IpConfigCard() {
           follow you across an IP change.
         </p>
       </div>
-      <div className="rounded border border-neutral-200 bg-neutral-50 p-3 text-sm">
+      <div className="rounded border border-border bg-muted p-3 text-sm">
         <p className="font-semibold">Proposed</p>
         <dl className="mt-1 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-0.5">
-          <dt className="text-neutral-500">VLAN</dt>
+          <dt className="text-muted-foreground">VLAN</dt>
           <dd className="font-mono">{vlanId}</dd>
-          <dt className="text-neutral-500">Mode</dt>
+          <dt className="text-muted-foreground">Mode</dt>
           <dd>{modeLabel(mode)}</dd>
-          <dt className="text-neutral-500">Gateway</dt>
+          <dt className="text-muted-foreground">Gateway</dt>
           <dd className="font-mono">{gateway || "(empty)"}</dd>
         </dl>
       </div>
@@ -144,7 +144,7 @@ export function IpConfigCard() {
     <>
       Expected:{" "}
       {expectedIp ? (
-        <span className="font-mono text-neutral-700">{expectedIp}</span>
+        <span className="font-mono text-foreground">{expectedIp}</span>
       ) : (
         <span className="italic">loading identity…</span>
       )}
@@ -153,13 +153,13 @@ export function IpConfigCard() {
 
   return (
     <>
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             IP configuration
           </h4>
           {query.isLoading && (
-            <span className="text-xs text-neutral-500">Loading…</span>
+            <span className="text-xs text-muted-foreground">Loading…</span>
           )}
         </div>
 
@@ -168,20 +168,20 @@ export function IpConfigCard() {
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-8 animate-pulse rounded border border-neutral-200 bg-neutral-100"
+                className="h-8 animate-pulse rounded border border-border bg-muted"
               />
             ))}
           </div>
         )}
 
         {query.error instanceof Error && (
-          <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
             <p className="font-medium">Failed to load IP configuration</p>
             <p className="mt-1 break-all">{query.error.message}</p>
             <button
               type="button"
               onClick={() => query.refetch()}
-              className="mt-2 rounded-md border border-red-400 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100"
+              className="mt-2 rounded-md border border-red-400 dark:border-red-900 bg-card px-3 py-1.5 text-sm font-medium text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
             >
               Retry
             </button>
@@ -191,22 +191,22 @@ export function IpConfigCard() {
         {query.data && !editing && (
           <>
             <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
-              <dt className="text-neutral-500">VLAN</dt>
-              <dd className="font-mono text-neutral-900">
+              <dt className="text-muted-foreground">VLAN</dt>
+              <dd className="font-mono text-foreground">
                 {query.data.vlan_id}
               </dd>
-              <dt className="text-neutral-500">Mode</dt>
-              <dd className="text-neutral-900">{modeLabel(query.data.mode)}</dd>
-              <dt className="text-neutral-500">IP address</dt>
-              <dd className="font-mono text-neutral-900">
+              <dt className="text-muted-foreground">Mode</dt>
+              <dd className="text-foreground">{modeLabel(query.data.mode)}</dd>
+              <dt className="text-muted-foreground">IP address</dt>
+              <dd className="font-mono text-foreground">
                 {query.data.ip_address ?? "—"}
               </dd>
-              <dt className="text-neutral-500">Subnet mask</dt>
-              <dd className="font-mono text-neutral-900">
+              <dt className="text-muted-foreground">Subnet mask</dt>
+              <dd className="font-mono text-foreground">
                 {query.data.subnet_mask ?? "—"}
               </dd>
-              <dt className="text-neutral-500">Gateway</dt>
-              <dd className="font-mono text-neutral-900">
+              <dt className="text-muted-foreground">Gateway</dt>
+              <dd className="font-mono text-foreground">
                 {query.data.gateway}
               </dd>
             </dl>
@@ -214,12 +214,12 @@ export function IpConfigCard() {
               <button
                 type="button"
                 onClick={handleEdit}
-                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50"
+                className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted"
               >
                 Edit…
               </button>
               {lastResult && (
-                <span className="text-sm italic text-neutral-700">
+                <span className="text-sm italic text-foreground">
                   {lastResult}
                 </span>
               )}
@@ -229,7 +229,7 @@ export function IpConfigCard() {
 
         {query.data && editing && (
           <>
-            <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="mb-3 rounded-md border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm text-amber-900 dark:text-amber-300">
               <p className="font-semibold">Heads up</p>
               <p className="mt-1">
                 Changing the management IP may disconnect you. Verify you have
@@ -239,7 +239,7 @@ export function IpConfigCard() {
 
             <div className="grid gap-3">
               <div>
-                <label className="block text-xs font-medium text-neutral-700">
+                <label className="block text-xs font-medium text-foreground">
                   Address assignment
                 </label>
                 <div className="mt-1 flex flex-wrap items-center gap-4 text-sm">
@@ -277,7 +277,7 @@ export function IpConfigCard() {
                 <div>
                   <label
                     htmlFor="ip-vlan"
-                    className="block text-xs font-medium text-neutral-700"
+                    className="block text-xs font-medium text-foreground"
                   >
                     VLAN
                   </label>
@@ -288,14 +288,14 @@ export function IpConfigCard() {
                     max={4094}
                     value={vlanId}
                     onChange={(e) => setVlanId(Number(e.target.value) || 1)}
-                    className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full rounded-md border border-border px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="ip-gateway"
-                    className="block text-xs font-medium text-neutral-700"
+                    className="block text-xs font-medium text-foreground"
                   >
                     Gateway
                   </label>
@@ -305,12 +305,12 @@ export function IpConfigCard() {
                     value={gateway}
                     placeholder="e.g. 192.168.1.1"
                     onChange={(e) => setGateway(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full rounded-md border border-border px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-muted-foreground">
                 The switch does not let the web UI edit the IP address / subnet
                 mask directly — those are set via the VLAN-interface form.
                 They are shown read-only in the summary above.
@@ -332,7 +332,7 @@ export function IpConfigCard() {
                 type="button"
                 onClick={handleCancel}
                 disabled={mutation.isPending}
-                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -356,7 +356,7 @@ export function IpConfigCard() {
         busy={mutation.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
               <p className="font-semibold">Apply failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

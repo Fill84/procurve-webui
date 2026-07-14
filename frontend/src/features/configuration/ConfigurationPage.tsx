@@ -27,7 +27,7 @@ export function ConfigurationPage() {
     <div className="p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold">Configuration</h2>
-        <p className="mt-0.5 text-xs text-neutral-500">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           System identity, network addressing, per-port settings, device
           features, QoS, and support URLs. Lockout-risky writes (like the
           management IP) require typing the switch IP to confirm; every

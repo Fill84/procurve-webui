@@ -116,7 +116,7 @@ export function DevicePasswordsCard() {
 
   const dialogBody = (
     <div className="space-y-3">
-      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
         <p className="font-semibold">Physical-recovery lockout risk</p>
         <p className="mt-1">
           A wrong Manager password — or a non-matching confirm — locks every
@@ -125,7 +125,7 @@ export function DevicePasswordsCard() {
           Make sure you have console / SSH access ready before applying.
         </p>
       </div>
-      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
         <p className="font-semibold">Cleartext-on-the-wire warning</p>
         <p className="mt-1">
           The 2810 firmware sends the new password as a query-string
@@ -134,7 +134,7 @@ export function DevicePasswordsCard() {
           the right link before applying.
         </p>
       </div>
-      <div className="rounded border border-neutral-200 bg-neutral-50 p-3 text-sm">
+      <div className="rounded border border-border bg-muted p-3 text-sm">
         <p>
           <span className="font-semibold">Operator:</span>{" "}
           {form.operator_username.trim() === "" && form.operator_password === ""
@@ -153,7 +153,7 @@ export function DevicePasswordsCard() {
     <>
       Expected:{" "}
       {expectedIp ? (
-        <span className="font-mono text-neutral-700">{expectedIp}</span>
+        <span className="font-mono text-foreground">{expectedIp}</span>
       ) : (
         <span className="italic">loading identity…</span>
       )}
@@ -162,14 +162,14 @@ export function DevicePasswordsCard() {
 
   return (
     <>
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Device passwords
           </h4>
         </div>
 
-        <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           <p className="font-semibold">Physical-recovery lockout</p>
           <p className="mt-1">
             A wrong Manager password locks the switch. Recovery is the
@@ -180,8 +180,8 @@ export function DevicePasswordsCard() {
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Read-Only Access (Operator) */}
-          <fieldset className="rounded border border-neutral-200 p-4">
-            <legend className="px-2 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+          <fieldset className="rounded border border-border p-4">
+            <legend className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Read-Only Access (Operator)
             </legend>
             <div className="space-y-3">
@@ -218,8 +218,8 @@ export function DevicePasswordsCard() {
           </fieldset>
 
           {/* Read-Write Access (Manager) */}
-          <fieldset className="rounded border border-neutral-200 p-4">
-            <legend className="px-2 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+          <fieldset className="rounded border border-border p-4">
+            <legend className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Read-Write Access (Manager)
             </legend>
             <div className="space-y-3">
@@ -261,7 +261,7 @@ export function DevicePasswordsCard() {
             type="button"
             onClick={handleClear}
             disabled={setPasswords.isPending}
-            className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
           >
             Clear changes
           </button>
@@ -276,7 +276,7 @@ export function DevicePasswordsCard() {
         </div>
 
         {lastResult && (
-          <p className="mt-3 text-sm italic text-neutral-700">{lastResult}</p>
+          <p className="mt-3 text-sm italic text-foreground">{lastResult}</p>
         )}
       </section>
 
@@ -295,7 +295,7 @@ export function DevicePasswordsCard() {
         busy={setPasswords.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               <p className="font-semibold">Apply failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>
@@ -329,7 +329,7 @@ function PwField({
     <div>
       <label
         htmlFor={id}
-        className="block text-xs font-medium text-neutral-700"
+        className="block text-xs font-medium text-foreground"
       >
         {label}
       </label>
@@ -342,11 +342,11 @@ function PwField({
         spellCheck={false}
         className={`mt-1 w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
           error
-            ? "border-red-400 focus:border-red-500 focus:ring-red-500"
-            : "border-neutral-300 focus:border-blue-500 focus:ring-blue-500"
+            ? "border-red-400 focus:border-red-500 focus:ring-red-500 dark:border-red-900"
+            : "border-border focus:border-blue-500 focus:ring-blue-500"
         }`}
       />
-      {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-700 dark:text-red-300">{error}</p>}
     </div>
   );
 }

@@ -116,24 +116,24 @@ export function BobPortsCard() {
     mutation.error instanceof Error ? mutation.error.message : null;
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Device view — admin status
         </h4>
         {query.isLoading && (
-          <span className="text-xs text-neutral-500">Loading…</span>
+          <span className="text-xs text-muted-foreground">Loading…</span>
         )}
       </div>
 
       {query.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mb-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load port list</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
             type="button"
             onClick={() => query.refetch()}
-            className="mt-2 rounded-md border border-red-400 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100"
+            className="mt-2 rounded-md border border-red-400 dark:border-red-900 bg-card px-3 py-1.5 text-sm font-medium text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             Retry
           </button>
@@ -146,25 +146,25 @@ export function BobPortsCard() {
             <button
               type="button"
               onClick={() => stageAll(true)}
-              className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-800 hover:bg-neutral-100"
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
             >
               Enable all
             </button>
             <button
               type="button"
               onClick={() => stageAll(false)}
-              className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-800 hover:bg-neutral-100"
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
             >
               Disable all
             </button>
-            <span className="ml-2 text-xs text-neutral-500">
+            <span className="ml-2 text-xs text-muted-foreground">
               {serverPorts.length} port(s) · {dirty ? "pending changes" : "no pending changes"}
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded border border-neutral-200">
+          <div className="overflow-x-auto rounded border border-border">
             <table className="min-w-full text-sm">
-              <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-600">
+              <thead className="bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left">Port</th>
                   <th className="px-3 py-2 text-left">Label</th>
@@ -173,28 +173,28 @@ export function BobPortsCard() {
                   <th className="px-3 py-2 text-left">Admin</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-200">
+              <tbody className="divide-y divide-border">
                 {serverPorts.map((p: BobPort) => {
                   const want = staged[p.port] ?? p.enabled;
                   const changed = want !== p.enabled;
                   return (
                     <tr
                       key={p.port}
-                      className={changed ? "bg-amber-50" : undefined}
+                      className={changed ? "bg-amber-50 dark:bg-amber-950/40" : undefined}
                     >
                       <td className="px-3 py-1.5 font-mono">{p.port}</td>
-                      <td className="px-3 py-1.5 text-neutral-700">
+                      <td className="px-3 py-1.5 text-foreground">
                         {p.label || "—"}
                       </td>
-                      <td className="px-3 py-1.5 text-neutral-500">
+                      <td className="px-3 py-1.5 text-muted-foreground">
                         {p.kind}
                       </td>
                       <td className="px-3 py-1.5">
                         <span
                           className={
                             p.link
-                              ? "rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-800"
-                              : "rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-500"
+                              ? "rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-xs text-green-800 dark:text-green-300"
+                              : "rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
                           }
                         >
                           {p.link ? "up" : "down"}
@@ -206,7 +206,7 @@ export function BobPortsCard() {
                             type="checkbox"
                             checked={want}
                             onChange={() => toggleOne(p.port)}
-                            className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                            className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
                           />
                           <span>{want ? "Enabled" : "Disabled"}</span>
                         </label>
@@ -233,20 +233,20 @@ export function BobPortsCard() {
               <button
                 type="button"
                 onClick={revert}
-                className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline"
+                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
                 Revert
               </button>
             )}
             {lastResult && (
-              <span className="text-sm italic text-neutral-700">
+              <span className="text-sm italic text-foreground">
                 {lastResult}
               </span>
             )}
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
               <p className="font-semibold">Apply failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

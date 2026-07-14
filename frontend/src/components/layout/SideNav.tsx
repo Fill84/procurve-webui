@@ -21,7 +21,7 @@ const NAV_ITEMS: readonly NavItem[] = [
 
 export function SideNav() {
   return (
-    <nav className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 border-r border-neutral-200 bg-neutral-50 p-3">
+    <nav className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 border-r border-border bg-muted p-3">
       <ul className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => (
           <li key={item.to}>
@@ -31,10 +31,10 @@ export function SideNav() {
               // route; restrict its active styling to exact matches so other
               // tabs don't also render as active.
               activeOptions={item.to === "/" ? { exact: true } : undefined}
-              className="block rounded-md px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-200"
+              className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               activeProps={{
                 className:
-                  "block rounded-md px-3 py-2 text-sm bg-neutral-900 text-white",
+                  "block rounded-md px-3 py-2 text-sm bg-primary text-primary-foreground",
               }}
             >
               {item.label}

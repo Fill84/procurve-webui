@@ -33,15 +33,15 @@ export function PingCard() {
     ping.error instanceof Error ? ping.error.message : null;
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-      <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
+      <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Ping
       </h4>
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[16rem]">
           <label
             htmlFor="ping-destination"
-            className="block text-xs font-medium text-neutral-700"
+            className="block text-xs font-medium text-foreground"
           >
             Destination (IP or hostname)
           </label>
@@ -52,13 +52,13 @@ export function PingCard() {
             onChange={(e) => setDestination(e.target.value)}
             placeholder="e.g. 8.8.8.8"
             disabled={ping.isPending}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-neutral-50"
+            className="mt-1 w-full rounded-md border border-border px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-muted"
           />
         </div>
         <div className="w-24">
           <label
             htmlFor="ping-count"
-            className="block text-xs font-medium text-neutral-700"
+            className="block text-xs font-medium text-foreground"
           >
             Count
           </label>
@@ -70,7 +70,7 @@ export function PingCard() {
             value={packetCount}
             onChange={(e) => setPacketCount(Number(e.target.value) || 1)}
             disabled={ping.isPending}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-neutral-50"
+            className="mt-1 w-full rounded-md border border-border px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-muted"
           />
         </div>
         <button
@@ -83,14 +83,14 @@ export function PingCard() {
       </form>
 
       {errorMessage && (
-        <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-semibold">Ping failed</p>
           <p className="mt-1 break-all">{errorMessage}</p>
         </div>
       )}
 
       {result && !errorMessage && (
-        <div className="mt-3 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-800">
+        <div className="mt-3 rounded-md border border-border bg-muted p-3 text-sm text-foreground">
           <p>
             <span className="font-semibold">Results:</span>{" "}
             <span className="font-mono">
@@ -98,7 +98,7 @@ export function PingCard() {
             </span>{" "}
             successful
             {result.failures > 0 && (
-              <span className="ml-2 text-red-700">
+              <span className="ml-2 text-red-700 dark:text-red-300">
                 ({result.failures} failed)
               </span>
             )}

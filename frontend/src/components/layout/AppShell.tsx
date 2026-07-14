@@ -8,7 +8,7 @@ import { SideNav } from "./SideNav";
  */
 export function AppShell() {
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
+    <div className="min-h-screen bg-background text-foreground">
       <TopBar />
       <div className="flex">
         <SideNav />

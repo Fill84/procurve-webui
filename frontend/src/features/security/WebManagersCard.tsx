@@ -95,7 +95,7 @@ export function WebManagersCard() {
 
   const dialogBody = pending ? (
     <div className="space-y-3">
-      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
         <p className="font-semibold">Lockout risk</p>
         <p className="mt-1">
           The authorized-manager list is a whitelist. Changes take effect
@@ -103,7 +103,7 @@ export function WebManagersCard() {
           will be locked out of the web UI.
         </p>
       </div>
-      <div className="rounded border border-neutral-200 bg-neutral-50 p-3 text-sm">
+      <div className="rounded border border-border bg-muted p-3 text-sm">
         {pending.kind === "add" ? (
           <p>
             <span className="font-semibold">Add:</span>{" "}
@@ -132,7 +132,7 @@ export function WebManagersCard() {
     <>
       Expected:{" "}
       {expectedIp ? (
-        <span className="font-mono text-neutral-700">{expectedIp}</span>
+        <span className="font-mono text-foreground">{expectedIp}</span>
       ) : (
         <span className="italic">loading identity…</span>
       )}
@@ -141,25 +141,25 @@ export function WebManagersCard() {
 
   return (
     <>
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Authorized managers
           </h4>
           {managers.isLoading && (
-            <span className="text-xs text-neutral-500">Loading…</span>
+            <span className="text-xs text-muted-foreground">Loading…</span>
           )}
         </div>
 
         {managers.error instanceof Error && (
-          <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             Failed to fetch managers: {managers.error.message}
           </div>
         )}
 
-        <div className="overflow-x-auto rounded border border-neutral-200">
+        <div className="overflow-x-auto rounded border border-border">
           <table className="min-w-full text-sm">
-            <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-600">
+            <thead className="bg-muted text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 text-left">#</th>
                 <th className="px-3 py-2 text-left">IP</th>
@@ -168,12 +168,12 @@ export function WebManagersCard() {
                 <th className="px-3 py-2"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200">
+            <tbody className="divide-y divide-border">
               {entries.length === 0 && !managers.isLoading && (
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-3 py-3 text-center text-neutral-500"
+                    className="px-3 py-3 text-center text-muted-foreground"
                   >
                     No authorized-manager entries.
                   </td>
@@ -189,22 +189,22 @@ export function WebManagersCard() {
                     <button
                       type="button"
                       onClick={() => requestDelete(row)}
-                      className="rounded border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      className="rounded border border-red-300 bg-card px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
                     >
                       Remove…
                     </button>
                   </td>
                 </tr>
               ))}
-              <tr className="bg-neutral-50">
-                <td className="px-3 py-2 text-neutral-400">new</td>
+              <tr className="bg-muted">
+                <td className="px-3 py-2 text-muted-foreground">new</td>
                 <td className="px-3 py-2">
                   <input
                     type="text"
                     placeholder="IP"
                     value={newIp}
                     onChange={(e) => setNewIp(e.target.value)}
-                    className="w-full rounded-md border border-neutral-300 px-2 py-1 font-mono text-xs"
+                    className="w-full rounded-md border border-border px-2 py-1 font-mono text-xs"
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -213,7 +213,7 @@ export function WebManagersCard() {
                     placeholder="Mask"
                     value={newMask}
                     onChange={(e) => setNewMask(e.target.value)}
-                    className="w-full rounded-md border border-neutral-300 px-2 py-1 font-mono text-xs"
+                    className="w-full rounded-md border border-border px-2 py-1 font-mono text-xs"
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -222,7 +222,7 @@ export function WebManagersCard() {
                     onChange={(e) =>
                       setNewLevel(Number(e.target.value) as 1 | 2)
                     }
-                    className="rounded-md border border-neutral-300 px-2 py-1 text-xs"
+                    className="rounded-md border border-border px-2 py-1 text-xs"
                   >
                     <option value={2}>Manager</option>
                     <option value={1}>Operator</option>
@@ -233,7 +233,7 @@ export function WebManagersCard() {
                     type="button"
                     onClick={requestAdd}
                     disabled={!newIp.trim() || !expectedIp}
-                    className="rounded border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    className="rounded border border-red-300 bg-card px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
                   >
                     Add…
                   </button>
@@ -244,7 +244,7 @@ export function WebManagersCard() {
         </div>
 
         {lastResult && (
-          <p className="mt-3 text-sm italic text-neutral-700">{lastResult}</p>
+          <p className="mt-3 text-sm italic text-foreground">{lastResult}</p>
         )}
       </section>
 
@@ -269,7 +269,7 @@ export function WebManagersCard() {
         busy={setManager.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               <p className="font-semibold">Apply failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

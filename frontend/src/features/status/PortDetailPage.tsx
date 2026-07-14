@@ -45,7 +45,7 @@ export function PortDetailPage({ port: portStr }: { port: string }) {
     return (
       <div className="p-6">
         <BackLink />
-        <div className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mt-4 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           Invalid port id: <code className="font-mono">{portStr}</code>
         </div>
       </div>
@@ -70,7 +70,7 @@ export function PortDetailPage({ port: portStr }: { port: string }) {
             countersQuery.refetch();
           }}
           disabled={portsQuery.isFetching || countersQuery.isFetching}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+          className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
         >
           {portsQuery.isFetching || countersQuery.isFetching ? "Refreshing…" : "Refresh"}
         </button>
@@ -102,7 +102,7 @@ function BackLink() {
   return (
     <Link
       to="/status"
-      className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
+      className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline"
     >
       <span aria-hidden>&larr;</span> Back to status
     </Link>
@@ -124,22 +124,22 @@ function HeaderCard({
 }) {
   if (loading) {
     return (
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="h-8 w-48 animate-pulse rounded bg-neutral-100" />
-        <div className="mt-3 h-5 w-64 animate-pulse rounded bg-neutral-100" />
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
+        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="mt-3 h-5 w-64 animate-pulse rounded bg-muted" />
       </section>
     );
   }
   if (error) {
     return (
-      <section className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+      <section className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
         Failed to load port status: {error instanceof Error ? error.message : String(error)}
       </section>
     );
   }
   if (notFound || !portStatus) {
     return (
-      <section className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+      <section className="rounded-md border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm text-amber-900 dark:text-amber-300">
         Port {portNum} not found on this switch.
       </section>
     );
@@ -147,13 +147,13 @@ function HeaderCard({
 
   const linkUp = portStatus.link_status === "Up";
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <h2 className="text-xl font-semibold text-neutral-900">
+        <h2 className="text-xl font-semibold text-foreground">
           Port {portStatus.port}
         </h2>
         {portStatus.port_name && (
-          <span className="text-base text-neutral-600">
+          <span className="text-base text-muted-foreground">
             {portStatus.port_name}
           </span>
         )}
@@ -179,13 +179,13 @@ function StateBadge({ linkUp, enabled }: { linkUp: boolean; enabled: boolean }) 
   let cls: string;
   let label: string;
   if (linkUp) {
-    cls = "bg-green-100 text-green-800";
+    cls = "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300";
     label = "Link up";
   } else if (enabled) {
-    cls = "bg-amber-100 text-amber-800";
+    cls = "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300";
     label = "Link down";
   } else {
-    cls = "bg-neutral-200 text-neutral-700";
+    cls = "bg-muted text-foreground";
     label = "Disabled";
   }
   return (
@@ -200,10 +200,10 @@ function StateBadge({ linkUp, enabled }: { linkUp: boolean; enabled: boolean }) 
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="mt-0.5 font-medium text-neutral-900">{value}</dd>
+      <dd className="mt-0.5 font-medium text-foreground">{value}</dd>
     </div>
   );
 }
@@ -220,15 +220,15 @@ function CountersCard({
   available: boolean;
 }) {
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white shadow-sm">
-      <header className="border-b border-neutral-200 px-4 py-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+    <section className="rounded-lg border border-border bg-card shadow-sm">
+      <header className="border-b border-border px-4 py-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Counter totals
         </h3>
       </header>
       <div className="p-4">
         {loading && (
-          <div className="h-24 animate-pulse rounded bg-neutral-100" />
+          <div className="h-24 animate-pulse rounded bg-muted" />
         )}
         {error != null && (
           <div className="text-sm text-red-900">
@@ -237,14 +237,14 @@ function CountersCard({
           </div>
         )}
         {!loading && error == null && (!counters || !available) && (
-          <div className="text-sm text-neutral-500">
+          <div className="text-sm text-muted-foreground">
             No counter data available for this port.
           </div>
         )}
         {counters && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
+              <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2 font-semibold">Metric</th>
                   <th className="px-4 py-2 text-right font-semibold">Rx</th>
@@ -258,7 +258,7 @@ function CountersCard({
                 <CounterRow label="Errors" rx={counters.errors_rx} tx={null} />
               </tbody>
             </table>
-            <p className="mt-3 text-xs text-neutral-500">
+            <p className="mt-3 text-xs text-muted-foreground">
               Counters are packet counts as reported by the switch and wrap at
               2<sup>32</sup>.
             </p>
@@ -279,12 +279,12 @@ function CounterRow({
   tx: number | null;
 }) {
   return (
-    <tr className="border-t border-neutral-100">
-      <td className="px-4 py-2 font-medium text-neutral-900">{label}</td>
-      <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">
+    <tr className="border-t border-border">
+      <td className="px-4 py-2 font-medium text-foreground">{label}</td>
+      <td className="px-4 py-2 text-right font-mono tabular-nums text-foreground">
         {rx.toLocaleString()}
       </td>
-      <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">
+      <td className="px-4 py-2 text-right font-mono tabular-nums text-foreground">
         {tx === null ? "—" : tx.toLocaleString()}
       </td>
     </tr>
@@ -293,8 +293,8 @@ function CounterRow({
 
 function VlanCard() {
   return (
-    <section className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 text-sm text-neutral-600">
-      <div className="font-semibold text-neutral-700">VLAN memberships</div>
+    <section className="rounded-lg border border-dashed border-border bg-muted p-4 text-sm text-muted-foreground">
+      <div className="font-semibold text-foreground">VLAN memberships</div>
       <p className="mt-1">
         Not available in Phase 2 — VLAN membership is only exposed through the
         write-path endpoints which are not wired up yet.

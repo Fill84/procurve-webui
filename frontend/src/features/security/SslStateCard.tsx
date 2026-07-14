@@ -18,53 +18,53 @@ export function SslStateCard() {
   const ssl = useSslState();
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           SSL state (read-only)
         </h4>
         {ssl.isLoading && (
-          <span className="text-xs text-neutral-500">Loading…</span>
+          <span className="text-xs text-muted-foreground">Loading…</span>
         )}
       </div>
 
       {ssl.error instanceof Error && (
-        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           Failed to fetch SSL state: {ssl.error.message}
         </div>
       )}
 
       {ssl.data && (
         <dl className="grid grid-cols-[12rem,1fr] gap-y-1 text-sm">
-          <dt className="text-neutral-500">HTTPS</dt>
+          <dt className="text-muted-foreground">HTTPS</dt>
           <dd>
             <span
               className={
                 ssl.data.ssl_enabled
-                  ? "font-semibold text-green-700"
-                  : "text-neutral-700"
+                  ? "font-semibold text-green-700 dark:text-green-300"
+                  : "text-foreground"
               }
             >
               {ssl.data.ssl_enabled ? "ON" : "OFF"}
             </span>
           </dd>
 
-          <dt className="text-neutral-500">SSL port</dt>
+          <dt className="text-muted-foreground">SSL port</dt>
           <dd className="font-mono">{ssl.data.ssl_port}</dd>
 
-          <dt className="text-neutral-500">Certificate mode</dt>
+          <dt className="text-muted-foreground">Certificate mode</dt>
           <dd>
             {ssl.data.cert_mode === 1
               ? "Create / self-signed"
               : "Use installed"}
           </dd>
 
-          <dt className="text-neutral-500">CA-signed cert installed</dt>
+          <dt className="text-muted-foreground">CA-signed cert installed</dt>
           <dd>
             {ssl.data.ca_signed_installed ? (
-              <span className="font-semibold text-green-700">Yes</span>
+              <span className="font-semibold text-green-700 dark:text-green-300">Yes</span>
             ) : (
-              <span className="text-neutral-700">No</span>
+              <span className="text-foreground">No</span>
             )}
           </dd>
         </dl>

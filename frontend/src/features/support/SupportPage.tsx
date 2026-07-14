@@ -29,14 +29,14 @@ export function SupportPage() {
           {Array.from({ length: 2 }).map((_, i) => (
             <div
               key={i}
-              className="h-32 animate-pulse rounded-lg border border-neutral-200 bg-neutral-100"
+              className="h-32 animate-pulse rounded-lg border border-border bg-muted"
             />
           ))}
         </div>
       )}
 
       {isError && (
-        <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-900">
+        <div className="rounded-lg border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load support info</p>
           <p className="mt-1 text-sm opacity-80">
             {error instanceof Error ? error.message : String(error)}
@@ -44,7 +44,7 @@ export function SupportPage() {
           <button
             type="button"
             onClick={() => refetch()}
-            className="mt-3 rounded-md border border-red-400 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100"
+            className="mt-3 rounded-md border border-red-400 dark:border-red-900 bg-card px-3 py-1.5 text-sm font-medium text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             Retry
           </button>
@@ -56,10 +56,10 @@ export function SupportPage() {
           {/* Hero */}
           <Card>
             <div className="flex flex-col gap-1">
-              <h3 className="text-2xl font-semibold text-neutral-900">
+              <h3 className="text-2xl font-semibold text-foreground">
                 Support
               </h3>
-              <p className="text-sm text-neutral-600">
+              <p className="text-sm text-muted-foreground">
                 HPE Networking replaces the legacy ProCurve support portal.
               </p>
             </div>
@@ -69,66 +69,66 @@ export function SupportPage() {
           <Card title="Support links">
             <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[max-content_1fr]">
               <div className="contents">
-                <dt className="text-sm text-neutral-500">Current portal</dt>
+                <dt className="text-sm text-muted-foreground">Current portal</dt>
                 <dd className="text-sm">
                   <a
                     href={data.current_url}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="font-mono text-blue-700 underline hover:text-blue-900 break-all"
+                    className="font-mono text-blue-700 dark:text-blue-300 underline hover:text-blue-900 break-all"
                   >
                     {data.current_url}
                   </a>
                 </dd>
               </div>
               <div className="contents">
-                <dt className="text-sm text-neutral-500">Legacy URL</dt>
+                <dt className="text-sm text-muted-foreground">Legacy URL</dt>
                 <dd className="text-sm">
                   <span
-                    className="font-mono text-neutral-500 line-through break-all"
+                    className="font-mono text-muted-foreground line-through break-all"
                     title="No longer resolves"
                   >
                     {data.legacy_url}
                   </span>
-                  <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                  <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-900 dark:text-amber-300">
                     defunct
                   </span>
                 </dd>
               </div>
               <div className="contents">
-                <dt className="text-sm text-neutral-500">Project repo</dt>
+                <dt className="text-sm text-muted-foreground">Project repo</dt>
                 <dd className="text-sm">
                   <a
                     href="https://github.com/Fill84/procurve-webui"
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="font-mono text-blue-700 underline hover:text-blue-900 break-all"
+                    className="font-mono text-blue-700 dark:text-blue-300 underline hover:text-blue-900 break-all"
                   >
                     github.com/Fill84/procurve-webui
                   </a>
-                  <span className="ml-2 text-xs text-neutral-500">
+                  <span className="ml-2 text-xs text-muted-foreground">
                     source &amp; contributions
                   </span>
                 </dd>
               </div>
               <div className="contents">
-                <dt className="text-sm text-neutral-500">Report an issue</dt>
+                <dt className="text-sm text-muted-foreground">Report an issue</dt>
                 <dd className="text-sm">
                   <a
                     href="https://github.com/Fill84/procurve-webui/issues/new"
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="font-mono text-blue-700 underline hover:text-blue-900 break-all"
+                    className="font-mono text-blue-700 dark:text-blue-300 underline hover:text-blue-900 break-all"
                   >
                     github.com/Fill84/procurve-webui/issues/new
                   </a>
-                  <span className="ml-2 text-xs text-neutral-500">
+                  <span className="ml-2 text-xs text-muted-foreground">
                     bug reports &amp; feature requests
                   </span>
                 </dd>
               </div>
             </dl>
-            <p className="mt-4 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
+            <p className="mt-4 rounded-md border border-border bg-muted p-3 text-xs text-foreground">
               {data.note}
             </p>
           </Card>
@@ -136,10 +136,10 @@ export function SupportPage() {
           {/* Switch identifiers — handy when opening a support case. */}
           <Card title="This switch">
             {identity.isLoading && (
-              <p className="text-sm text-neutral-500">Loading identifiers…</p>
+              <p className="text-sm text-muted-foreground">Loading identifiers…</p>
             )}
             {identity.isError && (
-              <p className="text-sm text-red-700">
+              <p className="text-sm text-red-700 dark:text-red-300">
                 Could not load switch identity.
               </p>
             )}
@@ -180,14 +180,14 @@ function SwitchIdentifiers({
     <div className="flex flex-col gap-3">
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-[max-content_1fr]">
         <div className="contents">
-          <dt className="text-sm text-neutral-500">Model</dt>
-          <dd className="text-sm font-mono text-neutral-900 break-all">
+          <dt className="text-sm text-muted-foreground">Model</dt>
+          <dd className="text-sm font-mono text-foreground break-all">
             {product}
           </dd>
         </div>
         <div className="contents">
-          <dt className="text-sm text-neutral-500">Serial number</dt>
-          <dd className="text-sm font-mono text-neutral-900 break-all">
+          <dt className="text-sm text-muted-foreground">Serial number</dt>
+          <dd className="text-sm font-mono text-foreground break-all">
             {serial}
           </dd>
         </div>
@@ -196,7 +196,7 @@ function SwitchIdentifiers({
         <button
           type="button"
           onClick={copy}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
         >
           {copied ? "Copied!" : "Copy model + serial"}
         </button>
@@ -207,9 +207,9 @@ function SwitchIdentifiers({
 
 function Card({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       {title && (
-        <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </h4>
       )}

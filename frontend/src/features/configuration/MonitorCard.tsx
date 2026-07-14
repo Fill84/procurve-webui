@@ -109,24 +109,24 @@ export function MonitorCard() {
     (enabled && (destPort === null || sourcePorts.size === 0));
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Port mirroring
         </h4>
         {(query.isLoading || bob.isLoading) && (
-          <span className="text-xs text-neutral-500">Loading…</span>
+          <span className="text-xs text-muted-foreground">Loading…</span>
         )}
       </div>
 
       {query.error instanceof Error && (
-        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load monitor config</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
             type="button"
             onClick={() => query.refetch()}
-            className="mt-2 rounded-md border border-red-400 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100"
+            className="mt-2 rounded-md border border-red-400 dark:border-red-900 bg-card px-3 py-1.5 text-sm font-medium text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             Retry
           </button>
@@ -140,9 +140,9 @@ export function MonitorCard() {
               type="checkbox"
               checked={enabled}
               onChange={(e) => setEnabled(e.target.checked)}
-              className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
             />
-            <span className="font-medium text-neutral-800">
+            <span className="font-medium text-foreground">
               Enable port mirroring
             </span>
           </label>
@@ -152,7 +152,7 @@ export function MonitorCard() {
               <div>
                 <label
                   htmlFor="mon-dest"
-                  className="block text-xs font-medium text-neutral-700"
+                  className="block text-xs font-medium text-foreground"
                 >
                   Destination port (sniffer)
                 </label>
@@ -164,7 +164,7 @@ export function MonitorCard() {
                       e.target.value === "" ? null : Number(e.target.value),
                     )
                   }
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">— select —</option>
                   {destCandidates.map((p) => (
@@ -176,11 +176,11 @@ export function MonitorCard() {
               </div>
 
               <div>
-                <span className="block text-xs font-medium text-neutral-700">
+                <span className="block text-xs font-medium text-foreground">
                   Source ports (mirrored to the destination)
                 </span>
                 {sourceCandidates.length === 0 ? (
-                  <p className="mt-1 text-xs text-neutral-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     No candidate ports (bob-ports list not loaded).
                   </p>
                 ) : (
@@ -194,9 +194,9 @@ export function MonitorCard() {
                           type="checkbox"
                           checked={sourcePorts.has(p)}
                           onChange={() => toggleSource(p)}
-                          className="h-3.5 w-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                          className="h-3.5 w-3.5 rounded border-border text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="font-mono text-neutral-700">
+                        <span className="font-mono text-foreground">
                           {p}
                         </span>
                       </label>
@@ -217,14 +217,14 @@ export function MonitorCard() {
               {mutation.isPending ? "Saving…" : "Save"}
             </button>
             {lastResult && (
-              <span className="text-sm italic text-neutral-700">
+              <span className="text-sm italic text-foreground">
                 {lastResult}
               </span>
             )}
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
               <p className="font-semibold">Save failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

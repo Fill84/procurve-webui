@@ -82,36 +82,36 @@ export function PerPortSecurityCard() {
   const rows = perPort.data?.rows ?? [];
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Per-port security
         </h4>
         {perPort.isLoading && (
-          <span className="text-xs text-neutral-500">Loading…</span>
+          <span className="text-xs text-muted-foreground">Loading…</span>
         )}
       </div>
 
       {perPort.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           Failed to fetch per-port state: {perPort.error.message}
         </div>
       )}
 
       {errorMessage && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           <p className="font-semibold">Update failed</p>
           <p className="mt-1 break-all">{errorMessage}</p>
         </div>
       )}
 
       {lastResult && (
-        <p className="mb-3 text-sm italic text-neutral-700">{lastResult}</p>
+        <p className="mb-3 text-sm italic text-foreground">{lastResult}</p>
       )}
 
-      <div className="overflow-x-auto rounded border border-neutral-200">
+      <div className="overflow-x-auto rounded border border-border">
         <table className="min-w-full text-sm">
-          <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-600">
+          <thead className="bg-muted text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-3 py-2 text-left">Port</th>
               <th className="px-3 py-2 text-left">Name</th>
@@ -121,12 +121,12 @@ export function PerPortSecurityCard() {
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-200">
+          <tbody className="divide-y divide-border">
             {rows.length === 0 && !perPort.isLoading && (
               <tr>
                 <td
                   colSpan={6}
-                  className="px-3 py-3 text-center text-neutral-500"
+                  className="px-3 py-3 text-center text-muted-foreground"
                 >
                   No per-port rows.
                 </td>
@@ -145,7 +145,7 @@ export function PerPortSecurityCard() {
                         onChange={(e) =>
                           setMode(Number(e.target.value) as 1 | 2 | 5)
                         }
-                        className="rounded border border-neutral-300 px-2 py-1 text-xs"
+                        className="rounded border border-border px-2 py-1 text-xs"
                       >
                         <option value={1}>Continuous</option>
                         <option value={2}>Static</option>
@@ -170,7 +170,7 @@ export function PerPortSecurityCard() {
                         onChange={(e) =>
                           setAction(Number(e.target.value) as 1 | 2 | 3)
                         }
-                        className="rounded border border-neutral-300 px-2 py-1 text-xs"
+                        className="rounded border border-border px-2 py-1 text-xs"
                       >
                         <option value={1}>None</option>
                         <option value={2}>Send alarm</option>
@@ -191,7 +191,7 @@ export function PerPortSecurityCard() {
                         onChange={(e) =>
                           setLimit(Number(e.target.value) || 1)
                         }
-                        className="w-16 rounded border border-neutral-300 px-2 py-1 text-xs"
+                        className="w-16 rounded border border-border px-2 py-1 text-xs"
                       />
                     ) : (
                       row.address_limit
@@ -204,7 +204,7 @@ export function PerPortSecurityCard() {
                           type="button"
                           onClick={() => setEditingPort(null)}
                           disabled={setPerport.isPending}
-                          className="rounded border border-neutral-300 bg-white px-2 py-1 text-xs"
+                          className="rounded border border-border bg-card px-2 py-1 text-xs"
                         >
                           Cancel
                         </button>
@@ -221,7 +221,7 @@ export function PerPortSecurityCard() {
                       <button
                         type="button"
                         onClick={() => startEdit(row)}
-                        className="rounded border border-neutral-300 bg-white px-2 py-1 text-xs"
+                        className="rounded border border-border bg-card px-2 py-1 text-xs"
                       >
                         Edit
                       </button>

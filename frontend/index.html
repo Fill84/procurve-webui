@@ -5,6 +5,24 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>procurve-webui</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a white flash.
+      // Mirrors the logic in src/lib/theme.tsx (keep them in sync).
+      (function () {
+        try {
+          var pref = localStorage.getItem("procurve-theme");
+          var dark =
+            pref === "dark" ||
+            ((pref === null || pref === "system") &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var root = document.documentElement;
+          if (dark) root.classList.add("dark");
+          root.style.colorScheme = dark ? "dark" : "light";
+        } catch (e) {
+          /* no-op: fall back to the default light theme */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

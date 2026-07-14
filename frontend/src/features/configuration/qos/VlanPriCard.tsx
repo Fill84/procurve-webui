@@ -51,24 +51,24 @@ export function VlanPriCard() {
     mutation.error instanceof Error ? mutation.error.message : null;
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           CoS — VLAN priority
         </h4>
         {query.isLoading && (
-          <span className="text-xs text-neutral-500">Loading…</span>
+          <span className="text-xs text-muted-foreground">Loading…</span>
         )}
       </div>
 
       {query.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="mb-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load VLAN priority entries</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
             type="button"
             onClick={() => query.refetch()}
-            className="mt-2 rounded-md border border-red-400 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100"
+            className="mt-2 rounded-md border border-red-400 dark:border-red-900 bg-card px-3 py-1.5 text-sm font-medium text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             Retry
           </button>
@@ -77,9 +77,9 @@ export function VlanPriCard() {
 
       {query.data && (
         <>
-          <div className="overflow-x-auto rounded border border-neutral-200">
+          <div className="overflow-x-auto rounded border border-border">
             <table className="min-w-full text-sm">
-              <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-600">
+              <thead className="bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left">VLAN id</th>
                   <th className="px-3 py-2 text-left">Label</th>
@@ -87,12 +87,12 @@ export function VlanPriCard() {
                   <th className="px-3 py-2 text-left">Priority</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-200">
+              <tbody className="divide-y divide-border">
                 {entries.length === 0 && (
                   <tr>
                     <td
                       colSpan={4}
-                      className="px-3 py-3 text-center text-xs italic text-neutral-500"
+                      className="px-3 py-3 text-center text-xs italic text-muted-foreground"
                     >
                       No VLAN priority entries.
                     </td>
@@ -110,13 +110,13 @@ export function VlanPriCard() {
             </table>
           </div>
 
-          <div className="mt-4 rounded border border-dashed border-neutral-300 bg-neutral-50 p-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <div className="mt-4 rounded border border-dashed border-border bg-muted p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Assign priority
             </p>
             <div className="grid gap-2 sm:grid-cols-3">
               <label className="text-xs">
-                <span className="block text-neutral-700">VLAN id</span>
+                <span className="block text-foreground">VLAN id</span>
                 <input
                   type="number"
                   min={1}
@@ -125,11 +125,11 @@ export function VlanPriCard() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, vlan_id: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                  className="mt-1 w-full rounded-md border border-border px-2 py-1 text-sm"
                 />
               </label>
               <label className="text-xs">
-                <span className="block text-neutral-700">Kind</span>
+                <span className="block text-foreground">Kind</span>
                 <select
                   value={form.mode}
                   onChange={(e) =>
@@ -139,14 +139,14 @@ export function VlanPriCard() {
                       value: "",
                     }))
                   }
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                  className="mt-1 w-full rounded-md border border-border px-2 py-1 text-sm"
                 >
                   <option value="dscp">DSCP</option>
                   <option value="priority">802.1p</option>
                 </select>
               </label>
               <label className="text-xs">
-                <span className="block text-neutral-700">
+                <span className="block text-foreground">
                   {form.mode === "dscp" ? "DSCP (0–63)" : "Priority (0–7)"}
                 </span>
                 <input
@@ -157,7 +157,7 @@ export function VlanPriCard() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, value: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                  className="mt-1 w-full rounded-md border border-border px-2 py-1 text-sm"
                 />
               </label>
             </div>
@@ -173,7 +173,7 @@ export function VlanPriCard() {
                 {mutation.isPending ? "Applying…" : "Apply"}
               </button>
               {lastResult && (
-                <span className="text-sm italic text-neutral-700">
+                <span className="text-sm italic text-foreground">
                   {lastResult}
                 </span>
               )}
@@ -181,7 +181,7 @@ export function VlanPriCard() {
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
               <p className="font-semibold">Request failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

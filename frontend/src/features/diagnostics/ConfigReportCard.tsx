@@ -44,9 +44,9 @@ export function ConfigReportCard() {
     report.error instanceof Error ? report.error.message : null;
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Configuration report
         </h4>
         <div className="flex items-center gap-2">
@@ -55,14 +55,14 @@ export function ConfigReportCard() {
               <button
                 type="button"
                 onClick={handleCopy}
-                className="rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted"
               >
                 {copied ? "Copied" : "Copy"}
               </button>
               <button
                 type="button"
                 onClick={handleDownload}
-                className="rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted"
               >
                 Download .txt
               </button>
@@ -86,22 +86,22 @@ export function ConfigReportCard() {
       </div>
 
       {errorMessage && (
-        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-semibold">Failed to fetch configuration report</p>
           <p className="mt-1 break-all">{errorMessage}</p>
         </div>
       )}
 
       {!report.data && !errorMessage && !report.isFetching && (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-muted-foreground">
           Press <span className="font-medium">Generate</span> to fetch the
           current running-config.
         </p>
       )}
 
       {report.data && (
-        <pre className="max-h-96 overflow-auto rounded border border-neutral-200 bg-neutral-50 p-3 text-xs leading-5">
-          <code className="block whitespace-pre font-mono text-neutral-800">
+        <pre className="max-h-96 overflow-auto rounded border border-border bg-muted p-3 text-xs leading-5">
+          <code className="block whitespace-pre font-mono text-foreground">
             {configText}
           </code>
         </pre>

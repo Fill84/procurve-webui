@@ -22,7 +22,7 @@ export function SecurityPage() {
     <div className="p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold">Security</h2>
-        <p className="mt-0.5 text-xs text-neutral-500">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Manage device passwords, web-access mode, authorized managers,
           per-port security, and the SSL subsystem. Lockout-risky writes
           require typing the switch IP to confirm and take a pre-write

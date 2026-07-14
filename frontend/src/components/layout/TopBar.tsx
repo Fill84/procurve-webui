@@ -1,6 +1,7 @@
 import { useIdentity } from "@/api/hooks/useIdentity";
 import { useLogout } from "@/api/hooks/useAuth";
 import { useRouter } from "@tanstack/react-router";
+import { ThemeToggle } from "./ThemeToggle";
 
 /**
  * Sticky top bar. Displays the switch's system_name from /api/v1/identity
@@ -21,23 +22,26 @@ export function TopBar() {
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-6">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-card px-6">
       <div className="flex items-baseline gap-3">
         <span className="text-lg font-semibold">
           {identity?.system_name ?? "ProCurve Switch"}
         </span>
         {identity?.product ? (
-          <span className="text-sm text-neutral-500">{identity.product}</span>
+          <span className="text-sm text-muted-foreground">{identity.product}</span>
         ) : null}
       </div>
-      <button
-        type="button"
-        onClick={handleLogout}
-        disabled={logout.isPending}
-        className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {logout.isPending ? "Logging out..." : "Logout"}
-      </button>
+      <div className="flex items-center gap-3">
+        <ThemeToggle />
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={logout.isPending}
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {logout.isPending ? "Logging out..." : "Logout"}
+        </button>
+      </div>
     </header>
   );
 }

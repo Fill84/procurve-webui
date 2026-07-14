@@ -73,7 +73,7 @@ export function WebAccessCard() {
 
   const body = (
     <div className="space-y-3">
-      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
         <p className="font-semibold">Lockout risk</p>
         <p className="mt-1">
           Enabling HTTPS-only without a valid certificate installed will lock
@@ -83,7 +83,7 @@ export function WebAccessCard() {
           before toggling this.
         </p>
       </div>
-      <div className="rounded border border-neutral-200 bg-neutral-50 p-3 text-sm">
+      <div className="rounded border border-border bg-muted p-3 text-sm">
         <p>
           <span className="font-semibold">Proposed:</span>{" "}
           HTTPS {enabled ? "ON" : "OFF"} on port{" "}
@@ -97,7 +97,7 @@ export function WebAccessCard() {
     <>
       Expected:{" "}
       {expectedIp ? (
-        <span className="font-mono text-neutral-700">{expectedIp}</span>
+        <span className="font-mono text-foreground">{expectedIp}</span>
       ) : (
         <span className="italic">loading identity…</span>
       )}
@@ -106,25 +106,25 @@ export function WebAccessCard() {
 
   return (
     <>
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Web access (HTTP / HTTPS)
           </h4>
           {sslQuery.isLoading && (
-            <span className="text-xs text-neutral-500">Loading…</span>
+            <span className="text-xs text-muted-foreground">Loading…</span>
           )}
         </div>
 
         {sslQuery.error instanceof Error && (
-          <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             Failed to fetch SSL state: {sslQuery.error.message}
           </div>
         )}
 
         <div className="grid gap-4 md:grid-cols-[auto,8rem,auto] md:items-end">
           <div>
-            <label className="block text-xs font-medium text-neutral-700">
+            <label className="block text-xs font-medium text-foreground">
               Mode
             </label>
             <div className="mt-1 flex items-center gap-4 text-sm">
@@ -152,7 +152,7 @@ export function WebAccessCard() {
           <div>
             <label
               htmlFor="ssl-port"
-              className="block text-xs font-medium text-neutral-700"
+              className="block text-xs font-medium text-foreground"
             >
               SSL port
             </label>
@@ -164,7 +164,7 @@ export function WebAccessCard() {
               value={port}
               onChange={(e) => setPort(Number(e.target.value) || 443)}
               disabled={!enabled}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-neutral-50"
+              className="mt-1 w-full rounded-md border border-border px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-muted"
             />
           </div>
 
@@ -179,7 +179,7 @@ export function WebAccessCard() {
         </div>
 
         {lastResult && (
-          <p className="mt-3 text-sm italic text-neutral-700">{lastResult}</p>
+          <p className="mt-3 text-sm italic text-foreground">{lastResult}</p>
         )}
       </section>
 
@@ -198,7 +198,7 @@ export function WebAccessCard() {
         busy={setWebAccess.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               <p className="font-semibold">Apply failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

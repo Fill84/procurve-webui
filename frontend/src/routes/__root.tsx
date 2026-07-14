@@ -21,10 +21,10 @@ function RootComponent() {
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50">
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-muted">
+      <div className="rounded-lg border border-border bg-card p-6 text-center">
         <h1 className="text-xl font-semibold">Page not found</h1>
-        <p className="mt-2 text-sm text-neutral-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           The page you requested does not exist.
         </p>
       </div>

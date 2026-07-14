@@ -75,17 +75,17 @@ export function SupportPageCard() {
     mgmtUrl.trim().length > 0;
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Support URLs
         </h4>
         {query.isLoading && (
-          <span className="text-xs text-neutral-500">Loading…</span>
+          <span className="text-xs text-muted-foreground">Loading…</span>
         )}
       </div>
 
-      <p className="mb-4 text-xs text-neutral-500">
+      <p className="mb-4 text-xs text-muted-foreground">
         The two URL fields the applet's Support tab shows. Not
         lockout-risky — saved immediately with a pre-write autobackup.
       </p>
@@ -95,20 +95,20 @@ export function SupportPageCard() {
           {Array.from({ length: 2 }).map((_, i) => (
             <div
               key={i}
-              className="h-10 animate-pulse rounded border border-neutral-200 bg-neutral-100"
+              className="h-10 animate-pulse rounded border border-border bg-muted"
             />
           ))}
         </div>
       )}
 
       {query.error instanceof Error && (
-        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load support URLs</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
             type="button"
             onClick={() => query.refetch()}
-            className="mt-2 rounded-md border border-red-400 bg-white px-3 py-1.5 text-sm font-medium text-red-900 hover:bg-red-100"
+            className="mt-2 rounded-md border border-red-400 dark:border-red-900 bg-card px-3 py-1.5 text-sm font-medium text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
           >
             Retry
           </button>
@@ -121,7 +121,7 @@ export function SupportPageCard() {
             <div>
               <label
                 htmlFor="support-url"
-                className="block text-xs font-medium text-neutral-700"
+                className="block text-xs font-medium text-foreground"
               >
                 Support URL
               </label>
@@ -131,14 +131,14 @@ export function SupportPageCard() {
                 value={supportUrl}
                 maxLength={MAX_URL}
                 onChange={(e) => setSupportUrl(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 w-full rounded-md border border-border px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
             <div>
               <label
                 htmlFor="mgmt-url"
-                className="block text-xs font-medium text-neutral-700"
+                className="block text-xs font-medium text-foreground"
               >
                 Management server URL
               </label>
@@ -148,7 +148,7 @@ export function SupportPageCard() {
                 value={mgmtUrl}
                 maxLength={MAX_URL}
                 onChange={(e) => setMgmtUrl(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 w-full rounded-md border border-border px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -172,20 +172,20 @@ export function SupportPageCard() {
                   setLastResult(null);
                   mutation.reset();
                 }}
-                className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline"
+                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
                 Revert
               </button>
             )}
             {lastResult && (
-              <span className="text-sm italic text-neutral-700">
+              <span className="text-sm italic text-foreground">
                 {lastResult}
               </span>
             )}
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
               <p className="font-semibold">Save failed</p>
               <p className="mt-1 break-all">{errorMessage}</p>
             </div>

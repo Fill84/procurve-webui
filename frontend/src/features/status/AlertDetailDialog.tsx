@@ -56,19 +56,19 @@ export function AlertDetailDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-card text-card-foreground shadow-xl">
         {detail.isLoading && (
           <div className="p-6">
-            <div className="h-6 w-1/3 animate-pulse rounded bg-neutral-200" />
-            <div className="mt-4 h-32 animate-pulse rounded bg-neutral-100" />
+            <div className="h-6 w-1/3 animate-pulse rounded bg-muted" />
+            <div className="mt-4 h-32 animate-pulse rounded bg-muted" />
           </div>
         )}
         {detail.isError && (
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-red-900">
+            <h3 className="text-lg font-semibold text-red-900 dark:text-red-300">
               Failed to load event details
             </h3>
-            <p className="mt-2 text-sm text-red-800">
+            <p className="mt-2 text-sm text-red-800 dark:text-red-300">
               {detail.error instanceof Error
                 ? detail.error.message
                 : String(detail.error)}
@@ -77,7 +77,7 @@ export function AlertDetailDialog({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
               >
                 Close
               </button>
@@ -110,22 +110,22 @@ function AlertDetailBody({
   const solution = detail.solution ?? [];
   return (
     <>
-      <header className="border-b border-neutral-200 px-6 py-4">
+      <header className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold text-neutral-900">
+          <h3 className="text-lg font-semibold text-foreground">
             {detail.title}
           </h3>
           <SeverityBadge severity={detail.severity} />
         </div>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-600">
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {detail.affected_port > 0 && (
             <span>
-              <span className="font-medium text-neutral-700">Port:</span>{" "}
+              <span className="font-medium text-foreground">Port:</span>{" "}
               <span className="font-mono">{detail.affected_port}</span>
             </span>
           )}
           <span>
-            <span className="font-medium text-neutral-700">When:</span>{" "}
+            <span className="font-medium text-foreground">When:</span>{" "}
             <span className="font-mono text-xs">
               {formatAlertTimestamp(detail.ts_centiseconds, currentUptimeCenti)}
             </span>
@@ -133,7 +133,7 @@ function AlertDetailBody({
         </div>
       </header>
 
-      <div className="space-y-4 px-6 py-4 text-sm text-neutral-800">
+      <div className="space-y-4 px-6 py-4 text-sm text-foreground">
         {detail.description && (
           <Section title="Description">
             <p>{detail.description}</p>
@@ -156,17 +156,17 @@ function AlertDetailBody({
         {!detail.description &&
           solution.length === 0 &&
           !detail.other_possibilities && (
-            <p className="italic text-neutral-500">
+            <p className="italic text-muted-foreground">
               The switch did not provide additional detail for this event.
             </p>
           )}
       </div>
 
-      <footer className="flex justify-end gap-2 border-t border-neutral-200 px-6 py-3">
+      <footer className="flex justify-end gap-2 border-t border-border px-6 py-3">
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
         >
           Close
         </button>
@@ -184,10 +184,10 @@ function Section({
 }) {
   return (
     <section>
-      <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+      <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {title}
       </h4>
-      <div className="text-sm text-neutral-800">{children}</div>
+      <div className="text-sm text-foreground">{children}</div>
     </section>
   );
 }
@@ -215,32 +215,32 @@ function severityStyle(severity: number): {
     case 1:
       return {
         label: "Sev 1 · Critical",
-        classes: "border-red-300 bg-red-50 text-red-800",
+        classes: "border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300",
       };
     case 2:
       return {
         label: "Sev 2 · Major",
-        classes: "border-orange-300 bg-orange-50 text-orange-800",
+        classes: "border-orange-300 dark:border-orange-900 bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300",
       };
     case 3:
       return {
         label: "Sev 3 · Warning",
-        classes: "border-amber-300 bg-amber-50 text-amber-800",
+        classes: "border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300",
       };
     case 4:
       return {
         label: "Sev 4 · Info",
-        classes: "border-blue-300 bg-blue-50 text-blue-800",
+        classes: "border-blue-300 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300",
       };
     case 5:
       return {
         label: "Sev 5 · Notice",
-        classes: "border-neutral-300 bg-neutral-50 text-neutral-700",
+        classes: "border-border bg-muted text-foreground",
       };
     default:
       return {
         label: `Sev ${severity}`,
-        classes: "border-neutral-300 bg-neutral-50 text-neutral-700",
+        classes: "border-border bg-muted text-foreground",
       };
   }
 }
