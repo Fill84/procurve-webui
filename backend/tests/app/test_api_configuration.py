@@ -905,7 +905,7 @@ _FAULT_DETECTION_BODY = {
 }
 
 _MONITOR_BODY = {
-    "request": {"enabled": True, "dest_port": 2, "source_mask": 0b101},
+    "request": {"enabled": True, "dest_port": 2, "source_ports": [1, 3]},
 }
 
 _BOB_PORTS_BODY = {"request": {"enable": True, "ports": [1, 2, 3]}}
@@ -1057,7 +1057,7 @@ def test_monitor_write_happy_path(
     req = seen["request"]
     assert req.enabled is True  # type: ignore[attr-defined]
     assert req.dest_port == 2  # type: ignore[attr-defined]
-    assert req.source_mask == 0b101  # type: ignore[attr-defined]
+    assert req.source_ports == [1, 3]  # type: ignore[attr-defined]
 
 
 def test_bob_ports_write_happy_path(

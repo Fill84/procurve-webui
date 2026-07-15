@@ -34,7 +34,7 @@ Sub-tab key: `monitor` (menu.html:45).
   |---|---|---|---|
   | portCopyStatus | `2` or `4` | yes | `2` = monitoring off, `4` = monitoring on. The literal values are set as hidden inputs (monitor1.html:93,97). |
   | portCopyDest | integer | when `portCopyStatus=4` | The monitoring (mirror destination) port. Populated from the `monitoringPort` select (monitor1.html:129-145) by `apply()` (line 73). |
-  | portCopySourceMask | integer | when `portCopyStatus=4` | Bitmask of source ports (the ports whose traffic is duplicated to the destination). Computed by `parent.mpmf.document.list.getPortMask()` (monitor1.html:75) — this is a `GenericList` helper in the applet-hosted sibling frame. Interpret as a big-integer bitmask: bit `n` set = port `n+1` selected. |
+  | portCopySourceMask | hex-pair string | when `portCopyStatus=4` | Source-port mask computed by `parent.mpmf.document.list.getPortMask()` (monitor1.html:75) — implemented in `research/decompiled/MonitorList.java:10-54`. One 32-bit word per 32 ports; **port 1 = MSB** (`1 << (32 - n)`, MonitorList.java:36); rendered as zero-padded **lowercase hex byte pairs separated by single spaces** (MonitorList.java:40-52). Ports 1+2 → `c0 00 00 00`; on the wire the spaces are form-encoded as `+`: `portCopySourceMask=c0+00+00+00`. |
 
 - **Request body:** none (GET).
 - **Response body:** **not live-tested.**
@@ -49,7 +49,7 @@ Sub-tab key: `monitor` (menu.html:45).
 |---|---|---|---|---|
 | status | `portCopyStatus` | `2`/`4` | `bool` | True (enable) → `4`, False (disable) → `2`. |
 | dest_port | `portCopyDest` | integer | `int \| None` | Required when enabling. On the 2810 observed defaults: any port not in the source set. |
-| source_mask | `portCopySourceMask` | integer bitmask | `int \| None` | Required when enabling. Ports whose traffic to mirror. |
+| source_ports | `portCopySourceMask` | hex-pair mask string | `list[int] \| None` | Required when enabling. Ports whose traffic to mirror; encoded to the legacy mask by `monitor_source_mask()` in `operations/configuration.py`. |
 
 ## Reading the current values
 
@@ -76,10 +76,10 @@ Host: 192.168.178.3
 Accept: */*
 ```
 
-Enable monitoring, mirror ports 1+2 (source_mask = 0b11 = 3) to
-destination port 24:
+Enable monitoring, mirror ports 1+2 (mask word `0xC0000000` →
+`c0 00 00 00`) to destination port 24:
 ```
-GET /cgi/set_monitor?portCopyStatus=4&portCopyDest=24&portCopySourceMask=3 HTTP/1.1
+GET /cgi/set_monitor?portCopyStatus=4&portCopyDest=24&portCopySourceMask=c0+00+00+00 HTTP/1.1
 Host: 192.168.178.3
 Accept: */*
 ```
@@ -95,12 +95,12 @@ from pydantic import BaseModel, model_validator
 class SetMonitorRequest(BaseModel):
     enabled: bool
     dest_port: int | None = None
-    source_mask: int | None = None
+    source_ports: list[int] | None = None  # 1-based; encoded at the wire layer
 
     @model_validator(mode="after")
-    def enabled_requires_dest_and_mask(self) -> "SetMonitorRequest":
-        if self.enabled and (self.dest_port is None or self.source_mask is None):
-            raise ValueError("enabling monitoring requires dest_port and source_mask")
+    def enabled_requires_dest_and_ports(self) -> "SetMonitorRequest":
+        if self.enabled and (self.dest_port is None or not self.source_ports):
+            raise ValueError("enabling monitoring requires dest_port and source_ports")
         return self
 
 
@@ -113,10 +113,15 @@ class SetMonitorResponse(BaseModel):
 - **Two forms, one endpoint.** The JS chooses between `mpset0`
   (status=2) and `mpset1` (status=4) at apply time. A Python
   client collapses to one function that emits either shape.
-- **Bitmask semantics.** `getPortMask()` in `GenericList` is not
-  obvious from the decompiled source; the applet treats the list
-  positions as bit positions. **Needs live capture** to confirm
-  whether bit 0 corresponds to port 1 or port 0, and whether the
-  mask is sent as a decimal integer or hex.
+- **Bitmask semantics — RESOLVED (2026-07-15).** An earlier revision of
+  this doc guessed "integer bitmask, bit 0 = port 1" and flagged it
+  needs-live-capture, but the algorithm is fully present in
+  `research/decompiled/MonitorList.java` (`getPortMask`, lines 10-54):
+  per-32-port words, port 1 = MSB of its word, formatted as lowercase
+  zero-padded hex byte pairs joined by spaces. The audit (F1) found the
+  first implementation sent a decimal LSB-first integer — both format
+  and bit order wrong; fixed to the legacy encoding, mirrored by unit
+  tests in `tests/operations/test_configuration_monitor.py`. Still not
+  live-captured, but now byte-faithful to the decompiled source.
 - **No CGI read.** Scraping monitor1.html is the only way to read
   the current state.

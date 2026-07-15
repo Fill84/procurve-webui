@@ -2341,8 +2341,9 @@ export interface components {
             /**
              * Apply
              * @default Apply Changes
+             * @constant
              */
-            apply: string;
+            apply: "Apply Changes";
         };
         /**
          * SetCosTosModeBody
@@ -2436,8 +2437,14 @@ export interface components {
          * SetDeviceFeaturesRequest
          * @description Write request for one of the five feature-set endpoints.
          *
-         *     Use `endpoint` to pick the correct wire path. `igmp` / `spanning_tree`
-         *     may be None to omit the corresponding field.
+         *     Use `endpoint` to pick the correct wire path. Each legacy page submits
+         *     a fixed field set (mirror pages features2/2a/2b/2c/2d), so the model
+         *     enforces exactly that combination — the applet could never emit
+         *     anything else (audit F5):
+         *
+         *     * ``feature_set`` / ``feature2_set`` — IGMP **and** Spanning Tree
+         *     * ``globalfeature_set`` — Spanning Tree only
+         *     * ``vlanfeature_set`` / ``vlan2feature_set`` — IGMP only
          */
         SetDeviceFeaturesRequest: {
             /**
@@ -2599,14 +2606,23 @@ export interface components {
         SetMonitorBody: {
             request: components["schemas"]["SetMonitorRequest"];
         };
-        /** SetMonitorRequest */
+        /**
+         * SetMonitorRequest
+         * @description Port-mirroring write. Source ports are 1-based port numbers.
+         *
+         *     The wire encoding of `portCopySourceMask` (space-separated hex byte
+         *     pairs, port 1 = MSB — MonitorList.java:getPortMask) is produced by
+         *     `operations.configuration.monitor_source_mask`, not stored here.
+         *     The 1..32 bound matches the applet's single-32-bit-word mask on this
+         *     device (2810-24G tops out at port 24).
+         */
         SetMonitorRequest: {
             /** Enabled */
             enabled: boolean;
             /** Dest Port */
             dest_port?: number | null;
-            /** Source Mask */
-            source_mask?: number | null;
+            /** Source Ports */
+            source_ports?: number[] | null;
         };
         /**
          * SetPerportBody

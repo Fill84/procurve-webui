@@ -58,6 +58,18 @@ template so Phase 1 can translate each doc into Python mechanically.
   emits `+` for spaces. Python's `httpx`/`urllib.parse.urlencode` does the
   same by default, so no special handling is required unless a byte-match
   test fails.
+- **Asterisk divergence (accepted, audit F6)** — Java's `URLEncoder` and
+  browser form submits leave `*` literal; `httpx`/`quote_plus` emit `%2A`
+  (verified empirically on httpx 0.28.1). Affects free-text fields only
+  (`sysName`, `sysLocation`, `sysContact`, `_SuppURL`,
+  `hpHttpMgMgmtSrvrURL`, `_portName`). Any RFC-conformant decoder treats
+  the two identically, so this is tolerated rather than special-cased;
+  revisit only if a live byte-match test fails on a value containing `*`.
+- **Comma in `indeces` — two different conventions!**
+  `set_bobports` (SwitchBob.java:282-293) appends the CSV comma **raw**;
+  the ListPane multi-item submit path (`port_form`/`mod_ports`,
+  ListPane.java:572) sends it **encoded** (`URLEncoder.encode(",")` →
+  `%2C`). Mirror the specific caller, not a blanket rule (audit F4).
 
 ## File template
 

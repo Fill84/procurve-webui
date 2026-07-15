@@ -163,6 +163,12 @@ async def test_set_port_config_emits_expected_params(
     assert q["hpSwitchPortFastEtherMode"] == "9"
     assert q["hpSwitchPortFlowControl"] == "2"
     assert q["apply"] == " Apply Settings "
+    # ListPane.submitMultipleItems URL-encodes the separator between items
+    # (URLEncoder.encode(","), ListPane.java:572) — unlike set_bobports,
+    # whose SwitchBob path appends the comma raw. Byte-level check:
+    raw = route.calls.last.request.url.raw_path.decode()
+    assert "indeces=1%2C2" in raw
+    assert "apply=+Apply+Settings+" in raw
 
 
 @respx.mock

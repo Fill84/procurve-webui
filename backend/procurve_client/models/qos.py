@@ -23,7 +23,18 @@ from enum import IntEnum
 from ipaddress import IPv4Address
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+def _domain_or_sentinel(name: str, value: int, upper: int) -> int:
+    """Allow 0..upper plus the legacy 255 "No override" sentinel.
+
+    The legacy <select> lists offer only these values; anything else must
+    never reach the switch (audit F3).
+    """
+    if value != 255 and not (0 <= value <= upper):
+        raise ValueError(f"{name} must be 0..{upper} or 255 (No override)")
+    return value
 
 # ---- Shared enums -------------------------------------------------------
 
@@ -65,10 +76,10 @@ class SetCosApptRequest(BaseModel):
     action: Literal["Add", "Replace", "Delete"]
     app_id: int = Field(..., ge=0, le=58)
     protocol: Literal["TCP", "UDP"]
-    port: int | None = None
+    port: int | None = Field(default=None, ge=1, le=65535)
     policy_mode: ApplyPolicy = ApplyPolicy.NO_OVERRIDE
-    dscp: int | None = None
-    priority_8021p: int | None = None
+    dscp: int | None = Field(default=None, ge=0, le=63)
+    priority_8021p: int | None = Field(default=None, ge=0, le=7)
 
     @model_validator(mode="after")
     def _consistency(self) -> SetCosApptRequest:
@@ -99,8 +110,8 @@ class SetCosUserPriRequest(BaseModel):
     action: Literal["Add", "Replace", "Delete"]
     address: IPv4Address
     policy_mode: ApplyPolicy = ApplyPolicy.NO_OVERRIDE
-    priority_8021p: int | None = None
-    dscp: int | None = None
+    priority_8021p: int | None = Field(default=None, ge=0, le=7)
+    dscp: int | None = Field(default=None, ge=0, le=63)
 
     @model_validator(mode="after")
     def _consistency(self) -> SetCosUserPriRequest:
@@ -133,6 +144,16 @@ class SetCosVlanPriRequest(BaseModel):
     vlan_id: int = Field(..., ge=1, le=4094)
     dscp: int = 255
     priority_8021p: int = 255
+
+    @field_validator("dscp")
+    @classmethod
+    def _dscp_domain(cls, v: int) -> int:
+        return _domain_or_sentinel("dscp", v, 63)
+
+    @field_validator("priority_8021p")
+    @classmethod
+    def _priority_domain(cls, v: int) -> int:
+        return _domain_or_sentinel("priority_8021p", v, 7)
 
     @model_validator(mode="after")
     def _mutually_exclusive(self) -> SetCosVlanPriRequest:
@@ -172,6 +193,11 @@ class SetDscpTableRequest(BaseModel):
     row_index: int = Field(..., ge=1, le=64)
     priority_8021p: int
 
+    @field_validator("priority_8021p")
+    @classmethod
+    def _priority_domain(cls, v: int) -> int:
+        return _domain_or_sentinel("priority_8021p", v, 7)
+
 
 # ---- get_diffserv / set_diffserv ---------------------------------------
 
@@ -192,6 +218,11 @@ class SetDiffservRequest(BaseModel):
     row_index: int = Field(..., ge=1, le=64)
     dscp: int
 
+    @field_validator("dscp")
+    @classmethod
+    def _dscp_domain(cls, v: int) -> int:
+        return _domain_or_sentinel("dscp", v, 63)
+
 
 # ---- set_cosproto ------------------------------------------------------
 
@@ -199,8 +230,10 @@ class SetCosProtoRequest(BaseModel):
     """Protocol-priority submit. On the 2810-24G the form is empty; exact
     field set unknown — see protocol doc (`# TODO: needs live capture`)."""
 
-    # On this firmware the form's `<table>` body is empty; only `Apply` is sent.
-    apply: str = "Apply Changes"
+    # On this firmware the form's `<table>` body is empty; only `Apply` is
+    # sent. Pinned to the legacy button caption — free text would go on the
+    # wire verbatim (audit F7).
+    apply: Literal["Apply Changes"] = "Apply Changes"
 
 
 # ---- Response sentinels ------------------------------------------------

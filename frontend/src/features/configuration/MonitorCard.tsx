@@ -2,13 +2,14 @@
  * MonitorCard — port-mirroring enable + destination / source picker.
  *
  * Port mirroring copies all traffic from a set of source ports onto a
- * single destination port (for a sniffer). The switch encodes the source
- * set as a bitmask (`portCopySourceMask`); bit N = port N+1 on this
- * firmware. Not lockout-risky — a copy of traffic won't sever the
- * management session.
+ * single destination port (for a sniffer). We send the selected source
+ * ports as a plain list; the backend encodes the legacy
+ * `portCopySourceMask` wire format (MonitorList.java hex-pair mask).
+ * Not lockout-risky — a copy of traffic won't sever the management
+ * session.
  *
  * When monitoring is disabled we send only `enabled: false`; when
- * enabling, both `dest_port` and `source_mask` are required (the
+ * enabling, both `dest_port` and `source_ports` are required (the
  * backend model validates that).
  *
  * We derive the candidate source-port list from the bob-ports read
@@ -26,7 +27,6 @@ import {
   useSetMonitor,
   type SetMonitorRequest,
 } from "@/api/hooks/useConfiguration";
-import { portsToMask } from "./portMask";
 
 export function MonitorCard() {
   const query = useMonitor();
@@ -69,7 +69,7 @@ export function MonitorCard() {
       ? {
           enabled: true,
           dest_port: destPort,
-          source_mask: portsToMask(Array.from(sourcePorts)),
+          source_ports: Array.from(sourcePorts).sort((a, b) => a - b),
         }
       : { enabled: false };
     mutation.mutate(

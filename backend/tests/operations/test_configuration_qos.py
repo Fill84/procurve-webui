@@ -140,6 +140,10 @@ async def test_set_cos_appt_user_defined_port(
     assert q["src"] == "5060"
     assert q["ap"] == "2"
     assert q["pr"] == "5"
+    # Field order per the legacy form (set_cos_appt.md URL template):
+    # action, app, tcpudp, src, ap, dscp, pr.
+    raw = route.calls.last.request.url.raw_path.decode()
+    assert "action=Add&app=0&tcpudp=TCP&src=5060&ap=2&pr=5" in raw
 
 
 def test_set_cos_appt_user_defined_requires_port() -> None:
@@ -434,3 +438,83 @@ async def test_set_cosproto_with_explicit_request(
     async with ProcurveTransport(host="192.0.2.3") as t:
         await set_cosproto(t, request=SetCosProtoRequest())
     assert route.called
+
+
+def test_set_cosproto_apply_is_pinned() -> None:
+    """`apply` must be the legacy button caption, not caller free text."""
+    with pytest.raises(ValueError):
+        SetCosProtoRequest(apply="Apply")  # type: ignore[arg-type]
+
+# ---- range validation (audit F3) ------------------------------------------
+# The legacy UI could only emit values from its <select> lists; the models
+# must refuse anything outside those domains before it reaches the switch.
+
+def test_set_cos_appt_rejects_out_of_range_values() -> None:
+    common: dict = {"action": "Add", "app_id": 0, "protocol": "TCP"}
+    with pytest.raises(ValueError):
+        SetCosApptRequest(**common, port=0)
+    with pytest.raises(ValueError):
+        SetCosApptRequest(**common, port=65536)
+    with pytest.raises(ValueError):
+        SetCosApptRequest(
+            **common, port=80, policy_mode=ApplyPolicy.DSCP, dscp=64
+        )
+    with pytest.raises(ValueError):
+        SetCosApptRequest(
+            **common, port=80, policy_mode=ApplyPolicy.DSCP, dscp=-1
+        )
+    with pytest.raises(ValueError):
+        SetCosApptRequest(
+            **common, port=80, policy_mode=ApplyPolicy.P_8021, priority_8021p=8
+        )
+
+
+def test_set_cos_userpri_rejects_out_of_range_values() -> None:
+    with pytest.raises(ValueError):
+        SetCosUserPriRequest(
+            action="Add",
+            address=IPv4Address("192.0.2.9"),
+            policy_mode=ApplyPolicy.DSCP,
+            dscp=64,
+        )
+    with pytest.raises(ValueError):
+        SetCosUserPriRequest(
+            action="Add",
+            address=IPv4Address("192.0.2.9"),
+            policy_mode=ApplyPolicy.P_8021,
+            priority_8021p=8,
+        )
+
+
+def test_set_cos_vlanpri_accepts_sentinel_and_rejects_gaps() -> None:
+    # 255 is the "No override" sentinel and stays valid.
+    SetCosVlanPriRequest(vlan_id=1, dscp=255, priority_8021p=255)
+    SetCosVlanPriRequest(vlan_id=1, dscp=63)
+    SetCosVlanPriRequest(vlan_id=1, priority_8021p=7)
+    # Values between the real domain and the sentinel must be refused.
+    with pytest.raises(ValueError):
+        SetCosVlanPriRequest(vlan_id=1, dscp=64)
+    with pytest.raises(ValueError):
+        SetCosVlanPriRequest(vlan_id=1, priority_8021p=8)
+    with pytest.raises(ValueError):
+        SetCosVlanPriRequest(vlan_id=1, dscp=254)
+
+
+def test_set_dscptable_priority_range() -> None:
+    SetDscpTableRequest(row_index=1, priority_8021p=0)
+    SetDscpTableRequest(row_index=1, priority_8021p=7)
+    SetDscpTableRequest(row_index=1, priority_8021p=255)
+    with pytest.raises(ValueError):
+        SetDscpTableRequest(row_index=1, priority_8021p=8)
+    with pytest.raises(ValueError):
+        SetDscpTableRequest(row_index=1, priority_8021p=-1)
+
+
+def test_set_diffserv_dscp_range() -> None:
+    SetDiffservRequest(row_index=1, dscp=0)
+    SetDiffservRequest(row_index=1, dscp=63)
+    SetDiffservRequest(row_index=1, dscp=255)
+    with pytest.raises(ValueError):
+        SetDiffservRequest(row_index=1, dscp=64)
+    with pytest.raises(ValueError):
+        SetDiffservRequest(row_index=1, dscp=-1)

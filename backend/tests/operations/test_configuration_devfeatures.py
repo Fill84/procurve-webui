@@ -150,5 +150,51 @@ async def test_set_device_features_blocked_by_read_only(
     async with ProcurveTransport(host="192.0.2.3") as t:
         with pytest.raises(WriteDisabledError):
             await set_device_features(
-                t, request=SetDeviceFeaturesRequest(igmp=True)
+                t,
+                request=SetDeviceFeaturesRequest(igmp=True, spanning_tree=True),
             )
+
+
+# ---- per-endpoint field validation (audit F3 + F5) -------------------------
+# Each legacy page submits a fixed field set; combinations the applet could
+# never produce must be refused (mirror pages features2/2a/2b/2c/2d).
+
+def test_device_features_both_selects_required_on_combined_pages() -> None:
+    for endpoint in ("/cgi/feature_set", "/cgi/feature2_set"):
+        SetDeviceFeaturesRequest(
+            endpoint=endpoint, igmp=True, spanning_tree=True
+        )
+        with pytest.raises(ValueError):
+            SetDeviceFeaturesRequest(endpoint=endpoint, igmp=True)
+        with pytest.raises(ValueError):
+            SetDeviceFeaturesRequest(endpoint=endpoint, spanning_tree=True)
+
+
+def test_device_features_global_page_is_stp_only() -> None:
+    SetDeviceFeaturesRequest(
+        endpoint="/cgi/globalfeature_set", spanning_tree=True
+    )
+    with pytest.raises(ValueError):
+        SetDeviceFeaturesRequest(endpoint="/cgi/globalfeature_set")
+    with pytest.raises(ValueError):
+        SetDeviceFeaturesRequest(
+            endpoint="/cgi/globalfeature_set", igmp=True, spanning_tree=True
+        )
+
+
+def test_device_features_vlan_pages_are_igmp_only() -> None:
+    for endpoint in ("/cgi/vlanfeature_set", "/cgi/vlan2feature_set"):
+        SetDeviceFeaturesRequest(endpoint=endpoint, vlan_id=10, igmp=True)
+        with pytest.raises(ValueError):
+            SetDeviceFeaturesRequest(endpoint=endpoint, vlan_id=10)
+        with pytest.raises(ValueError):
+            SetDeviceFeaturesRequest(
+                endpoint=endpoint, vlan_id=10, igmp=True, spanning_tree=True
+            )
+
+
+def test_device_features_vlan_id_range() -> None:
+    with pytest.raises(ValueError):
+        SetDeviceFeaturesRequest(igmp=True, spanning_tree=True, vlan_id=0)
+    with pytest.raises(ValueError):
+        SetDeviceFeaturesRequest(igmp=True, spanning_tree=True, vlan_id=4095)

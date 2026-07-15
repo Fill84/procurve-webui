@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { formatUptime } from "./format";
-import { maskToPorts, portsToMask } from "@/features/configuration/portMask";
 import { portLedStatus } from "@/components/switch-panel/portLedStatus";
 
 describe("formatUptime", () => {
@@ -20,29 +19,6 @@ describe("formatUptime", () => {
 
   it("truncates centisecond remainders instead of rounding up", () => {
     expect(formatUptime(199)).toMatch(/00:00:01/);
-  });
-});
-
-describe("port bitmask helpers", () => {
-  it("round-trips all 26 possible ports", () => {
-    const all = Array.from({ length: 26 }, (_, i) => i + 1);
-    expect(maskToPorts(portsToMask(all))).toEqual(all);
-  });
-
-  it("round-trips sparse selections", () => {
-    const picks = [1, 5, 24];
-    expect(maskToPorts(portsToMask(picks))).toEqual(picks);
-  });
-
-  it("maps an empty selection to mask 0 and back", () => {
-    expect(portsToMask([])).toBe(0);
-    expect(maskToPorts(0)).toEqual([]);
-  });
-
-  it("sets the expected bit per port (port 1 = LSB)", () => {
-    expect(portsToMask([1])).toBe(1);
-    expect(portsToMask([2])).toBe(2);
-    expect(portsToMask([3])).toBe(4);
   });
 });
 

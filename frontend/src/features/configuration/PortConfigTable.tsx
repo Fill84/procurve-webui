@@ -204,7 +204,9 @@ function EditPortDialog({
       // `ports` is re-pinned by the backend from the URL; we still send
       // [port] so the body is internally consistent.
       ports: [port],
-      name: name.trim(),
+      // Sent verbatim — trimming here would silently rewrite names that
+      // legitimately carry edge whitespace on the switch (audit F7).
+      name,
       admin_enabled: adminEnabled,
       mode,
       flow_control_enabled: effectiveFlow,

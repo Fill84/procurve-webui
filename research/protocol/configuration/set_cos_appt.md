@@ -20,6 +20,14 @@ select `ap`, used by cos_app6).
 `Add` / `Replace` / `Delete` and submit `fapp3`).
 Sub-tab key in menu: `qos` / `appt`.
 
+> **⚠ Ground-truth gap (audit F2, 2026-07-15):** this doc cites one or more
+> `cos_*.html` mirror pages that are **not present** in
+> `research/mirror/2026-04-23/configuration/` (only `cos_mainf.html` and
+> `cos_menu.html` were captured; the per-subtab QoS pages were never
+> mirrored and are not in git history). HTML-derived claims below are
+> therefore unverifiable in-repo. Treat the wire contract as
+> **experimental** until the QoS pages are re-mirrored or live-captured.
+
 ## HTTP contract
 
 - **Method:** GET

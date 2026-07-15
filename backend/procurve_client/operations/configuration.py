@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import re
 from ipaddress import IPv4Address
-from urllib.parse import quote_plus
 
 from procurve_client._safety import READ, WRITE
 from procurve_client.errors import ParseError
@@ -571,24 +570,24 @@ async def set_port_config(
     """Modify per-port config via /cgi/mod_ports.
 
     Preserves the `_portName` underscore and `indeces` misspelling
-    byte-exactly; emits `apply=+Apply+Settings+` on the wire (quote_plus of
-    " Apply Settings ", matching the applet's URLEncoder.encode).
+    byte-exactly; emits `apply=+Apply+Settings+` on the wire (space → `+`,
+    matching the applet's URLEncoder.encode, which httpx also does).
 
-    The query is assembled manually so the `indeces` CSV comma stays
-    literal (httpx params would emit %2C — see _conventions.md); the
-    user-supplied port name is quote_plus-encoded like the applet did.
+    Multi-port submits separate the `indeces` items with an encoded comma
+    (`%2C`) — ListPane.submitMultipleItems calls `URLEncoder.encode(",")`
+    (ListPane.java:572). Only the SwitchBob path (set_bobports) appends
+    the comma raw; an earlier revision wrongly applied that here (audit F4).
+    httpx's default param encoding produces exactly the ListPane bytes.
     """
-    query = "&".join(
-        [
-            f"indeces={_format_ports_csv(request.ports)}",
-            f"_portName={quote_plus(request.name)}",
-            f"hpSwitchPortAdminStatus={'1' if request.admin_enabled else '2'}",
-            f"hpSwitchPortFastEtherMode={int(request.mode)}",
-            f"hpSwitchPortFlowControl={'2' if request.flow_control_enabled else '1'}",
-            f"apply={quote_plus(_APPLY_SETTINGS)}",
-        ]
-    )
-    r = await transport.get(f"{_MOD_PORTS_CGI}?{query}")
+    params: dict[str, int | str] = {
+        "indeces": _format_ports_csv(request.ports),
+        "_portName": request.name,
+        "hpSwitchPortAdminStatus": "1" if request.admin_enabled else "2",
+        "hpSwitchPortFastEtherMode": int(request.mode),
+        "hpSwitchPortFlowControl": "2" if request.flow_control_enabled else "1",
+        "apply": _APPLY_SETTINGS,
+    }
+    r = await transport.get(_MOD_PORTS_CGI, params=params)
     ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
@@ -639,14 +638,16 @@ async def set_cos_appt(
     `pr`, `src` from sibling-frame forms (via session state) is unverified.
     Python client eagerly emits all known fields.
     """
+    # Field order mirrors the legacy form: action, app, tcpudp, src, ap,
+    # dscp, pr (set_cos_appt.md URL template).
     params: dict[str, int | str] = {
         "action": request.action,
         "app": request.app_id,
         "tcpudp": request.protocol,
-        "ap": int(request.policy_mode),
     }
     if request.port is not None:
         params["src"] = request.port
+    params["ap"] = int(request.policy_mode)
     if request.dscp is not None:
         params["dscp"] = request.dscp
     if request.priority_8021p is not None:
@@ -898,6 +899,29 @@ async def get_monitor_page(transport: ProcurveTransport) -> MonitorPage:
     )
 
 
+def monitor_source_mask(ports: list[int]) -> str:
+    """Encode source ports as the applet's `portCopySourceMask` value.
+
+    Ground truth is MonitorList.java:getPortMask (research/decompiled/):
+    one 32-bit word, port 1 = MSB (`1 << (32 - n)`), rendered as eight
+    zero-padded lowercase hex digits split into byte pairs joined by
+    single spaces — ports 1+2 → ``"c0 00 00 00"``. Spaces reach the wire
+    as ``+`` (browser form GET), which httpx also emits.
+
+    Limited to one word (ports 1..32): the 2810-24G never exceeds it and
+    the applet's multi-word concatenation has never been observed live.
+    """
+    if not ports:
+        raise ValueError("source port list must not be empty")
+    if any(p < 1 or p > 32 for p in ports):
+        raise ValueError("source ports must be within 1..32")
+    word = 0
+    for p in ports:
+        word |= 1 << (32 - p)
+    digits = f"{word:08x}"
+    return " ".join(digits[i : i + 2] for i in range(0, 8, 2))
+
+
 @WRITE
 async def set_monitor(
     transport: ProcurveTransport,
@@ -906,22 +930,21 @@ async def set_monitor(
 ) -> ConfigWriteAck:
     """Enable or disable port mirroring via /cgi/set_monitor.
 
-    `portCopyStatus=4` enables (requires dest_port + source_mask);
-    `portCopyStatus=2` disables (emits no other fields).
-    # TODO: needs live capture — the `portCopySourceMask` bitmask endianness
-    (bit 0 = port 1 or port 0?) is unverified.
+    `portCopyStatus=4` enables (requires dest_port + source_ports);
+    `portCopyStatus=2` disables (emits no other fields). The source
+    mask is encoded by `monitor_source_mask` (legacy hex-pair format).
     """
     if not request.enabled:
         params: dict[str, int | str] = {"portCopyStatus": 2}
     else:
-        # The model_validator on SetMonitorRequest guarantees both are non-None
+        # The model_validator on SetMonitorRequest guarantees both are set
         # when enabled=True; mypy can't see through that so we narrow here.
-        if request.dest_port is None or request.source_mask is None:
-            raise ValueError("enabling monitoring requires dest_port and source_mask")
+        if request.dest_port is None or not request.source_ports:
+            raise ValueError("enabling monitoring requires dest_port and source_ports")
         params = {
             "portCopyStatus": 4,
             "portCopyDest": request.dest_port,
-            "portCopySourceMask": request.source_mask,
+            "portCopySourceMask": monitor_source_mask(request.source_ports),
         }
     r = await transport.get(_MONITOR_CGI, params=params)
     ensure_write_ok(r.status_code, r.text)
