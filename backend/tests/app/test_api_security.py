@@ -198,7 +198,7 @@ def test_web_access_write_blocked_when_read_only(
         r = c.put("/api/v1/security/web-access", json=_SSL_REQUEST_BODY)
         app.dependency_overrides.clear()
     assert r.status_code == 403
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "read_only"
     assert called is False
 
@@ -219,7 +219,7 @@ def test_web_access_write_requires_host_confirmation(
     bad = {**_SSL_REQUEST_BODY, "confirm_switch_host": "10.0.0.1"}
     r = client.put("/api/v1/security/web-access", json=bad)
     assert r.status_code == 400
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "host_mismatch"
     assert called is False
 
@@ -358,7 +358,7 @@ def test_web_managers_write_requires_host_confirmation(
     bad = {**_WEB_MGR_ADD_BODY, "confirm_switch_host": "wrong"}
     r = client.post("/api/v1/security/web-managers", json=bad)
     assert r.status_code == 400
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "host_mismatch"
     assert called is False
 
@@ -728,7 +728,7 @@ def test_device_passwords_write_blocked_when_read_only(
         )
         app.dependency_overrides.clear()
     assert r.status_code == 403
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "read_only"
     assert called is False
 
@@ -751,7 +751,7 @@ def test_device_passwords_write_requires_host_confirmation(
     bad = {**_DEVICE_PASSWORDS_BODY, "confirm_switch_host": "10.0.0.1"}
     r = client.put("/api/v1/security/device-passwords", json=bad)
     assert r.status_code == 400
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "host_mismatch"
     assert called is False
 

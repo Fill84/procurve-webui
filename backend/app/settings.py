@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     @field_validator("session_secret")
     @classmethod
     def _reject_placeholder(cls, v: str) -> str:
-        if v.strip() in {"", "change-me", "your-secret-here"}:
+        # Reject by prefix, not exact match: the .env.example value is
+        # "change-me-to-a-random-string-of-at-least-32-chars", which is >=32
+        # chars and used to sail straight through an exact-match check —
+        # leaving anyone who copied the example running with a publicly
+        # known cookie-signing key.
+        s = v.strip()
+        if not s or s.startswith("change-me") or s in {"your-secret-here"}:
             raise ValueError("SESSION_SECRET must be a real random value")
         return v

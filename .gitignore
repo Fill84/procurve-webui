@@ -48,3 +48,6 @@ backups/
 # reference; comment out if you ever need to scrub a sensitive page.
 # research/mirror/
 
+# Session/tooling artifacts
+.claude/
+backend/coverage-report.md

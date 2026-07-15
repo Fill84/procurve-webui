@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import re
 from ipaddress import IPv4Address
+from urllib.parse import quote_plus
 
 from procurve_client._safety import READ, WRITE
 from procurve_client.errors import ParseError
@@ -82,7 +83,7 @@ from procurve_client.models.qos import (
     SetDiffservRequest,
     SetDscpTableRequest,
 )
-from procurve_client.parsing import parse_tilde_lines
+from procurve_client.parsing import ensure_write_ok, parse_int, parse_tilde_lines
 from procurve_client.transport import ProcurveTransport
 
 # ---- URL paths --------------------------------------------------------
@@ -173,7 +174,10 @@ async def get_bobports(transport: ProcurveTransport) -> BobPortsResponse:
     dev_row = rows[0]
     if len(dev_row) < 2:
         raise ParseError(f"/cgi/get_bobports device line missing fields: {dev_row!r}")
-    device = BobDevice(codename=dev_row[0], port_count=int(dev_row[1]))
+    device = BobDevice(
+        codename=dev_row[0],
+        port_count=parse_int(dev_row[1], context="get_bobports port_count"),
+    )
 
     ports: list[BobPort] = []
     for row in rows[1:]:
@@ -186,13 +190,15 @@ async def get_bobports(transport: ProcurveTransport) -> BobPortsResponse:
             raise ParseError(f"bobports row had {len(row)} fields: {row!r}")
         ports.append(
             BobPort(
-                port=int(row[0]),
+                port=parse_int(row[0], context="get_bobports port"),
                 kind=row[1],
                 label=row[2],
                 link=_bob_bool(row[3]),
                 enabled=_bob_bool(row[4]),
                 mode=row[5] if len(row) > 5 and row[5].strip() else None,
-                poe=int(row[6]) if len(row) > 6 and row[6].strip() else None,
+                poe=parse_int(row[6], context="get_bobports poe")
+                if len(row) > 6 and row[6].strip()
+                else None,
             )
         )
     return BobPortsResponse(device=device, ports=ports)
@@ -209,12 +215,15 @@ async def set_bobports(
     Wire-level: `ifAdminStatus=1|2` + `indeces=<csv>`. The misspelling
     `indeces` is preserved on the wire. Response body is not consumed by
     the legacy UI; unverified shape (presumed OK~...).
+
+    The query is assembled manually so the CSV comma stays literal (httpx
+    params would emit %2C, which the firmware's own comma-splitting echo
+    parser suggests it does not decode — see _conventions.md).
     """
-    params = {
-        "ifAdminStatus": "1" if request.enable else "2",
-        "indeces": _format_ports_csv(request.ports),
-    }
-    r = await transport.get(_SET_BOBPORTS, params=params)
+    csv = _format_ports_csv(request.ports)
+    admin = "1" if request.enable else "2"
+    r = await transport.get(f"{_SET_BOBPORTS}?ifAdminStatus={admin}&indeces={csv}")
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -260,6 +269,7 @@ async def set_fault_detection(
     """Set fault-detection sensitivity via /cgi/web_agent?ffs=<n>."""
     params = {"ffs": int(request.sensitivity)}
     r = await transport.get(_WEB_AGENT_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -327,6 +337,7 @@ async def set_system_info(
         "apply": _APPLY_CHANGES,
     }
     r = await transport.get(_SYSTEM_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -373,13 +384,29 @@ async def get_ip_page(transport: ProcurveTransport) -> IpConfigPage:
     gw_m = _IP_GATEWAY_INPUT_RE.search(body1) or _IP_GATEWAY_JS_RE.search(body1)
     if not gw_m:
         raise ParseError("ip1.html: missing default gateway")
+    try:
+        mode = IpMode(int(mode_m.group(1)))
+    except ValueError as exc:
+        raise ParseError(
+            f"ip2.html: unknown IP mode {mode_m.group(1)!r}"
+        ) from exc
     return IpConfigPage(
         vlan_id=int(vlan_m.group(1)),
-        mode=IpMode(int(mode_m.group(1))),
-        ip_address=IPv4Address(ip_m.group(1)) if ip_m else None,
+        mode=mode,
+        ip_address=_parse_ipv4(ip_m.group(1), context="ip2.html IP address")
+        if ip_m
+        else None,
         subnet_mask=mask_m.group(1) if mask_m else None,
-        gateway=IPv4Address(gw_m.group(1)),
+        gateway=_parse_ipv4(gw_m.group(1), context="ip1.html gateway"),
     )
+
+
+def _parse_ipv4(raw: str, *, context: str) -> IPv4Address:
+    """IPv4Address() with ParseError — dotted-digit regexes admit 999.1.1.1."""
+    try:
+        return IPv4Address(raw)
+    except ValueError as exc:
+        raise ParseError(f"{context}: invalid IPv4 literal {raw!r}") from exc
 
 
 @WRITE
@@ -400,6 +427,7 @@ async def set_ip_config(
         "apply": _APPLY_CHANGES,
     }
     r = await transport.get(_IP_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -412,6 +440,7 @@ async def set_default_gateway(
     """Set only the default gateway via /cgi/gateway."""
     params = {"rt": str(request.gateway)}
     r = await transport.get(_GATEWAY_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -435,7 +464,7 @@ async def get_portscfg(transport: ProcurveTransport) -> PortConfigList:
             )
         ports.append(
             PortConfig(
-                port=int(row[0]),
+                port=parse_int(row[0], context="getPortsCfg port"),
                 port_name=row[1],
                 port_type_label=row[2],
                 port_type=row[3],
@@ -444,7 +473,9 @@ async def get_portscfg(transport: ProcurveTransport) -> PortConfigList:
                 config_mode=row[6],
                 trunk=row[7],
                 flow_control=_parse_enable_disable(row[8]),
-                extra=int(row[9]) if row[9].strip() else 0,
+                extra=parse_int(row[9], context="getPortsCfg extra")
+                if row[9].strip()
+                else 0,
             )
         )
     return PortConfigList(ports=ports)
@@ -481,7 +512,9 @@ def _parse_indeces_csv(s: str) -> list[int]:
     s = s.strip()
     if not s:
         return []
-    return [int(x) for x in re.split(r"[,]|%2C", s) if x]
+    return [
+        parse_int(x, context="indeces csv") for x in re.split(r"[,]|%2C", s) if x
+    ]
 
 
 @READ
@@ -538,17 +571,25 @@ async def set_port_config(
     """Modify per-port config via /cgi/mod_ports.
 
     Preserves the `_portName` underscore and `indeces` misspelling
-    byte-exactly; emits `apply=" Apply Settings "` (spaces included).
+    byte-exactly; emits `apply=+Apply+Settings+` on the wire (quote_plus of
+    " Apply Settings ", matching the applet's URLEncoder.encode).
+
+    The query is assembled manually so the `indeces` CSV comma stays
+    literal (httpx params would emit %2C — see _conventions.md); the
+    user-supplied port name is quote_plus-encoded like the applet did.
     """
-    params = {
-        "indeces": _format_ports_csv(request.ports),
-        "_portName": request.name,
-        "hpSwitchPortAdminStatus": "1" if request.admin_enabled else "2",
-        "hpSwitchPortFastEtherMode": int(request.mode),
-        "hpSwitchPortFlowControl": "2" if request.flow_control_enabled else "1",
-        "apply": _APPLY_SETTINGS,
-    }
-    r = await transport.get(_MOD_PORTS_CGI, params=params)
+    query = "&".join(
+        [
+            f"indeces={_format_ports_csv(request.ports)}",
+            f"_portName={quote_plus(request.name)}",
+            f"hpSwitchPortAdminStatus={'1' if request.admin_enabled else '2'}",
+            f"hpSwitchPortFastEtherMode={int(request.mode)}",
+            f"hpSwitchPortFlowControl={'2' if request.flow_control_enabled else '1'}",
+            f"apply={quote_plus(_APPLY_SETTINGS)}",
+        ]
+    )
+    r = await transport.get(f"{_MOD_PORTS_CGI}?{query}")
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -576,7 +617,7 @@ async def get_cos_appt(transport: ProcurveTransport) -> CosAppList:
         entries.append(
             CosAppEntry(
                 application_name=row[0],
-                port_number=int(row[1]),
+                port_number=parse_int(row[1], context="getCosAppt port_number"),
                 type=proto,
                 dscp=row[3],
                 priority=row[4],
@@ -611,6 +652,7 @@ async def set_cos_appt(
     if request.priority_8021p is not None:
         params["pr"] = request.priority_8021p
     r = await transport.get(_COSAPPF_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return QosWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -655,6 +697,7 @@ async def set_cos_userpri(
     if request.dscp is not None:
         params["dscp"] = request.dscp
     r = await transport.get(_COSUSERF_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return QosWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -670,6 +713,7 @@ async def set_costos_mode(
         "indeces": 0,
     }
     r = await transport.get(_COSTOS_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return QosWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -684,7 +728,7 @@ async def get_cos_vlanpri(transport: ProcurveTransport) -> CosVlanList:
             raise ParseError(f"cosvlan row had {len(row)} fields: {row!r}")
         entries.append(
             CosVlanEntry(
-                vlan_id=int(row[0]),
+                vlan_id=parse_int(row[0], context="getCosVlanPri vlan_id"),
                 vlan_label=row[1],
                 dscp_policy=row[2],
                 priority=row[3],
@@ -706,6 +750,7 @@ async def set_cos_vlanpri(
         "indeces": request.vlan_id,
     }
     r = await transport.get(_COSVLANF_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return QosWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -720,7 +765,7 @@ async def get_dscptable(transport: ProcurveTransport) -> DscpTable:
             raise ParseError(f"dscptable row had {len(row)} fields: {row!r}")
         out.append(
             DscpPolicy(
-                row_index=int(row[0]),
+                row_index=parse_int(row[0], context="getDscpTable row_index"),
                 codepoint=row[1],
                 priority_label=row[2],
             )
@@ -743,6 +788,7 @@ async def set_dscptable(
         "pr": request.priority_8021p,
     }
     r = await transport.get(_DSCPTABLE_SET_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return QosWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -757,7 +803,7 @@ async def get_diffserv(transport: ProcurveTransport) -> DiffservTable:
             raise ParseError(f"diffserv row had {len(row)} fields: {row!r}")
         out.append(
             DiffservEntry(
-                row_index=int(row[0]),
+                row_index=parse_int(row[0], context="getDiffserv row_index"),
                 inbound_codepoint=row[1],
                 dscp_policy=row[2],
                 priority_label=row[3],
@@ -782,6 +828,7 @@ async def set_diffserv(
         "dscp": request.dscp,
     }
     r = await transport.get(_DIFFSERV_SET_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return QosWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -800,6 +847,7 @@ async def set_cosproto(
     """
     params = {"Apply": (request or SetCosProtoRequest()).apply}
     r = await transport.get(_COSPROTO_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return QosWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -876,6 +924,7 @@ async def set_monitor(
             "portCopySourceMask": request.source_mask,
         }
     r = await transport.get(_MONITOR_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -945,6 +994,7 @@ async def set_device_features(
     if request.spanning_tree is not None:
         params["hpSwitchStpAdminStatus"] = "1" if request.spanning_tree else "2"
     r = await transport.get(request.endpoint, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -993,4 +1043,5 @@ async def set_support(
         "apply": _APPLY_CHANGES,
     }
     r = await transport.get(_SUPPORT_CGI, params=params)
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)

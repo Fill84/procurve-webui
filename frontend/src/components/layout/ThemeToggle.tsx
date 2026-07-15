@@ -8,7 +8,7 @@
  * so they stay monochrome in both themes, matching the app's B&W identity.
  */
 import type { ReactElement, SVGProps } from "react";
-import { useTheme, type ThemePreference } from "@/lib/theme";
+import { useTheme, type ThemePreference } from "@/lib/theme-context";
 import { cn } from "@/lib/utils";
 
 function SunIcon(props: SVGProps<SVGSVGElement>) {

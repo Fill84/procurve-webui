@@ -151,3 +151,42 @@ async def test_device_reset_constructs_correct_url(monkeypatch: pytest.MonkeyPat
     assert route.called
     assert str(route.calls.last.request.url) == "http://192.0.2.3/cgi/device_reset"
     assert result.initiated is True
+
+
+@respx.mock
+async def test_device_reset_reraises_when_switch_unreachable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Connect-phase failure = the reset was never delivered -> re-raise.
+
+    Reporting initiated=True for an unreachable switch would send the
+    operator into a wait for a boot cycle that never happens.
+    """
+    import httpx
+
+    from procurve_client.errors import TransportError
+
+    monkeypatch.setenv("READ_ONLY", "false")
+    respx.get("http://192.0.2.3/cgi/device_reset").mock(
+        side_effect=httpx.ConnectError("connection refused")
+    )
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(TransportError):
+            await device_reset(t)
+
+
+@respx.mock
+async def test_device_reset_treats_read_error_as_initiated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Read-phase failure IS the expected success signature (reboot cuts TCP)."""
+    import httpx
+
+    monkeypatch.setenv("READ_ONLY", "false")
+    respx.get("http://192.0.2.3/cgi/device_reset").mock(
+        side_effect=httpx.ReadError("connection reset by peer")
+    )
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        result = await device_reset(t)
+    assert result.initiated is True
+    assert "connection closed" in (result.message or "")

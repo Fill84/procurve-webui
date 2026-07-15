@@ -4,10 +4,17 @@
  * LOCKOUT RISK: this is a WHITELIST. A bad entry (wrong mask, or deleting
  * your own row) locks the caller out of the web UI IMMEDIATELY. Every
  * add/delete goes through the shared DangerConfirmDialog with the switch IP.
+ * New entries are format-validated client-side (IPv4 + mask), and the
+ * confirm dialog warns when the prospective whitelist would no longer
+ * cover the operator's own client IP (as reported by whoami).
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
 import { DangerConfirmDialog } from "@/components/ui/DangerConfirmDialog";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { entryCovers, isContiguousNetmask, isValidIpv4 } from "@/lib/ipv4";
 import { useIdentity } from "@/api/hooks/useIdentity";
+import { useWhoami } from "@/api/hooks/useAuth";
 import {
   useSetWebManager,
   useWebManagers,
@@ -21,6 +28,7 @@ type PendingOp =
 
 export function WebManagersCard() {
   const identity = useIdentity();
+  const whoami = useWhoami();
   const managers = useWebManagers();
   const setManager = useSetWebManager();
 
@@ -31,15 +39,34 @@ export function WebManagersCard() {
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   const expectedIp = identity.data?.ip_address ?? "";
+  const clientIp = whoami.data?.client_ip ?? null;
+
+  // L7: format-validate before the payload can reach the switch — this is
+  // the card whose own warning says a bad entry locks you out immediately.
+  const ipTrimmed = newIp.trim();
+  const maskTrimmed = newMask.trim() || "255.255.255.255";
+  const ipError =
+    ipTrimmed !== "" && !isValidIpv4(ipTrimmed)
+      ? "Not a valid IPv4 address."
+      : null;
+  const maskError = !isValidIpv4(maskTrimmed)
+    ? "Not a valid IPv4 mask."
+    : null;
+  const maskWarning =
+    !maskError && !isContiguousNetmask(maskTrimmed)
+      ? "Mask bits are non-contiguous — double-check this is intended."
+      : null;
+  const canAdd =
+    ipTrimmed !== "" && !ipError && !maskError && !!expectedIp;
 
   const requestAdd = () => {
-    if (!newIp.trim()) return;
+    if (!canAdd) return;
     setLastResult(null);
     setManager.reset();
     setPending({
       kind: "add",
-      ip: newIp.trim(),
-      mask: newMask.trim() || "255.255.255.255",
+      ip: ipTrimmed,
+      mask: maskTrimmed,
       level: newLevel,
     });
   };
@@ -89,20 +116,38 @@ export function WebManagersCard() {
   };
 
   const errorMessage =
-    setManager.error instanceof Error ? setManager.error.message : null;
+    apiErrorMessage(setManager.error);
 
   const entries = managers.data?.entries ?? [];
 
+  // Own-IP coverage check (advisory): compute the whitelist as it would
+  // look after the pending change; an empty whitelist means no restriction.
+  const prospective: Array<{ ip: string; mask: string }> = !pending
+    ? []
+    : pending.kind === "add"
+      ? [...entries, { ip: pending.ip, mask: pending.mask }]
+      : entries.filter((e) => e.index !== pending.row.index);
+  const ownIpExcluded =
+    pending !== null &&
+    clientIp !== null &&
+    prospective.length > 0 &&
+    !prospective.some((e) => entryCovers(e.ip, e.mask, clientIp));
+
   const dialogBody = pending ? (
     <div className="space-y-3">
-      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-        <p className="font-semibold">Lockout risk</p>
-        <p className="mt-1">
-          The authorized-manager list is a whitelist. Changes take effect
-          immediately. If your client IP is not covered after the change, you
-          will be locked out of the web UI.
-        </p>
-      </div>
+      <ErrorBanner title="Lockout risk">
+        The authorized-manager list is a whitelist. Changes take effect
+        immediately. If your client IP is not covered after the change, you
+        will be locked out of the web UI.
+      </ErrorBanner>
+      {ownIpExcluded && (
+        <ErrorBanner title="Your own IP will be locked out">
+          After this change, no whitelist entry covers your current client
+          IP (<span className="font-mono">{clientIp}</span>) — applying it
+          will cut off this session's access to the switch web UI
+          immediately.
+        </ErrorBanner>
+      )}
       <div className="rounded border border-border bg-muted p-3 text-sm">
         {pending.kind === "add" ? (
           <p>
@@ -152,9 +197,9 @@ export function WebManagersCard() {
         </div>
 
         {managers.error instanceof Error && (
-          <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          <ErrorBanner className="mb-3">
             Failed to fetch managers: {managers.error.message}
-          </div>
+          </ErrorBanner>
         )}
 
         <div className="overflow-x-auto rounded border border-border">
@@ -204,7 +249,10 @@ export function WebManagersCard() {
                     placeholder="IP"
                     value={newIp}
                     onChange={(e) => setNewIp(e.target.value)}
-                    className="w-full rounded-md border border-border px-2 py-1 font-mono text-xs"
+                    aria-invalid={ipError !== null}
+                    className={`w-full rounded-md border px-2 py-1 font-mono text-xs ${
+                      ipError ? "border-red-400 dark:border-red-900" : "border-border"
+                    }`}
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -213,7 +261,10 @@ export function WebManagersCard() {
                     placeholder="Mask"
                     value={newMask}
                     onChange={(e) => setNewMask(e.target.value)}
-                    className="w-full rounded-md border border-border px-2 py-1 font-mono text-xs"
+                    aria-invalid={maskError !== null}
+                    className={`w-full rounded-md border px-2 py-1 font-mono text-xs ${
+                      maskError ? "border-red-400 dark:border-red-900" : "border-border"
+                    }`}
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -232,7 +283,7 @@ export function WebManagersCard() {
                   <button
                     type="button"
                     onClick={requestAdd}
-                    disabled={!newIp.trim() || !expectedIp}
+                    disabled={!canAdd}
                     className="rounded border border-red-300 bg-card px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
                   >
                     Add…
@@ -242,6 +293,12 @@ export function WebManagersCard() {
             </tbody>
           </table>
         </div>
+
+        {(ipError ?? maskError ?? maskWarning) && (
+          <p className="mt-2 text-xs text-red-700 dark:text-red-300">
+            {ipError ?? maskError ?? maskWarning}
+          </p>
+        )}
 
         {lastResult && (
           <p className="mt-3 text-sm italic text-foreground">{lastResult}</p>
@@ -269,10 +326,7 @@ export function WebManagersCard() {
         busy={setManager.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-              <p className="font-semibold">Apply failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Apply failed">{errorMessage}</ErrorBanner>
           ) : null
         }
       />

@@ -20,6 +20,7 @@
  * banner (`actionNotice`) for success feedback on take/download/delete.
  * Swapping to a real toast provider later is trivial.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useMemo, useState } from "react";
 import type { BackupMeta } from "@/api/hooks/useBackups";
 import {
@@ -69,7 +70,7 @@ export function BackupsListPage() {
         setNotice({
           tone: "error",
           text: `Failed to take backup: ${
-            err instanceof Error ? err.message : String(err)
+            apiErrorMessage(err)
           }`,
         });
       },
@@ -83,7 +84,7 @@ export function BackupsListPage() {
         setNotice({
           tone: "error",
           text: `Download failed: ${
-            err instanceof Error ? err.message : String(err)
+            apiErrorMessage(err)
           }`,
         });
       },
@@ -103,7 +104,7 @@ export function BackupsListPage() {
         setNotice({
           tone: "error",
           text: `Delete failed: ${
-            err instanceof Error ? err.message : String(err)
+            apiErrorMessage(err)
           }`,
         });
       },

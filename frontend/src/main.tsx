@@ -1,16 +1,42 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiError } from "./api/client";
 import { routeTree } from "./routeTree.gen";
 import { ThemeProvider } from "./lib/theme";
 import "./styles/globals.css";
 
 const queryClient = new QueryClient({
+  // Session-expiry handling: when any query starts failing with 401 (the
+  // dashboard polls hit this within seconds of expiry), bounce to /login
+  // with the current path as the return target instead of leaving the page
+  // silently erroring every poll cycle. A hard navigation deliberately
+  // resets all in-memory state for the fresh session.
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (
+        error instanceof ApiError &&
+        error.status === 401 &&
+        window.location.pathname !== "/login"
+      ) {
+        const back = encodeURIComponent(
+          window.location.pathname + window.location.search,
+        );
+        window.location.assign(`/login?redirect=${back}`);
+      }
+    },
+  }),
   defaultOptions: {
     queries: {
       retry: false,
       refetchOnWindowFocus: false,
+      // Switch read-safety: every query here scrapes a CGI on a fragile
+      // embedded switch, so remounting a tab must NOT refire ~10 requests.
+      // 30 s staleness means tab-bouncing costs zero switch traffic; the
+      // dashboards that need fresher data poll via explicit refetchInterval,
+      // which is unaffected by staleTime.
+      staleTime: 30_000,
     },
   },
 });

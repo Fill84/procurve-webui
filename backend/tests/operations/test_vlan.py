@@ -208,6 +208,38 @@ async def test_get_vlan_ports_live_fixture() -> None:
 
 
 @respx.mock
+async def test_get_gvrp_ports_rejects_truncated_triple_stream() -> None:
+    """A cut-off response must raise, not parse as a shorter valid list (L12)."""
+    respx.get(f"{HOST}/cgi/getGVRPPort").mock(
+        return_value=Response(200, text="ON~1~1~0~2~2~\n")
+    )
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(ParseError, match="truncated"):
+            await get_gvrp_ports(t)
+
+
+@respx.mock
+async def test_get_vlan_ports_rejects_truncated_triple_stream() -> None:
+    respx.get(f"{HOST}/cgi/getVLANPort").mock(
+        return_value=Response(200, text="OFF~1~1~2~2~2~\n")
+    )
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(ParseError, match="truncated"):
+            await get_vlan_ports(t, vlan_id=1)
+
+
+@respx.mock
+async def test_list_vlans_rejects_truncated_pair_stream() -> None:
+    """A lone trailing id token means the body was cut mid-pair (L12)."""
+    respx.get(f"{HOST}/cgi/listVLANS").mock(
+        return_value=Response(200, text="1~DEFAULT_VLAN~10~\n")
+    )
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(ParseError, match="truncated"):
+            await list_vlans(t)
+
+
+@respx.mock
 async def test_get_vlan_ports_rejects_invalid_mode() -> None:
     respx.get(f"{HOST}/cgi/getVLANPort").mock(
         return_value=Response(200, text="OFF~1~1~7~\n")

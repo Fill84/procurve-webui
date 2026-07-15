@@ -8,7 +8,10 @@
  * `dps` (a second injected read-only telemetry value) is displayed as
  * raw metadata when present; its meaning is undocumented.
  */
-import { useEffect, useState } from "react";
+import { apiErrorMessage } from "@/api/client";
+import { useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useFaultDetection,
   useSetFaultDetection,
@@ -32,9 +35,7 @@ export function FaultDetectionCard() {
   const [sensitivity, setSensitivity] = useState<FaultSensitivity>(128);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (query.data) setSensitivity(query.data.sensitivity);
-  }, [query.data]);
+  useServerSync(query.data, (data) => setSensitivity(data.sensitivity));
 
   const dirty =
     !!query.data && sensitivity !== query.data.sensitivity;
@@ -58,7 +59,7 @@ export function FaultDetectionCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
   const canSave = !mutation.isPending && dirty;
 
   return (
@@ -73,7 +74,7 @@ export function FaultDetectionCard() {
       </div>
 
       {query.error instanceof Error && (
-        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner>
           <p className="font-medium">Failed to load fault detection</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -83,7 +84,7 @@ export function FaultDetectionCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -150,10 +151,9 @@ export function FaultDetectionCard() {
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Save failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Save failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}

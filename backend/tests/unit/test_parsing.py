@@ -3,12 +3,24 @@ import pytest
 
 from procurve_client.errors import OperationError, ParseError
 from procurve_client.parsing import (
+    parse_int,
     parse_kv_lines,
     parse_running_config,
     parse_tilde_lines,
     parse_tilde_row,
     unwrap_sentinel,
 )
+
+# --- parse_int ---
+
+def test_parse_int_converts_and_strips():
+    assert parse_int(" 42 ", context="test") == 42
+
+
+def test_parse_int_raises_typed_parse_error():
+    with pytest.raises(ParseError, match="getFoo: expected integer"):
+        parse_int("garbage", context="getFoo")
+
 
 # --- parse_tilde_row ---
 

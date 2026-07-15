@@ -1,6 +1,18 @@
 import { useState, type FormEvent } from "react";
-import { useRouter } from "@tanstack/react-router";
+import { getRouteApi, useRouter } from "@tanstack/react-router";
+import { apiErrorMessage } from "@/api/client";
 import { useLogin } from "@/api/hooks/useAuth";
+
+const loginRoute = getRouteApi("/login");
+
+/** Accept only same-origin path targets: must start with exactly one "/"
+ * ("//host" is scheme-relative and would leave the origin). */
+function safeRedirectTarget(redirect: string | undefined): string {
+  if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
+    return redirect;
+  }
+  return "/";
+}
 
 /**
  * Standalone login page. On successful submit the whoami query is
@@ -13,6 +25,7 @@ export function LoginScreen() {
   const [password, setPassword] = useState("");
   const login = useLogin();
   const router = useRouter();
+  const { redirect } = loginRoute.useSearch();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -20,7 +33,9 @@ export function LoginScreen() {
       { username, password },
       {
         onSuccess: () => {
-          void router.navigate({ to: "/" });
+          // Return to the page the auth guard bounced us from (validated to
+          // a same-origin path), falling back to the Identity landing page.
+          router.history.push(safeRedirectTarget(redirect));
         },
       },
     );
@@ -29,7 +44,7 @@ export function LoginScreen() {
   const errorMessage = login.isError
     ? login.error.status === 401
       ? "Invalid username or password."
-      : `Login failed: ${login.error.body || login.error.message}`
+      : `Login failed: ${apiErrorMessage(login.error)}`
     : null;
 
   return (

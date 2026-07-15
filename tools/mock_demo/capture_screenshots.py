@@ -5,7 +5,7 @@ Prerequisites:
     python -m playwright install chromium
 
     # Then in another terminal:
-    python tools/mock_demo/demo_server.py --port 8090
+    python tools/mock_demo/demo_server.py    # defaults to :8080
 
 Then:
     python tools/mock_demo/capture_screenshots.py
@@ -102,6 +102,6 @@ async def main(base_url: str) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-url", default="http://127.0.0.1:8090")
+    parser.add_argument("--base-url", default="http://127.0.0.1:8080")
     args = parser.parse_args()
     asyncio.run(main(args.base_url))

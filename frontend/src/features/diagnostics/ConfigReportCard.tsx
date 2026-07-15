@@ -6,7 +6,9 @@
  * scraped running-config text in a monospaced <pre> with Download and Copy
  * affordances. Download synthesises an `<a download>` click for a .txt blob.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useConfigurationReport } from "@/api/hooks/useDiagnostics";
 
 export function ConfigReportCard() {
@@ -41,7 +43,7 @@ export function ConfigReportCard() {
   };
 
   const errorMessage =
-    report.error instanceof Error ? report.error.message : null;
+    apiErrorMessage(report.error);
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -86,10 +88,9 @@ export function ConfigReportCard() {
       </div>
 
       {errorMessage && (
-        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-          <p className="font-semibold">Failed to fetch configuration report</p>
-          <p className="mt-1 break-all">{errorMessage}</p>
-        </div>
+        <ErrorBanner title="Failed to fetch configuration report">
+          {errorMessage}
+        </ErrorBanner>
       )}
 
       {!report.data && !errorMessage && !report.isFetching && (

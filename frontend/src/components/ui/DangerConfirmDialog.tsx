@@ -23,7 +23,7 @@
  * No focus trap — matching the Phase 2 RestoreDialog's hand-rolled shell.
  * Swap to shadcn's Dialog later without touching callers.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export interface DangerConfirmDialogProps {
   /** Controls visibility. When this flips false -> true, the typed value resets. */
@@ -75,15 +75,17 @@ export function DangerConfirmDialog({
   const [typed, setTyped] = useState("");
 
   // Reset typed-state whenever `open` flips false -> true (a fresh opening).
-  // We use the "changing prop -> derived reset" pattern
+  // "Changing prop -> derived reset" pattern
   // (https://react.dev/learn/you-might-not-need-an-effect
-  // #resetting-all-state-when-a-prop-changes) instead of an effect so we
-  // don't trigger a cascading re-render after paint.
-  const wasOpenRef = useRef(false);
-  if (!wasOpenRef.current && open) {
-    setTyped("");
+  // #resetting-all-state-when-a-prop-changes) — tracked in STATE, not a ref:
+  // reading/writing a ref during render is a Rules-of-React violation that
+  // can skip the reset under StrictMode/interrupted renders, and this is
+  // the input that gates lockout-risky switch writes.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
+    if (open) setTyped("");
   }
-  wasOpenRef.current = open;
 
   // Close on Escape — a minimal UX affordance. Suppressed while `busy`.
   useEffect(() => {
@@ -151,13 +153,17 @@ export function DangerConfirmDialog({
 
           {/* Confirmation */}
           <section className="mt-4">
-            <label className="block text-sm font-medium text-foreground">
+            <label
+              htmlFor="danger-confirm-input"
+              className="block text-sm font-medium text-foreground"
+            >
               {confirmationLabel}
             </label>
             {confirmationHint != null && (
               <p className="mt-0.5 text-xs text-muted-foreground">{confirmationHint}</p>
             )}
             <input
+              id="danger-confirm-input"
               type="text"
               autoComplete="off"
               spellCheck={false}

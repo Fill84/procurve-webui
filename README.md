@@ -69,8 +69,11 @@ below — the `tools/mock_demo/` package bundles a one-command demo backend.
 - **Type-safe end-to-end.** Pydantic v2 models on the backend, OpenAPI →
   TypeScript types on the frontend. No hand-written API types.
 - **Polite to the hardware.** Polling cadence is intentionally low (default
-  2 seconds for live gauges, paused when the tab is hidden); the 2810-24G
-  has a small management CPU and high-frequency probes can crash it.
+  2 seconds for live gauges); dashboard polls pause and the live-traffic
+  WebSocket closes whenever the tab is hidden; all live-gauge subscribers
+  share ONE backend poll loop, and every request to the switch is
+  serialized process-wide — the 2810-24G has a small management CPU and
+  high-frequency or stacked probes can crash it.
 - **Open documentation.** Every reverse-engineered switch endpoint has its
   own `research/protocol/<tab>/<operation>.md` describing URL, query string,
   response shape, and validation rules.
@@ -109,9 +112,9 @@ docker compose up -d
 
 Browse to `http://localhost:8080`, log in with your switch credentials
 (blank/blank works on factory firmware). The compose file binds to
-`127.0.0.1` only by default; change `ports:` in `docker-compose.yml` if
-you need LAN access (read the [security note](#security-considerations)
-first).
+`127.0.0.1` only by default; set `WEBUI_BIND=0.0.0.0` (and optionally
+`WEBUI_PORT`) in `.env` if you need LAN access (read the
+[security note](#security-considerations) first).
 
 ### Option B — Local development
 
@@ -148,7 +151,7 @@ write paths in your environment.
 | `POLL_INTERVAL_SECONDS` | no | `2.0` | Live port-traffic poll cadence (WebSocket). Do not lower below 1.0 — the switch's management CPU does not cope. |
 | `HOST` | no | `127.0.0.1` | Bind address for the FastAPI service. Set to `0.0.0.0` to expose on the LAN; understand the [security implications](#security-considerations) first. |
 | `BACKUPS_DIR` | no | `/app/backups` | Filesystem path where `.pcc` backups are stored. The compose file mounts `./backups` here. |
-| `METRICS_ENABLED` | no | `false` | Expose a Prometheus `/metrics` endpoint. |
+| `METRICS_ENABLED` | no | `false` | Reserved — the Prometheus `/metrics` endpoint is planned but **not implemented yet** (the flag is currently a no-op). |
 
 **Switch credentials are never written to `.env`.** They are entered in the
 browser at login, validated against the switch, and held only in the
@@ -347,6 +350,18 @@ memory, and CPU utilisation. Read-only, no writes.
 - "Bob" SFP/mini-GBIC port assignments
 - QoS — CoS application/user-priority/VLAN-priority, DSCP, DiffServ
 
+### VLANs tab — `/vlans` *(write)*
+- All 802.1Q VLANs (id, name, type, tagged/untagged port sets)
+- Create / rename / delete static VLANs
+- Per-port membership editor (Auto/No · Tagged · Untagged · Forbid) that
+  submits only the ports whose mode changed, mirroring the legacy applet
+- **Every VLAN write is lockout-risky** (deleting the management VLAN or
+  re-homing your own uplink port cuts off the UI): each one requires
+  typing the switch IP to confirm and takes a pre-write backup
+- Global VLAN/GVRP mode switches are deliberately not exposed
+  (`setVLANMode` needs a reboot and its error shapes were never captured
+  live)
+
 ### Security tab — `/security` *(write)*
 - Web access mode (Web/SSL/WebSSL/disabled)
 - Web manager IP allow-lists (`web-managers`) — **lockout-risky**, gated
@@ -391,15 +406,19 @@ section carefully before exposing it to the LAN.
   *intentionally* refuses to start with the placeholder string from
   `.env.example`. Generate a fresh value with
   `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
-- **Default bind is `127.0.0.1`.** The compose file binds the published
-  port to `127.0.0.1:8080` so it's reachable only from the local host.
-  To expose to the LAN, change to `8080:8080` in `docker-compose.yml`
-  *and* add a TLS-terminating reverse proxy (Caddy / Traefik / nginx) —
+- **Default bind is `127.0.0.1`.** The compose file publishes the UI at
+  `127.0.0.1:${WEBUI_PORT:-8080}` so it's reachable only from the local
+  host. To expose to the LAN, set `WEBUI_BIND=0.0.0.0` in `.env` *and*
+  consider a TLS-terminating reverse proxy (Caddy / Traefik / nginx) —
   HTTPS is **not** built in yet. Without a proxy, switch credentials
-  travel the wire in plaintext.
-- **CSRF protection on writes.** The frontend submits a double-submit
-  cookie token on every state-changing request; same-origin only, strict
-  CORS.
+  travel the wire in plaintext. (`WEBUI_PORT`/`WEBUI_BIND` are separate
+  from `SWITCH_PORT`, which is the switch's own HTTP port.)
+- **CSRF protection on writes.** Every state-changing request (and the
+  WebSocket handshake) is rejected unless its `Origin` header matches the
+  request host, and the session cookie is `SameSite=Strict` — this also
+  closes the same-site/different-port gap that `SameSite` alone leaves
+  open. There is no token to manage; non-browser clients (curl, scripts)
+  are unaffected.
 - **Read-only by default.** Even with valid credentials, a fresh install
   refuses every write. Set `READ_ONLY=false` in `.env` to opt in.
 - **Auto-backup before every write.** A `.pcc` snapshot is captured
@@ -430,7 +449,8 @@ cd ../tools/mock_demo
 python demo_server.py            # listens on http://127.0.0.1:8080
 
 # 3. Browse to http://127.0.0.1:8080 and take screenshots manually,
-#    or run the headless capture script:
+#    or run the headless capture script (requires Playwright):
+pip install playwright && python -m playwright install chromium
 python capture_screenshots.py    # writes PNGs to docs/screenshots/
 ```
 
@@ -498,6 +518,7 @@ Implemented:
 - [x] Phase 1 — Python `procurve_client` library (read + write, ≥90% cov.)
 - [x] Phase 2 — Docker scaffold, read-only Identity + Status UI, WebSocket port traffic
 - [x] Phase 3 — Configuration / Security / Diagnostics tabs (write), Backups tab, alert ack/delete
+- [x] Phase 4 (first slice) — VLANs tab: list, create/rename/delete, per-port membership
 
 Planned:
 
@@ -513,6 +534,8 @@ If you'd like to help with any of these, see [Contributing](#contributing).
 
 ## Contributing
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow;
+[SECURITY.md](SECURITY.md) describes how to report vulnerabilities.
 Issues and pull requests are welcome. A few ground rules to keep this
 project safe to use against real production switches:
 

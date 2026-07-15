@@ -29,8 +29,15 @@
  *   - Connection lifecycle mutates a single `connected` boolean. We also
  *     mark `connected=false` on `onerror` so the UI button is accurate even
  *     if `onclose` fires a tick later.
+ *   - SWITCH SAFETY: the socket is closed whenever the tab becomes hidden
+ *     and reopened when it becomes visible again. Every open socket keeps
+ *     the backend polling the physical switch, and this switch has crashed
+ *     under sustained polling — a backgrounded/forgotten tab must never
+ *     hold the poll loop open. (The backend stops polling entirely when the
+ *     last subscriber disconnects.) The visibility reopen is the ONLY
+ *     automatic reconnect; error/close paths remain manual-only.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export interface PortSample {
   /** Frame timestamp in ms since epoch (convenient for Recharts XAxis). */
@@ -76,7 +83,6 @@ export function useLivePortTraffic(
   const [lastKey, setLastKey] = useState(sessionKey);
   const [samples, setSamples] = useState<PortSample[]>([]);
   const [connected, setConnected] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
 
   // Reset the sample buffer during render whenever the port changes, so the
   // chart doesn't flash stale data while the new socket handshakes. React
@@ -95,58 +101,93 @@ export function useLivePortTraffic(
     url.hash = "";
 
     let cancelled = false;
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
+    let ws: WebSocket | null = null;
 
-    ws.onopen = () => {
-      if (!cancelled) setConnected(true);
-    };
-    ws.onclose = () => {
-      if (!cancelled) setConnected(false);
-    };
-    ws.onerror = () => {
-      if (!cancelled) setConnected(false);
-    };
-    ws.onmessage = (ev) => {
-      if (cancelled) return;
-      let frame: WireFrame;
-      try {
-        frame = JSON.parse(ev.data as string) as WireFrame;
-      } catch {
-        return; // Malformed frame — skip quietly.
+    const closeSocket = () => {
+      // Only actively close OPEN/CONNECTING sockets; closing a CLOSED one is
+      // a no-op but emits noisy browser warnings on some builds.
+      if (
+        ws !== null &&
+        (ws.readyState === WebSocket.OPEN ||
+          ws.readyState === WebSocket.CONNECTING)
+      ) {
+        ws.close();
       }
-      if (!Array.isArray(frame.ports) || frame.ports.length === 0) {
-        // First "baseline" frame has ports: []. Nothing to plot yet.
-        return;
-      }
-      const p = frame.ports.find((pp) => pp.port === port);
-      if (!p) return;
-      const sample: PortSample = {
-        t: new Date(frame.timestamp).getTime(),
-        pkts_in_per_s: p.pkts_in_per_s,
-        pkts_out_per_s: p.pkts_out_per_s,
-        mcast_in_per_s: p.mcast_in_per_s,
-        mcast_out_per_s: p.mcast_out_per_s,
-        bcast_in_per_s: p.bcast_in_per_s,
-        bcast_out_per_s: p.bcast_out_per_s,
-        errors_in_per_s: p.errors_in_per_s,
+    };
+
+    const open = () => {
+      const socket = new WebSocket(url);
+      ws = socket;
+
+      socket.onopen = () => {
+        if (!cancelled) setConnected(true);
       };
-      setSamples((prev) => {
-        const next = prev.length >= bufferSize
-          ? [...prev.slice(prev.length - bufferSize + 1), sample]
-          : [...prev, sample];
-        return next;
-      });
+      socket.onclose = () => {
+        if (!cancelled) setConnected(false);
+      };
+      socket.onerror = () => {
+        if (!cancelled) setConnected(false);
+      };
+      socket.onmessage = (ev) => {
+        if (cancelled) return;
+        let frame: WireFrame;
+        try {
+          frame = JSON.parse(ev.data as string) as WireFrame;
+        } catch {
+          return; // Malformed frame — skip quietly.
+        }
+        if (!Array.isArray(frame.ports) || frame.ports.length === 0) {
+          // First "baseline" frame has ports: []. Nothing to plot yet.
+          return;
+        }
+        const p = frame.ports.find((pp) => pp.port === port);
+        if (!p) return;
+        const sample: PortSample = {
+          t: new Date(frame.timestamp).getTime(),
+          pkts_in_per_s: p.pkts_in_per_s,
+          pkts_out_per_s: p.pkts_out_per_s,
+          mcast_in_per_s: p.mcast_in_per_s,
+          mcast_out_per_s: p.mcast_out_per_s,
+          bcast_in_per_s: p.bcast_in_per_s,
+          bcast_out_per_s: p.bcast_out_per_s,
+          errors_in_per_s: p.errors_in_per_s,
+        };
+        setSamples((prev) => {
+          const next = prev.length >= bufferSize
+            ? [...prev.slice(prev.length - bufferSize + 1), sample]
+            : [...prev, sample];
+          return next;
+        });
+      };
     };
+
+    // Switch safety: never hold the stream open in a hidden tab — the
+    // backend polls the physical switch for as long as the socket lives.
+    const onVisibilityChange = () => {
+      if (cancelled) return;
+      if (document.visibilityState === "hidden") {
+        closeSocket();
+      } else if (
+        ws === null ||
+        ws.readyState === WebSocket.CLOSING ||
+        ws.readyState === WebSocket.CLOSED
+      ) {
+        open();
+      }
+    };
+
+    // Don't open at all if the effect runs while the tab is hidden (e.g. a
+    // background tab restoring its state); the visibility listener opens it
+    // once the tab is actually looked at.
+    if (document.visibilityState !== "hidden") {
+      open();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       cancelled = true;
-      // Only actively close OPEN/CONNECTING sockets; closing a CLOSED one is
-      // a no-op but emits noisy browser warnings on some builds.
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        ws.close();
-      }
-      wsRef.current = null;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      closeSocket();
     };
   }, [port, bufferSize, nonce]);
 

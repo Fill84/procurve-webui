@@ -29,3 +29,28 @@ def test_settings_defaults_match_spec(monkeypatch: pytest.MonkeyPatch) -> None:
     assert s.read_only is True
     assert s.session_ttl_hours == 8
     assert s.metrics_enabled is False
+
+
+def test_session_secret_rejects_env_example_placeholder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The literal .env.example value must be refused at startup.
+
+    Regression guard: the old exact-match validator accepted this string
+    because it is >=32 chars and not in the rejection set.
+    """
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
+    monkeypatch.setenv(
+        "SESSION_SECRET", "change-me-to-a-random-string-of-at-least-32-chars"
+    )
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_session_secret_rejects_any_change_me_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SWITCH_HOST", "192.0.2.3")
+    monkeypatch.setenv("SESSION_SECRET", "change-me-" + "x" * 40)
+    with pytest.raises(ValidationError):
+        Settings()

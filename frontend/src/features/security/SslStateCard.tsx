@@ -13,6 +13,7 @@
  * the danger button.
  */
 import { useSslState } from "@/api/hooks/useSecurity";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
 export function SslStateCard() {
   const ssl = useSslState();
@@ -29,9 +30,9 @@ export function SslStateCard() {
       </div>
 
       {ssl.error instanceof Error && (
-        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+        <ErrorBanner>
           Failed to fetch SSL state: {ssl.error.message}
-        </div>
+        </ErrorBanner>
       )}
 
       {ssl.data && (

@@ -24,7 +24,10 @@
  * backend's local backup restore — same failure mode as the per-port
  * config endpoint.
  */
-import { useEffect, useMemo, useState } from "react";
+import { apiErrorMessage } from "@/api/client";
+import { useMemo, useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useBobPorts,
   useSetBobPorts,
@@ -39,17 +42,15 @@ export function BobPortsCard() {
   const [staged, setStaged] = useState<Record<number, boolean>>({});
   const [lastResult, setLastResult] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (query.data) {
-      const next: Record<number, boolean> = {};
-      for (const p of query.data.ports ?? []) {
-        next[p.port] = p.enabled;
-      }
-      setStaged(next);
+  useServerSync(query.data, (data) => {
+    const next: Record<number, boolean> = {};
+    for (const p of data.ports ?? []) {
+      next[p.port] = p.enabled;
     }
-  }, [query.data]);
+    setStaged(next);
+  });
 
-  const serverPorts = query.data?.ports ?? [];
+  const serverPorts = useMemo(() => query.data?.ports ?? [], [query.data]);
 
   const { toEnable, toDisable } = useMemo(() => {
     const en: number[] = [];
@@ -113,7 +114,7 @@ export function BobPortsCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -127,7 +128,7 @@ export function BobPortsCard() {
       </div>
 
       {query.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner className="mb-3">
           <p className="font-medium">Failed to load port list</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -137,7 +138,7 @@ export function BobPortsCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -246,10 +247,9 @@ export function BobPortsCard() {
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Apply failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Apply failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}

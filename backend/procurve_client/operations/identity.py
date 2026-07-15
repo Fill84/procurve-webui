@@ -14,6 +14,7 @@ from ipaddress import IPv4Address
 from procurve_client._safety import READ
 from procurve_client.errors import ParseError
 from procurve_client.models.device import DeviceIdentity
+from procurve_client.parsing import parse_int
 from procurve_client.transport import ProcurveTransport
 
 _IDENTITY_PATH = "/identity/identity.html"
@@ -128,19 +129,26 @@ async def read_identity_page(transport: ProcurveTransport) -> DeviceIdentity:
     ip_match = re.search(r"\d+\.\d+\.\d+\.\d+", ip_raw)
     if not ip_match:
         raise ParseError(f"IP Address cell did not contain an IPv4 literal: {ip_raw!r}")
+    try:
+        ip_address = IPv4Address(ip_match.group(0))
+    except ValueError as exc:
+        # Dotted-digits regex admits out-of-range octets (e.g. 999.1.1.1).
+        raise ParseError(
+            f"IP Address cell is not a valid IPv4 address: {ip_match.group(0)!r}"
+        ) from exc
 
     return DeviceIdentity(
         system_name=_extract_named_cell(body, "System Name"),
         system_location=_extract_named_cell(body, "System Location"),
         system_contact=_extract_named_cell(body, "System Contact"),
         uptime_centiseconds=_extract_uptime_centis(body),
-        cpu_pct=int(cpu_pct_str),
+        cpu_pct=parse_int(cpu_pct_str, context="identity System CPU Util(%)"),
         memory_total_bytes=mem_total,
         memory_free_bytes=mem_free,
         product=_extract_product(body),
         base_mac=_extract_base_mac(body),
         serial_number=_extract_named_cell(body, "Serial Number"),
         firmware_version=_extract_named_cell(body, "Version"),
-        ip_address=IPv4Address(ip_match.group(0)),
+        ip_address=ip_address,
         management_server_url=_extract_management_url(body),
     )

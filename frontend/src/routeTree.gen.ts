@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedVlansRouteImport } from './routes/_authenticated.vlans'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated.support'
 import { Route as AuthenticatedStatusRouteImport } from './routes/_authenticated.status'
 import { Route as AuthenticatedSecurityRouteImport } from './routes/_authenticated.security'
@@ -32,6 +33,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedVlansRoute = AuthenticatedVlansRouteImport.update({
+  id: '/vlans',
+  path: '/vlans',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/security': typeof AuthenticatedSecurityRoute
   '/status': typeof AuthenticatedStatusRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
+  '/vlans': typeof AuthenticatedVlansRoute
   '/status/ports/$port': typeof AuthenticatedStatusPortsPortRoute
 }
 export interface FileRoutesByTo {
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/security': typeof AuthenticatedSecurityRoute
   '/status': typeof AuthenticatedStatusRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
+  '/vlans': typeof AuthenticatedVlansRoute
   '/': typeof AuthenticatedIndexRoute
   '/status/ports/$port': typeof AuthenticatedStatusPortsPortRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/_authenticated/security': typeof AuthenticatedSecurityRoute
   '/_authenticated/status': typeof AuthenticatedStatusRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
+  '/_authenticated/vlans': typeof AuthenticatedVlansRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/status/ports/$port': typeof AuthenticatedStatusPortsPortRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/status'
     | '/support'
+    | '/vlans'
     | '/status/ports/$port'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/status'
     | '/support'
+    | '/vlans'
     | '/'
     | '/status/ports/$port'
   id:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/_authenticated/security'
     | '/_authenticated/status'
     | '/_authenticated/support'
+    | '/_authenticated/vlans'
     | '/_authenticated/'
     | '/_authenticated/status/ports/$port'
   fileRoutesById: FileRoutesById
@@ -171,6 +183,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/vlans': {
+      id: '/_authenticated/vlans'
+      path: '/vlans'
+      fullPath: '/vlans'
+      preLoaderRoute: typeof AuthenticatedVlansRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/support': {
@@ -243,6 +262,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSecurityRoute: typeof AuthenticatedSecurityRoute
   AuthenticatedStatusRoute: typeof AuthenticatedStatusRouteWithChildren
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
+  AuthenticatedVlansRoute: typeof AuthenticatedVlansRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -253,6 +273,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSecurityRoute: AuthenticatedSecurityRoute,
   AuthenticatedStatusRoute: AuthenticatedStatusRouteWithChildren,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
+  AuthenticatedVlansRoute: AuthenticatedVlansRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

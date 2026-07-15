@@ -1,36 +1,68 @@
 import { type ClassValue, clsx } from "clsx";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
-// // from identityQuery.data.uptime_centiseconds
-// export function localUpTimeUpdater(startTime: number, callback: (uptime: number) => void): () => void {
-//   let current: number = startTime;
-//   const updateUptime = () => {
-//     current += 100;
-//     callback(current);
-//   };
 
-//   const intervalId = setInterval(updateUptime, 1000);
-//   updateUptime(); // Initial call to set the uptime immediately
+function subscribeEverySecond(onTick: () => void): () => void {
+  const id = setInterval(onTick, 1000);
+  return () => clearInterval(id);
+}
 
-//   return () => clearInterval(intervalId); // Return a function to clear the interval
-// }
+function getNowSeconds(): number {
+  return Math.floor(Date.now() / 1000);
+}
 
-export function useLiveUptime(formatter: (uptime: number) => string, startTimeCentiseconds?: number): string {
-  const [currentCentiseconds, setCurrentCentiseconds] = useState(startTimeCentiseconds ?? 0);
+interface UptimeAnchor {
+  /** Switch-reported uptime at the moment it arrived. */
+  startCentiseconds: number;
+  /** Wall-clock second when it arrived. */
+  anchoredAtSeconds: number;
+}
 
-  useEffect(() => {
-    if (startTimeCentiseconds === undefined) return;
-    let current = startTimeCentiseconds;
-    const interval = setInterval(() => {
-      current += 10;
-      setCurrentCentiseconds(current);
-    }, 100);
-    return () => clearInterval(interval);
-  }, [startTimeCentiseconds]);
+/**
+ * Live uptime display derived from the switch-reported uptime.
+ *
+ * The wall clock is consumed as an external store (useSyncExternalStore,
+ * quantized to whole seconds) and the reported uptime is anchored to it the
+ * moment it arrives; each tick recomputes elapsed time from the clock.
+ * Three properties fall out of that design:
+ *
+ * - **No drift under timer throttling.** Background tabs throttle timers to
+ *   >=1 s; the previous fixed `+10 centiseconds per 100 ms fire`
+ *   accumulator fell ~54 minutes behind per hidden hour. Wall-clock
+ *   arithmetic is immune — a late tick just computes a larger delta.
+ * - **One re-render per second** instead of ten: the display only changes
+ *   visibly once per second, so ticking faster was pure CPU burn on pages
+ *   (Status dashboard) that are left open all day.
+ * - **Render-pure**: no `Date.now()` in the render body (react-hooks/purity).
+ */
+export function useLiveUptime(
+  formatter: (uptime: number) => string,
+  startTimeCentiseconds?: number,
+): string {
+  const nowSeconds = useSyncExternalStore(subscribeEverySecond, getNowSeconds);
 
-  return formatter(currentCentiseconds);
+  // Re-anchor during render whenever a fresh uptime arrives (identity
+  // refetch) — derived-state pattern, no effect involved.
+  const [anchor, setAnchor] = useState<UptimeAnchor | null>(null);
+  if (anchor?.startCentiseconds !== startTimeCentiseconds) {
+    setAnchor(
+      startTimeCentiseconds === undefined
+        ? null
+        : {
+            startCentiseconds: startTimeCentiseconds,
+            anchoredAtSeconds: nowSeconds,
+          },
+    );
+  }
+
+  const current =
+    anchor === null
+      ? 0
+      : anchor.startCentiseconds +
+        (nowSeconds - anchor.anchoredAtSeconds) * 100;
+  return formatter(current);
 }

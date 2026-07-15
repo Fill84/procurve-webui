@@ -13,7 +13,10 @@
  * pre-write autobackup is still taken server-side, so the operator can
  * roll back from the Backups tab.
  */
-import { useEffect, useState } from "react";
+import { apiErrorMessage } from "@/api/client";
+import { useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useSetSupportPageConfig,
   useSupportPageConfig,
@@ -32,12 +35,10 @@ export function SupportPageCard() {
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   // Seed local form state from the fetched page the first time it arrives.
-  useEffect(() => {
-    if (query.data) {
-      setSupportUrl(query.data.support_url);
-      setMgmtUrl(query.data.mgmt_url);
-    }
-  }, [query.data]);
+  useServerSync(query.data, (data) => {
+    setSupportUrl(data.support_url);
+    setMgmtUrl(data.mgmt_url);
+  });
 
   const handleSave = () => {
     setLastResult(null);
@@ -61,7 +62,7 @@ export function SupportPageCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   const dirty =
     !!query.data &&
@@ -102,7 +103,7 @@ export function SupportPageCard() {
       )}
 
       {query.error instanceof Error && (
-        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner>
           <p className="font-medium">Failed to load support URLs</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -112,7 +113,7 @@ export function SupportPageCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -185,10 +186,9 @@ export function SupportPageCard() {
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Save failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Save failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}

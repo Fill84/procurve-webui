@@ -74,3 +74,44 @@ def test_health_does_not_require_auth(client: TestClient) -> None:
         # No login call performed; no cookie set.
         r = client.get("/api/v1/health")
         assert r.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Switch-safety: liveness never probes the switch; reachability is cached.
+# ---------------------------------------------------------------------------
+
+
+@respx.mock
+def test_liveness_never_contacts_switch(client: TestClient) -> None:
+    """/health/live is the Docker HEALTHCHECK target — zero switch traffic."""
+    route = respx.get("http://192.0.2.3/home.html").mock(
+        return_value=Response(200, text="<html>ok</html>"),
+    )
+    r = client.get("/api/v1/health/live")
+    assert r.status_code == 200
+    assert r.json() == {"status": "ok"}
+    assert route.called is False
+
+
+@respx.mock
+def test_health_probe_is_cached_within_ttl(client: TestClient) -> None:
+    """Repeated /health calls inside the TTL cost exactly one switch probe."""
+    route = respx.get("http://192.0.2.3/home.html").mock(
+        return_value=Response(200, text="<html>ok</html>"),
+    )
+    for _ in range(5):
+        r = client.get("/api/v1/health")
+        assert r.status_code == 200
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_health_failure_is_cached_too(client: TestClient) -> None:
+    """An unreachable verdict is also served from cache — no retry storm."""
+    route = respx.get("http://192.0.2.3/home.html").mock(
+        side_effect=httpx.ConnectError("connection refused"),
+    )
+    for _ in range(4):
+        r = client.get("/api/v1/health")
+        assert r.status_code == 503
+    assert route.call_count == 1

@@ -114,6 +114,48 @@ def test_assets_path_returns_404_for_missing_file(
     assert r.status_code == 404
 
 
+def test_hashed_assets_are_immutable_cached(
+    client_with_dist: tuple[TestClient, Path],
+) -> None:
+    """Vite bundles are content-hashed — safe to cache forever."""
+    client, _dist = client_with_dist
+    r = client.get("/assets/foo.js")
+    assert r.status_code == 200
+    assert r.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+
+def test_index_html_must_revalidate(
+    client_with_dist: tuple[TestClient, Path],
+) -> None:
+    """index.html names the current hashed bundles — a deploy must be
+    picked up on the next navigation, so browsers may not serve it stale."""
+    client, _dist = client_with_dist
+    for path in ("/", "/status/ports/1"):
+        r = client.get(path)
+        assert r.status_code == 200
+        assert r.headers["cache-control"] == "no-cache"
+
+
+def test_dist_root_files_get_short_cache(
+    client_with_dist: tuple[TestClient, Path],
+) -> None:
+    client, dist = client_with_dist
+    (dist / "favicon.svg").write_text("<svg/>", encoding="utf-8")
+    r = client.get("/favicon.svg")
+    assert r.status_code == 200
+    assert r.headers["cache-control"] == "public, max-age=3600"
+
+
+def test_large_responses_are_gzipped(
+    client_with_dist: tuple[TestClient, Path],
+) -> None:
+    client, dist = client_with_dist
+    (dist / "assets" / "big.js").write_text("x" * 4096, encoding="utf-8")
+    r = client.get("/assets/big.js", headers={"Accept-Encoding": "gzip"})
+    assert r.status_code == 200
+    assert r.headers.get("content-encoding") == "gzip"
+
+
 def test_static_mount_skipped_when_index_html_missing(
     settings: Settings, tmp_path: Path
 ) -> None:

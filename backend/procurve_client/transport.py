@@ -1,6 +1,8 @@
 """HTTP transport for the ProCurve switch."""
 from __future__ import annotations
 
+import asyncio
+import weakref
 from types import TracebackType
 from typing import Any, Self
 
@@ -8,6 +10,43 @@ import httpx
 
 from procurve_client.auth import AuthStrategy, NoneAuth
 from procurve_client.errors import AuthError, TransportError
+
+# ---------------------------------------------------------------------------
+# Switch-safety: one request at a time per switch host, process-wide.
+#
+# This switch's 2004-era embedded HTTP server has crashed under rapid
+# parallel probing (project read-safety rule: requests must never stack).
+# The transport is the single choke point for all switch traffic, so the
+# no-stacking guarantee is enforced HERE, structurally, instead of relying
+# on caller discipline: every get()/post() across every session/transport
+# serializes on a per-(event-loop, host) semaphore.
+#
+# NOTE: retries are intentionally absent from this module — the switch
+# crashes under repeated probing, so a failed request must surface as an
+# error, never be silently re-sent. Do not add httpx transport retries.
+# ---------------------------------------------------------------------------
+
+_MAX_CONCURRENT_PER_HOST = 1
+
+# Keyed by event loop (weakly, so finished loops don't pin dead semaphores —
+# tests create one loop per TestClient) and then by host. asyncio primitives
+# bind to the loop they are first awaited on, hence the per-loop scoping.
+_HOST_SEMAPHORES: weakref.WeakKeyDictionary[
+    asyncio.AbstractEventLoop, dict[str, asyncio.Semaphore]
+] = weakref.WeakKeyDictionary()
+
+
+def _switch_semaphore(host: str) -> asyncio.Semaphore:
+    loop = asyncio.get_running_loop()
+    per_loop = _HOST_SEMAPHORES.get(loop)
+    if per_loop is None:
+        per_loop = {}
+        _HOST_SEMAPHORES[loop] = per_loop
+    sem = per_loop.get(host)
+    if sem is None:
+        sem = asyncio.Semaphore(_MAX_CONCURRENT_PER_HOST)
+        per_loop[host] = sem
+    return sem
 
 
 class ProcurveTransport:
@@ -41,6 +80,10 @@ class ProcurveTransport:
             base_url=self.base_url,
             timeout=self.timeout_seconds,
             follow_redirects=False,
+            # Belt-and-suspenders alongside _switch_semaphore: even this
+            # session's own client never opens parallel connections to the
+            # fragile switch.
+            limits=httpx.Limits(max_connections=1, max_keepalive_connections=1),
         )
         return self
 
@@ -72,7 +115,8 @@ class ProcurveTransport:
     ) -> httpx.Response:
         client = self._require_client()
         try:
-            r = await client.get(path, params=params, headers=self._auth_headers())
+            async with _switch_semaphore(self.host):
+                r = await client.get(path, params=params, headers=self._auth_headers())
         except (httpx.HTTPError, OSError) as exc:
             raise TransportError(str(exc), host=self.host) from exc
         self._check_status(r)
@@ -91,14 +135,15 @@ class ProcurveTransport:
         client = self._require_client()
         merged_headers = {**self._auth_headers(), **(headers or {})}
         try:
-            r = await client.post(
-                path,
-                params=params,
-                data=data,
-                files=files,
-                content=content,
-                headers=merged_headers,
-            )
+            async with _switch_semaphore(self.host):
+                r = await client.post(
+                    path,
+                    params=params,
+                    data=data,
+                    files=files,
+                    content=content,
+                    headers=merged_headers,
+                )
         except (httpx.HTTPError, OSError) as exc:
             raise TransportError(str(exc), host=self.host) from exc
         self._check_status(r)

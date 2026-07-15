@@ -205,7 +205,7 @@ def test_ping_blocked_when_read_only(
         app.dependency_overrides.clear()
     assert r.status_code == 403
     body = r.json()
-    detail = body.get("detail", body)
+    detail = body  # flat {error, detail} envelope
     assert detail.get("error") == "read_only"
     assert called is False
 
@@ -349,7 +349,7 @@ def test_device_reset_blocked_when_read_only(
         app.dependency_overrides.clear()
     assert r.status_code == 403
     body = r.json()
-    detail = body.get("detail", body)
+    detail = body  # flat {error, detail} envelope
     assert detail.get("error") == "read_only"
     assert called is False
 
@@ -378,7 +378,7 @@ def test_device_reset_requires_host_confirmation_match(
     )
     assert r.status_code == 400
     body = r.json()
-    detail = body.get("detail", body)
+    detail = body  # flat {error, detail} envelope
     assert detail.get("error") == "host_mismatch"
     assert called is False
 

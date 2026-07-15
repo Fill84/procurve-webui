@@ -20,8 +20,10 @@ from __future__ import annotations
 
 import re
 
+import httpx
+
 from procurve_client._safety import READ, WRITE
-from procurve_client.errors import ParseError, ProtocolError
+from procurve_client.errors import ParseError, ProtocolError, TransportError
 from procurve_client.models.diagnostics import (
     ConfigurationReport,
     DeviceResetResponse,
@@ -165,12 +167,37 @@ async def device_reset(transport: ProcurveTransport) -> DeviceResetResponse:
     TCP reset mid-response. This implementation exists for full protocol
     parity and is decorated `@WRITE` so `READ_ONLY=true` blocks it.
 
+    Error classification matters here: only failures that happen AFTER the
+    request was plausibly delivered may be reported as ``initiated=True``
+    (the reboot cuts the TCP connection mid-response, so a read-phase error
+    is the *expected* success signature). Failures where the request never
+    reached the switch — connect refused/timeout, DNS, auth rejection —
+    re-raise so the operator knows the reset was NOT delivered, instead of
+    waiting out a boot cycle that never happens.
+
     See research/protocol/diagnostics/device_reset.md.
     """
     try:
         r = await transport.get(_DEVICE_RESET_PATH)
-    except Exception as exc:  # noqa: BLE001 — any transport error is plausibly a reboot
-        return DeviceResetResponse(initiated=True, message=f"connection closed: {exc}")
+    except TransportError as exc:
+        cause = exc.__cause__
+        # Connect-phase failures mean the request was never sent.
+        if isinstance(cause, httpx.ConnectError | httpx.ConnectTimeout):
+            raise
+        # Read/write-phase failures after a successful connect are the
+        # expected shape of a reboot cutting the connection.
+        if isinstance(
+            cause,
+            httpx.ReadError
+            | httpx.ReadTimeout
+            | httpx.WriteError
+            | httpx.RemoteProtocolError,
+        ):
+            return DeviceResetResponse(
+                initiated=True, message=f"connection closed: {exc}"
+            )
+        # Unknown transport failure — do not fabricate success.
+        raise
     # 200 with body — unusual, but not an error.
     if r.status_code != 200:
         raise ProtocolError(f"device_reset returned HTTP {r.status_code}")

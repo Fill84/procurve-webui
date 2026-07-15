@@ -11,8 +11,11 @@
  * Password changes live in DevicePasswordsCard (separate card, separate
  * lockout-risk profile).
  */
-import { useEffect, useState } from "react";
+import { apiErrorMessage } from "@/api/client";
+import { useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
 import { DangerConfirmDialog } from "@/components/ui/DangerConfirmDialog";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useIdentity } from "@/api/hooks/useIdentity";
 import {
   useSetWebAccess,
@@ -31,12 +34,10 @@ export function WebAccessCard() {
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   // Seed local form state from the fetched state the first time it arrives.
-  useEffect(() => {
-    if (sslQuery.data) {
-      setEnabled(sslQuery.data.ssl_enabled);
-      setPort(sslQuery.data.ssl_port);
-    }
-  }, [sslQuery.data]);
+  useServerSync(sslQuery.data, (data) => {
+    setEnabled(data.ssl_enabled);
+    setPort(data.ssl_port);
+  });
 
   const expectedIp = identity.data?.ip_address ?? "";
 
@@ -69,20 +70,17 @@ export function WebAccessCard() {
   };
 
   const errorMessage =
-    setWebAccess.error instanceof Error ? setWebAccess.error.message : null;
+    apiErrorMessage(setWebAccess.error);
 
   const body = (
     <div className="space-y-3">
-      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-        <p className="font-semibold">Lockout risk</p>
-        <p className="mt-1">
-          Enabling HTTPS-only without a valid certificate installed will lock
-          you out of the web UI. The browser will refuse to present the
-          self-signed certificate without an override, and the firmware does
-          not fall back to HTTP while HTTPS is on. Keep an SSH session open
-          before toggling this.
-        </p>
-      </div>
+      <ErrorBanner title="Lockout risk">
+        Enabling HTTPS-only without a valid certificate installed will lock
+        you out of the web UI. The browser will refuse to present the
+        self-signed certificate without an override, and the firmware does
+        not fall back to HTTP while HTTPS is on. Keep an SSH session open
+        before toggling this.
+      </ErrorBanner>
       <div className="rounded border border-border bg-muted p-3 text-sm">
         <p>
           <span className="font-semibold">Proposed:</span>{" "}
@@ -117,9 +115,9 @@ export function WebAccessCard() {
         </div>
 
         {sslQuery.error instanceof Error && (
-          <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          <ErrorBanner className="mb-3">
             Failed to fetch SSL state: {sslQuery.error.message}
-          </div>
+          </ErrorBanner>
         )}
 
         <div className="grid gap-4 md:grid-cols-[auto,8rem,auto] md:items-end">
@@ -198,10 +196,7 @@ export function WebAccessCard() {
         busy={setWebAccess.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-              <p className="font-semibold">Apply failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Apply failed">{errorMessage}</ErrorBanner>
           ) : null
         }
       />

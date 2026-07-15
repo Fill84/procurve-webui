@@ -145,12 +145,28 @@ interface RestoreSuccess {
   status: string;
   filename: string;
   sha256: string;
+  /** Filename of the pre-restore snapshot of the live config (rollback point). */
+  pre_restore_backup: string | null;
 }
 
-async function postRestore(filename: string): Promise<RestoreSuccess> {
+export interface RestoreVars {
+  filename: string;
+  /** Must equal the backend's SWITCH_HOST — same contract as device-reset. */
+  confirmSwitchHost: string;
+}
+
+async function postRestore({
+  filename,
+  confirmSwitchHost,
+}: RestoreVars): Promise<RestoreSuccess> {
   const r = await fetch(
     `/api/v1/backups/${encodeURIComponent(filename)}/restore`,
-    { method: "POST", credentials: "include" },
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm_switch_host: confirmSwitchHost }),
+    },
   );
   if (r.status === 403) {
     // Backend shape: { error: "read_only", detail: "<human message>" }
@@ -169,7 +185,11 @@ async function postRestore(filename: string): Promise<RestoreSuccess> {
 
 export function useRestoreBackup() {
   const qc = useQueryClient();
-  return useMutation<RestoreSuccess, ApiError | ReadOnlyRestoreError, string>({
+  return useMutation<
+    RestoreSuccess,
+    ApiError | ReadOnlyRestoreError,
+    RestoreVars
+  >({
     mutationFn: postRestore,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: BACKUPS_KEY });

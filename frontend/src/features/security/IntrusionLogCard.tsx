@@ -6,7 +6,9 @@
  * through the backend autobackup wrapper, and on success we invalidate
  * the intrusion query so the cleared flags are reflected in the UI.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useIntrusion, useResetIntrusion } from "@/api/hooks/useSecurity";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
 export function IntrusionLogCard() {
   const intrusion = useIntrusion();
@@ -14,7 +16,7 @@ export function IntrusionLogCard() {
 
   const entries = intrusion.data?.entries ?? [];
   const errorMessage =
-    reset.error instanceof Error ? reset.error.message : null;
+    apiErrorMessage(reset.error);
 
   const handleReset = () => {
     reset.mutate();
@@ -37,16 +39,15 @@ export function IntrusionLogCard() {
       </div>
 
       {intrusion.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+        <ErrorBanner className="mb-3">
           Failed to fetch intrusion log: {intrusion.error.message}
-        </div>
+        </ErrorBanner>
       )}
 
       {errorMessage && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          <p className="font-semibold">Reset failed</p>
-          <p className="mt-1 break-all">{errorMessage}</p>
-        </div>
+        <ErrorBanner title="Reset failed" className="mb-3">
+          {errorMessage}
+        </ErrorBanner>
       )}
 
       {reset.isSuccess && !errorMessage && (

@@ -18,6 +18,7 @@
  * (PortStatus.enabled === false) so "disabled" is distinguishable from
  * "just sitting quietly".
  */
+import { memo } from "react";
 import type { components } from "@/api/schema";
 
 type PortUsage = components["schemas"]["PortUsage"];
@@ -40,7 +41,7 @@ interface Props {
   portStatus?: PortStatus[];
 }
 
-export function PortUtilizationChart({ usage, portStatus }: Props) {
+function PortUtilizationChartImpl({ usage, portStatus }: Props) {
   const disabledSet = new Set(
     (portStatus ?? []).filter((p) => !p.enabled).map((p) => p.port),
   );
@@ -292,3 +293,7 @@ function LegendSwatch({ color, label }: { color: string; label: string }) {
     </span>
   );
 }
+
+// Memoized: inputs only change identity on their 5 s refetch; the Status
+// page's once-per-second uptime tick must not re-render the whole chart.
+export const PortUtilizationChart = memo(PortUtilizationChartImpl);

@@ -27,9 +27,10 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
+import structlog
 from fastapi import HTTPException
 
-from app.backup_store import BackupStore
+from app.backup_store import BackupMeta, BackupStore
 from app.settings import Settings
 from procurve_client.operations.backup import download_config
 from procurve_client.transport import ProcurveTransport
@@ -85,6 +86,7 @@ async def write_with_autobackup[T](
     store: BackupStore,
     transport: ProcurveTransport,
     write: Callable[[], Awaitable[T]],
+    on_backup: Callable[[BackupMeta], None] | None = None,
 ) -> T:
     """Run ``write()`` only after a pre-write backup has been saved.
 
@@ -92,12 +94,34 @@ async def write_with_autobackup[T](
     need to call it separately. This keeps the write-gate ordering in one
     place so every Phase 3 write route gets the same behaviour automatically.
 
+    ``on_backup`` (optional) receives the saved pre-write :class:`BackupMeta`
+    before the write runs — used by routes that want to surface the rollback
+    point to the user (e.g. restore returns it so the UI can offer an
+    "undo restore" affordance).
+
     If :func:`download_config` or :meth:`BackupStore.save` raises, the
     ``write`` coroutine is never scheduled and no partial state is left
     behind: the caller is responsible for surfacing the error, but the switch
     remains untouched.
     """
+    log = structlog.get_logger()
     require_writable(settings)
     backup = await download_config(transport)
-    store.save(backup, trigger="pre-write")
-    return await write()
+    meta = store.save(backup, trigger="pre-write")
+    log.info(
+        "pre_write_backup_saved", filename=meta.filename, sha256=meta.sha256
+    )
+    if on_backup is not None:
+        on_backup(meta)
+    try:
+        result = await write()
+    except Exception as exc:
+        log.warning(
+            "switch_write_failed",
+            error=type(exc).__name__,
+            detail=str(exc)[:200],
+            rollback_backup=meta.filename,
+        )
+        raise
+    log.info("switch_write_completed", rollback_backup=meta.filename)
+    return result

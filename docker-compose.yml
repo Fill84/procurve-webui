@@ -6,7 +6,13 @@ services:
     image: procurve-webui:latest
     container_name: procurve-webui
     ports:
-      - "${SWITCH_PORT:-8080}:8080"
+      # WEBUI_PORT/WEBUI_BIND control where the UI is published on the host.
+      # They are deliberately separate from SWITCH_PORT, which is the
+      # *switch's* HTTP port consumed by the backend via env_file — one
+      # variable must never steer both. Default bind is loopback-only, per
+      # the README's security posture; set WEBUI_BIND=0.0.0.0 to expose on
+      # the LAN.
+      - "${WEBUI_BIND:-127.0.0.1}:${WEBUI_PORT:-8080}:8080"
     env_file:
       - .env
     volumes:

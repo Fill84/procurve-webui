@@ -519,11 +519,11 @@ async def cfg_ports() -> dict[str, Any]:
 @app.get("/api/v1/configuration/ports/{port}")
 async def cfg_port_form(port: int) -> dict[str, Any]:
     return {
-        "port": port,
-        "name": f"port-{port}",
-        "enabled": True,
-        "config_mode": "auto",
-        "flow_control": False,
+        "ports": [port],
+        "port_name": f"port-{port}",
+        "admin_enabled": True,
+        "mode": 5,  # PortMode.AUTO
+        "flow_control_enabled": False,
     }
 
 
@@ -569,12 +569,27 @@ async def qos_vlan() -> dict[str, Any]:
 
 @app.get("/api/v1/configuration/qos/dscp")
 async def qos_dscp() -> dict[str, Any]:
-    return {"entries": []}
+    # DscpTable: 64 rows on real firmware; two representative ones suffice.
+    return {
+        "rows": [
+            {"row_index": 1, "codepoint": "000000", "priority_label": "No-override"},
+            {"row_index": 47, "codepoint": "101110", "priority_label": "7"},
+        ]
+    }
 
 
 @app.get("/api/v1/configuration/qos/diffserv")
 async def qos_diffserv() -> dict[str, Any]:
-    return {"entries": []}
+    return {
+        "rows": [
+            {
+                "row_index": 47,
+                "inbound_codepoint": "101110",
+                "dscp_policy": "101110",
+                "priority_label": "7",
+            },
+        ]
+    }
 
 
 # Security ----------------------------------------------------------------

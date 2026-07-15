@@ -197,6 +197,24 @@ def test_diff_missing_returns_404(
 # ---------------------------------------------------------------------------
 
 
+_CONFIRM_BODY = {"confirm_switch_host": "192.0.2.3"}  # equals settings.switch_host
+
+
+def _install_prewrite_download(
+    monkeypatch: pytest.MonkeyPatch, payload: bytes = b"live-config\n"
+) -> ConfigBackup:
+    """Patch the download used by write_with_autobackup's pre-write snapshot."""
+    import app.write_safety as write_safety_module
+
+    fake = _backup(payload)
+
+    async def fake_download(transport: object) -> ConfigBackup:
+        return fake
+
+    monkeypatch.setattr(write_safety_module, "download_config", fake_download)
+    return fake
+
+
 def test_restore_blocked_when_read_only_true(
     client: TestClient, store: BackupStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -210,12 +228,41 @@ def test_restore_blocked_when_read_only_true(
         called = True
 
     monkeypatch.setattr(backups_module, "upload_config", must_not_upload)
-    r = client.post(f"/api/v1/backups/{meta.filename}/restore")
+    r = client.post(f"/api/v1/backups/{meta.filename}/restore", json=_CONFIRM_BODY)
     assert r.status_code == 403
     body = r.json()
     assert body["error"] == "read_only"
     assert "READ_ONLY" in body["detail"]
     assert called is False
+
+
+def test_restore_rejects_wrong_host_confirmation(
+    app: FastAPI,
+    client: TestClient,
+    store: BackupStore,
+    monkeypatch: pytest.MonkeyPatch,
+    settings: Settings,
+) -> None:
+    """Wrong/missing confirm_switch_host must 400 before any switch I/O."""
+    settings.read_only = False
+    app.state.settings = settings
+    meta = store.save(_backup(b"cfg\n"), trigger="manual")
+    called = False
+
+    async def must_not_upload(transport: object, **_: object) -> None:
+        nonlocal called
+        called = True
+
+    monkeypatch.setattr(backups_module, "upload_config", must_not_upload)
+    r = client.post(
+        f"/api/v1/backups/{meta.filename}/restore",
+        json={"confirm_switch_host": "192.0.2.99"},
+    )
+    assert r.status_code == 400
+    assert r.json()["error"] == "host_mismatch"
+    assert called is False
+    # And no pre-write backup was taken either.
+    assert all(m.trigger != "pre-write" for m in store.list())
 
 
 def test_restore_calls_upload_when_read_only_false(
@@ -230,6 +277,7 @@ def test_restore_calls_upload_when_read_only_false(
     app.state.settings = settings
 
     meta = store.save(_backup(b"cfg\n"), trigger="manual")
+    live = _install_prewrite_download(monkeypatch, b"live-config\n")
     uploaded: dict[str, ConfigBackup] = {}
 
     async def fake_upload(
@@ -238,14 +286,23 @@ def test_restore_calls_upload_when_read_only_false(
         backup: ConfigBackup,
         configname: str = "Config",
         reboot_after: bool = False,
+        force: bool = False,
     ) -> None:
         uploaded["backup"] = backup
 
     monkeypatch.setattr(backups_module, "upload_config", fake_upload)
-    r = client.post(f"/api/v1/backups/{meta.filename}/restore")
+    r = client.post(f"/api/v1/backups/{meta.filename}/restore", json=_CONFIRM_BODY)
     assert r.status_code == 200, r.text
     assert uploaded["backup"].data == b"cfg\n"
     assert uploaded["backup"].sha256 == meta.sha256
+    # A pre-restore snapshot of the LIVE config was saved before the upload
+    # and surfaced in the response as the rollback point.
+    body = r.json()
+    pre = body["pre_restore_backup"]
+    assert pre is not None
+    saved = store.get_meta(pre)
+    assert saved.trigger == "pre-write"
+    assert saved.sha256 == live.sha256
 
 
 def test_restore_missing_returns_404(
@@ -261,7 +318,9 @@ def test_restore_missing_returns_404(
         return None
 
     monkeypatch.setattr(backups_module, "upload_config", fake_upload)
-    r = client.post("/api/v1/backups/backup_00000000T000000Z.pcc/restore")
+    r = client.post(
+        "/api/v1/backups/backup_00000000T000000Z.pcc/restore", json=_CONFIRM_BODY
+    )
     assert r.status_code == 404
 
 

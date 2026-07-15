@@ -26,7 +26,17 @@ docs/
 *.md
 !backend/README.md
 
+# Operator data — real switch configs must never enter the build context
+backups/
+
+# Tooling/dev-only trees
+tools/
+.claude/
+.github/
+
 # Misc
 *.log
 .env
 .env.local
+**/.env
+**/.env.local

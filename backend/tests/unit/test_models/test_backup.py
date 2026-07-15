@@ -23,7 +23,9 @@ def test_config_backup_slot_values():
 
 
 def test_config_backup_reference_sha_matches_known():
-    # Fixture recorded 2026-04-23 from the live switch.
+    # Fixture recorded 2026-04-23 from the live switch. The file is
+    # gitignored (real switch config), so fresh clones don't have it —
+    # skip instead of failing when absent.
     expected = "f9234e4f9e1caa40fe4ea84ae008128a990e96462f4bfb360649f9746df98e11"
     fixture = (
         Path(__file__).resolve().parents[4]
@@ -32,6 +34,8 @@ def test_config_backup_reference_sha_matches_known():
         / "2026-04-23"
         / "CONFIG.pcc"
     )
+    if not fixture.exists():
+        pytest.skip("gitignored reference fixture CONFIG.pcc not present")
     raw = fixture.read_bytes()
     cb = ConfigBackup.from_bytes(raw)
     assert cb.size == 2904

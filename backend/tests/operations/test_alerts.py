@@ -172,15 +172,16 @@ async def test_ack_alerts_wire_format_multi(
             ],
         )
     q = route.calls.last.request.url.params
-    # The parsed CSV is `1,2`. httpx percent-encodes the comma on the wire
-    # (`%2C`); the switch accepts both forms — see ack_alerts.md.
     assert q["indeces"] == "1,2"
     assert q["action"] == "ack"
     # dt repeated in the same order as the indeces CSV
     assert list(q.get_list("dt")) == ["11094915", "12000000"]
-    # Wire ordering: indeces, action, then dt's in event order.
+    # Wire ordering: indeces, action, then dt's in event order — and the
+    # comma MUST be a literal (not %2C) per ack_alerts.md: the firmware's
+    # echo parser splits on the literal comma, so the query is assembled
+    # manually instead of via httpx params.
     raw_query = route.calls.last.request.url.query.decode("ascii")
-    assert raw_query.startswith("indeces=1%2C2&action=ack&dt=11094915&dt=12000000")
+    assert raw_query.startswith("indeces=1,2&action=ack&dt=11094915&dt=12000000")
 
 
 @respx.mock

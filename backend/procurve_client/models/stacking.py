@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 # ---- get_memsinfo ------------------------------------------------------
 
@@ -168,6 +168,27 @@ class GetAppletLengthResponse(BaseModel):
 
 # ---- set_stack_cfg -----------------------------------------------------
 
+_QUERY_UNSAFE = frozenset("&=#?")
+
+
+def _validate_query_literal(v: str, *, field: str) -> str:
+    """Reject characters that would corrupt a raw (unencoded) query string.
+
+    The stacking CGIs mirror the applet byte-for-byte, and the applet
+    applies NO URL-encoding (StackConfig.java:442-520,
+    MemberCandidateList.java:756-760). A value containing ``&``, ``=``,
+    ``#`` or ``?`` would truncate or inject query parameters — a
+    correctness bug on a write path — and whitespace / non-printable /
+    non-ASCII bytes have no defined wire encoding on this firmware.
+    """
+    for ch in v:
+        if ch in _QUERY_UNSAFE or not (0x21 <= ord(ch) <= 0x7E):
+            raise ValueError(
+                f"{field} contains {ch!r}, which cannot travel in the "
+                "raw (unencoded) query string this CGI requires"
+            )
+    return v
+
 
 class SetStackCfgRequest(BaseModel):
     """Arguments for `/cgi/set_stack_cfg`.
@@ -190,6 +211,13 @@ class SetStackCfgRequest(BaseModel):
     ma: str | None = None
     ag: Literal[1, 2] | None = None
     aj: Literal[1, 2] | None = None
+
+    @field_validator("sn", "ma")
+    @classmethod
+    def _validate_strings(cls, v: str | None, info: ValidationInfo) -> str | None:
+        if v is None:
+            return v
+        return _validate_query_literal(v, field=str(info.field_name))
 
 
 # ---- set_members -------------------------------------------------------
@@ -228,9 +256,17 @@ class SetMembersRequest(BaseModel):
         for m in v:
             if not m:
                 raise ValueError("mac_addr cannot be empty")
-            if "," in m or "&" in m or "~" in m:
+            if "," in m or "~" in m:
                 raise ValueError(f"mac_addr {m!r} contains reserved character")
+            _validate_query_literal(m, field="mac_addr")
         return v
+
+    @field_validator("manager_password")
+    @classmethod
+    def _validate_password(cls, v: str) -> str:
+        # The wire carries the password raw (no URL-encoding, matching the
+        # applet) — reject characters that would truncate or inject params.
+        return _validate_query_literal(v, field="manager_password")
 
 
 class SetMembersError(BaseModel):

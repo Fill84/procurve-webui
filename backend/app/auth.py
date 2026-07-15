@@ -11,9 +11,11 @@ restart forces re-login. This is explicitly acceptable per spec.
 from __future__ import annotations
 
 import secrets
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+import structlog
 from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
 
 from app.settings import Settings
@@ -95,6 +97,54 @@ class SessionStore:
         for entry in entries:
             await entry.transport.__aexit__(None, None, None)
 
+    async def drop_expired(self, now: datetime) -> None:
+        """Release entries (and their open httpx clients) past expiry.
+
+        Called opportunistically on each login so a browser closed without
+        logging out doesn't pin its transport — and the switch credentials
+        held inside it — in memory until the process restarts.
+        """
+        expired = [
+            sid for sid, entry in self._entries.items() if entry.expires_at <= now
+        ]
+        for sid in expired:
+            await self.drop(sid)
+
+
+class LoginThrottle:
+    """In-memory failed-login backoff, keyed by client address.
+
+    After ``threshold`` consecutive failures, further attempts are refused
+    (the API layer returns 429) until an exponentially growing delay has
+    passed; any success clears the counter. This protects the switch as much
+    as the credentials: every login attempt is relayed to the fragile switch
+    as a live probe, so wire-speed brute force means wire-speed switch
+    hammering — the throttle rejects BEFORE any switch I/O.
+    """
+
+    def __init__(self, threshold: int = 3, max_delay_seconds: float = 30.0) -> None:
+        self._threshold = threshold
+        self._max_delay = max_delay_seconds
+        # key -> (consecutive failures, monotonic time of the last one)
+        self._failures: dict[str, tuple[int, float]] = {}
+
+    def retry_after_seconds(self, key: str) -> float:
+        entry = self._failures.get(key)
+        if entry is None:
+            return 0.0
+        count, last = entry
+        if count < self._threshold:
+            return 0.0
+        delay = min(2.0 ** (count - self._threshold + 1), self._max_delay)
+        return max(0.0, (last + delay) - time.monotonic())
+
+    def record_failure(self, key: str) -> None:
+        count, _ = self._failures.get(key, (0, 0.0))
+        self._failures[key] = (count + 1, time.monotonic())
+
+    def record_success(self, key: str) -> None:
+        self._failures.pop(key, None)
+
 
 # ---------------------------------------------------------------------------
 # Session creation (login path).
@@ -114,20 +164,29 @@ async def create_session(
     settings: Settings,
 ) -> SessionEntry:
     """Verify credentials against the switch and cache an entered transport."""
+    # Opportunistic sweep: each login releases any expired sessions' entries
+    # and transports (no periodic task needed for a single-admin tool).
+    await store.drop_expired(_now())
     auth = BasicAuth(username, password) if username or password else NoneAuth()
     transport = ProcurveTransport(
         host=settings.switch_host,
         port=settings.switch_port,
         auth=auth,
     )
+    log = structlog.get_logger()
     await transport.__aenter__()
     try:
         await _probe_credentials(transport)
-    except BaseException:
+    except BaseException as exc:
         # On any failure — AuthError, TransportError, cancellation — we must
         # release the httpx client we just opened.
         await transport.__aexit__(None, None, None)
+        # Never log the password; username + failure class is the audit trail.
+        log.info(
+            "login_failed", username=username, reason=type(exc).__name__
+        )
         raise
+    log.info("login_succeeded", username=username)
     session_id = secrets.token_urlsafe(32)
     expires_at = _now() + timedelta(hours=settings.session_ttl_hours)
     entry = SessionEntry(

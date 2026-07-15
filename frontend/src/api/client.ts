@@ -27,6 +27,34 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Extract the human-readable message from any error this app produces.
+ *
+ * The backend guarantees a flat `{"error": <slug>, "detail": <string>}`
+ * envelope on every error response (see backend/app/errors.py), so for an
+ * `ApiError` we surface `detail` instead of the raw
+ * `API 500: {"error":...}` JSON string cards used to render at users.
+ * Falls back gracefully for non-JSON bodies and plain Errors.
+ *
+ * Returns `null` for `null`/`undefined` so call sites can do
+ * `apiErrorMessage(mutation.error)` without their own null guard.
+ */
+export function apiErrorMessage(err: unknown): string | null {
+  if (err == null) return null;
+  if (err instanceof ApiError) {
+    try {
+      const body = JSON.parse(err.body) as Record<string, unknown>;
+      if (typeof body.detail === "string" && body.detail) return body.detail;
+      if (typeof body.error === "string" && body.error) return body.error;
+    } catch {
+      // Non-JSON body — fall through to the raw text.
+    }
+    return err.body || `Request failed (HTTP ${err.status})`;
+  }
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
 /** GET a JSON endpoint. */
 export async function apiGet<T>(path: string): Promise<T> {
   const r = await fetch(path, { credentials: "include" });

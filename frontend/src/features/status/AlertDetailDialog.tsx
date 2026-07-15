@@ -17,6 +17,7 @@
  *   * Severity 1..5 mapped to a colour (Critical → blue, per the legacy
  *     `<severity>d.gif` icon convention).
  */
+import { useEffect } from "react";
 import type { AlertDetail } from "@/api/hooks/useStatus";
 import { useAlertDetail } from "@/api/hooks/useStatus";
 import { formatAlertTimestamp } from "@/lib/format-alert";
@@ -44,6 +45,17 @@ export function AlertDetailDialog({
 }: AlertDetailDialogProps) {
   const open = index !== null && tsCenti !== null;
   const detail = useAlertDetail(index, tsCenti);
+
+  // Esc-to-close, matching the other two dialog shells. Registered before
+  // the early return (hooks must run unconditionally).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 

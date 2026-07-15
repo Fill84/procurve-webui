@@ -26,6 +26,7 @@
  * <svg>. No data fetching, no Query access, no local state beyond the
  * hovered-port highlight.
  */
+import { memo } from "react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import type { components } from "@/api/schema";
@@ -86,7 +87,7 @@ interface SwitchSvgProps {
   ports: PortStatus[];
 }
 
-export function SwitchSvg({ ports }: SwitchSvgProps) {
+function SwitchSvgImpl({ ports }: SwitchSvgProps) {
   const [hoveredPort, setHoveredPort] = useState<number | null>(null);
   const navigate = useNavigate();
 
@@ -222,3 +223,7 @@ export function SwitchSvg({ ports }: SwitchSvgProps) {
     </svg>
   );
 }
+
+// Memoized: `ports` only changes identity on the 5 s refetch, so the
+// once-per-second uptime tick on the Status page skips this subtree.
+export const SwitchSvg = memo(SwitchSvgImpl);

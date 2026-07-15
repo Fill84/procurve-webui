@@ -227,7 +227,7 @@ def test_system_write_blocked_when_read_only(
         r = c.put("/api/v1/configuration/system", json=_SYSTEM_BODY)
         app.dependency_overrides.clear()
     assert r.status_code == 403
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "read_only"
     assert called is False
 
@@ -397,7 +397,7 @@ def test_ip_write_requires_host_confirmation(
     bad = {**_IP_BODY, "confirm_switch_host": "10.0.0.1"}
     r = client.put("/api/v1/configuration/ip", json=bad)
     assert r.status_code == 400
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "host_mismatch"
     assert called is False
 
@@ -958,7 +958,7 @@ def test_write_blocked_when_read_only(
         r = c.put(path, json=body)
         app.dependency_overrides.clear()
     assert r.status_code == 403
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "read_only"
     assert called is False
 
@@ -1312,7 +1312,7 @@ def test_qos_write_blocked_when_read_only(
         r = c.put(path, json=body)
         app.dependency_overrides.clear()
     assert r.status_code == 403
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "read_only"
     assert called is False
 
@@ -1435,7 +1435,7 @@ def test_configuration_support_page_write_blocked_when_read_only(
         )
         app.dependency_overrides.clear()
     assert r.status_code == 403
-    detail = r.json().get("detail", r.json())
+    detail = r.json()  # flat {error, detail} envelope
     assert detail.get("error") == "read_only"
     assert called is False
 

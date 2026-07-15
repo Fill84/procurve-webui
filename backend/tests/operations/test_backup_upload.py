@@ -12,7 +12,7 @@ import pytest
 import respx
 from httpx import Response
 
-from procurve_client.errors import WriteDisabledError
+from procurve_client.errors import ProtocolError, WriteDisabledError
 from procurve_client.models.backup import ConfigBackup
 from procurve_client.operations.backup import (
     UPLOAD_CONFIGFILE_FIELD,
@@ -24,6 +24,20 @@ from procurve_client.operations.backup import (
 )
 from procurve_client.transport import ProcurveTransport
 
+# Minimal-but-valid stand-in matching the download_config contract (ASCII,
+# CRLF line endings, leading ';' config-editor header). Used when the real
+# gitignored reference fixture is absent (fresh clones don't have it).
+_SYNTHETIC_CONFIG = (
+    b"; J9021A Configuration Editor; Created on release #N.11.78\r\n"
+    b"\r\n"
+    b"hostname \"ProCurve Switch 2810-24G\"\r\n"
+    b"snmp-server community \"public\" Unrestricted\r\n"
+    b"vlan 1\r\n"
+    b'   name "DEFAULT_VLAN"\r\n'
+    b"   untagged 1-24\r\n"
+    b"   exit\r\n"
+)
+
 
 def _reference_backup() -> ConfigBackup:
     fixture = (
@@ -33,7 +47,9 @@ def _reference_backup() -> ConfigBackup:
         / "2026-04-23"
         / "CONFIG.pcc"
     )
-    return ConfigBackup.from_bytes(fixture.read_bytes())
+    if fixture.exists():
+        return ConfigBackup.from_bytes(fixture.read_bytes())
+    return ConfigBackup.from_bytes(_SYNTHETIC_CONFIG)
 
 
 def test_upload_constants_match_phase0_contract():
@@ -142,3 +158,78 @@ async def test_upload_config_custom_configname(monkeypatch):
             await upload_config(t, backup=backup, configname="MyBackup")
         body = route.calls.last.request.content
         assert b"MyBackup" in body
+
+
+# ---------------------------------------------------------------------------
+# Safety guards: payload sanity check + error-body detection.
+# Restore is the highest-risk write in the system — a garbage payload or a
+# silently-rejected upload must never be reported as success.
+# ---------------------------------------------------------------------------
+
+
+@respx.mock
+async def test_upload_config_rejects_payload_without_config_header(monkeypatch):
+    """Bytes that don't start with the ';' config header never hit the switch."""
+    monkeypatch.setenv("READ_ONLY", "false")
+    route = respx.post("http://192.0.2.3/cgi/upload").mock(
+        return_value=Response(200, text="OK")
+    )
+    bogus = ConfigBackup.from_bytes(b"definitely not a switch config\n")
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(ProtocolError, match="leading ';'"):
+            await upload_config(t, backup=bogus)
+    assert route.called is False
+
+
+@respx.mock
+async def test_upload_config_rejects_binary_payload(monkeypatch):
+    monkeypatch.setenv("READ_ONLY", "false")
+    route = respx.post("http://192.0.2.3/cgi/upload").mock(
+        return_value=Response(200, text="OK")
+    )
+    binary = ConfigBackup.from_bytes(b"; header then\x00binary garbage")
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(ProtocolError, match="NUL"):
+            await upload_config(t, backup=binary)
+    assert route.called is False
+
+
+@respx.mock
+async def test_upload_config_force_skips_sanity_check(monkeypatch):
+    monkeypatch.setenv("READ_ONLY", "false")
+    route = respx.post("http://192.0.2.3/cgi/upload").mock(
+        return_value=Response(200, text="OK")
+    )
+    bogus = ConfigBackup.from_bytes(b"headerless but forced\n")
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        await upload_config(t, backup=bogus, force=True)
+    assert route.called
+
+
+@respx.mock
+async def test_upload_config_raises_on_error_page_with_200(monkeypatch):
+    """The firmware returns 200 with an error page on rejects — detect it.
+
+    research/protocol/backup/upload_config.md: success is expected to be a
+    200 whose body does NOT contain 'error'.
+    """
+    monkeypatch.setenv("READ_ONLY", "false")
+    respx.post("http://192.0.2.3/cgi/upload").mock(
+        return_value=Response(200, text="<html>ERROR: invalid config</html>")
+    )
+    backup = _reference_backup()
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(ProtocolError, match="error marker"):
+            await upload_config(t, backup=backup)
+
+
+@respx.mock
+async def test_upload_config_raises_on_non_200(monkeypatch):
+    monkeypatch.setenv("READ_ONLY", "false")
+    respx.post("http://192.0.2.3/cgi/upload").mock(
+        return_value=Response(500, text="boom")
+    )
+    backup = _reference_backup()
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(ProtocolError, match="HTTP 500"):
+            await upload_config(t, backup=backup)

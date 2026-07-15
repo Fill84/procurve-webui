@@ -19,6 +19,8 @@
  * We surface this as a clearly labelled placeholder rather than silently
  * omitting it, so admins don't wonder if the row is missing data.
  */
+import { apiErrorMessage } from "@/api/client";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Link } from "@tanstack/react-router";
 import { usePortStatus, usePortCounters } from "@/api/hooks/useStatus";
 import { LivePortChart } from "./LivePortChart";
@@ -31,8 +33,14 @@ export function PortDetailPage({ port: portStr }: { port: string }) {
   const portNum = Number(portStr);
   const portIsValid = Number.isFinite(portNum) && Number.isInteger(portNum) && portNum > 0;
 
-  const portsQuery = usePortStatus();
-  const countersQuery = usePortCounters();
+  // Switch read-safety: this page already streams live rates for the port
+  // over the WebSocket (2 s cadence in LivePortChart), so the REST polls
+  // here are slowed way down — the default 5 s/10 s cadences would
+  // double-poll the same /cgi/portc data the stream is delivering. Link
+  // mode rarely changes and counter TOTALS only need a coarse refresh (the
+  // manual Refresh button covers impatience).
+  const portsQuery = usePortStatus({ refetchInterval: 30_000 });
+  const countersQuery = usePortCounters({ refetchInterval: 60_000 });
 
   const portStatus: PortStatus | undefined = portIsValid
     ? portsQuery.data?.ports.find((p) => p.port === portNum)
@@ -45,9 +53,9 @@ export function PortDetailPage({ port: portStr }: { port: string }) {
     return (
       <div className="p-6">
         <BackLink />
-        <div className="mt-4 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner className="mt-4">
           Invalid port id: <code className="font-mono">{portStr}</code>
-        </div>
+        </ErrorBanner>
       </div>
     );
   }
@@ -132,9 +140,9 @@ function HeaderCard({
   }
   if (error) {
     return (
-      <section className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-        Failed to load port status: {error instanceof Error ? error.message : String(error)}
-      </section>
+      <ErrorBanner>
+        Failed to load port status: {apiErrorMessage(error)}
+      </ErrorBanner>
     );
   }
   if (notFound || !portStatus) {
@@ -233,7 +241,7 @@ function CountersCard({
         {error != null && (
           <div className="text-sm text-red-900">
             Failed to load counters:{" "}
-            {error instanceof Error ? error.message : String(error)}
+            {apiErrorMessage(error)}
           </div>
         )}
         {!loading && error == null && (!counters || !available) && (

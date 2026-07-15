@@ -31,7 +31,7 @@ for protocol parity only; every test in this module mocks the operation.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.backup_store import BackupStore
 from app.deps import get_app_settings, get_backup_store, get_transport
@@ -62,19 +62,28 @@ router = APIRouter(prefix="/api/v1/diagnostics", tags=["diagnostics"])
 
 
 class PingRequest(BaseModel):
-    """Ping test. `destination` is an IPv4 address or hostname."""
+    """Ping test. `destination` is an IPv4 address or hostname.
 
-    destination: str
-    packet_count: int = 10
-    timeout_s: int = 5
+    Bounds mirror the legacy applet's form limits: an unbounded
+    packet_count could pin the switch's single-threaded CGI in an
+    arbitrarily long ICMP run (load hazard on this hardware).
+    """
+
+    destination: str = Field(
+        ..., min_length=1, max_length=253, pattern=r"^[A-Za-z0-9._-]+$"
+    )
+    packet_count: int = Field(default=10, ge=1, le=999)
+    timeout_s: int = Field(default=5, ge=1, le=60)
 
 
 class LinkTestRequest(BaseModel):
     """L2 link test. `destination` is a MAC address (dash- or colon-separated)."""
 
-    destination: str
-    packet_count: int = 10
-    timeout_s: int = 5
+    destination: str = Field(
+        ..., pattern=r"^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$"
+    )
+    packet_count: int = Field(default=10, ge=1, le=999)
+    timeout_s: int = Field(default=5, ge=1, le=60)
 
 
 class DeviceResetRequest(BaseModel):

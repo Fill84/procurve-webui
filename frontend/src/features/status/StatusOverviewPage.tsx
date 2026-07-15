@@ -32,6 +32,8 @@
  * doesn't add a new request in practice because useIdentity is already
  * resolved from TopBar.
  */
+import { apiErrorMessage } from "@/api/client";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -196,8 +198,8 @@ export function StatusOverviewPage() {
 
   const mutating = ackMutation.isPending || delMutation.isPending;
   const mutationError =
-    (ackMutation.error instanceof Error ? ackMutation.error.message : null) ??
-    (delMutation.error instanceof Error ? delMutation.error.message : null);
+    (apiErrorMessage(ackMutation.error)) ??
+    (apiErrorMessage(delMutation.error));
 
   return (
     <div className="p-6">
@@ -212,7 +214,13 @@ export function StatusOverviewPage() {
             alertsQuery.refetch();
             identityQuery.refetch();
           }}
-          disabled={portsQuery.isFetching || deviceQuery.isFetching}
+          disabled={
+            portsQuery.isFetching ||
+            usageQuery.isFetching ||
+            deviceQuery.isFetching ||
+            alertsQuery.isFetching ||
+            identityQuery.isFetching
+          }
           className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
         >
           {portsQuery.isFetching ? "Refreshing…" : "Refresh"}
@@ -225,12 +233,12 @@ export function StatusOverviewPage() {
           <div className="h-40 animate-pulse rounded bg-muted" />
         )}
         {portsQuery.isError && (
-          <div className="rounded border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+          <ErrorBanner className="rounded">
             Failed to load port status:{" "}
             {portsQuery.error instanceof Error
               ? portsQuery.error.message
               : String(portsQuery.error)}
-          </div>
+          </ErrorBanner>
         )}
         {ports && (
           <>
@@ -246,12 +254,12 @@ export function StatusOverviewPage() {
           <div className="h-40 animate-pulse rounded bg-muted" />
         )}
         {usageQuery.isError && (
-          <div className="rounded border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+          <ErrorBanner className="rounded">
             Failed to load port utilisation:{" "}
             {usageQuery.error instanceof Error
               ? usageQuery.error.message
               : String(usageQuery.error)}
-          </div>
+          </ErrorBanner>
         )}
         {usageQuery.data && (
           <PortUtilizationChart
@@ -484,9 +492,7 @@ export function StatusOverviewPage() {
         busy={delMutation.isPending}
         error={
           delMutation.error instanceof Error ? (
-            <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-2 text-sm text-red-900 dark:text-red-300">
-              {delMutation.error.message}
-            </div>
+            <ErrorBanner className="p-2">{delMutation.error.message}</ErrorBanner>
           ) : null
         }
         onConfirm={confirmDelete}

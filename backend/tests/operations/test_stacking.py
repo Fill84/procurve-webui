@@ -93,6 +93,18 @@ async def test_get_memsinfo_non_integer_count_raises() -> None:
 
 
 @respx.mock
+async def test_get_memsinfo_truncated_group_raises() -> None:
+    """A stream cut off by 2+ tokens mid-group must raise (L12); a single
+    missing trailing token remains the documented padded-empty case."""
+    respx.get(f"{HOST}/cgi/get_memsinfo").mock(
+        return_value=Response(200, text="1~1~001db3-aa0001")
+    )
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        with pytest.raises(ParseError, match="truncated"):
+            await get_memsinfo(t)
+
+
+@respx.mock
 async def test_get_memsinfo_empty_body_raises() -> None:
     respx.get(f"{HOST}/cgi/get_memsinfo").mock(return_value=Response(200, text=""))
     async with ProcurveTransport(host="192.0.2.3") as t:
@@ -375,6 +387,38 @@ def test_set_members_request_rejects_reserved_chars_in_mac() -> None:
             mac_addrs=["bad,mac"],
             switch_nums=[1],
         )
+
+
+def test_set_members_request_rejects_query_breaking_password() -> None:
+    """The password travels raw in the query string (no URL-encoding, wire
+    parity with the applet) — '&', '=', '#', '?', whitespace and non-ASCII
+    would truncate or inject parameters (audit L10)."""
+    for bad in ("p&ss", "p=ss", "p#ss", "p?ss", "p ss", "pässwörd"):
+        with pytest.raises(ValueError):
+            SetMembersRequest(
+                mac_addrs=["001db3-aa0001"],
+                switch_nums=[1],
+                manager_password=bad,
+            )
+
+
+def test_set_members_request_accepts_safe_password() -> None:
+    req = SetMembersRequest(
+        mac_addrs=["001db3-aa0001"],
+        switch_nums=[1],
+        manager_password="l@bP4ss!_-.",  # noqa: S106 — synthetic test value
+    )
+    assert req.manager_password == "l@bP4ss!_-."  # noqa: S105
+
+
+def test_set_stack_cfg_request_rejects_query_breaking_strings() -> None:
+    """`sn` (stack name) and `ma` also ride the raw query string (L10)."""
+    for field in ("sn", "ma"):
+        for bad in ("a&b", "a=b", "a#b", "a b"):
+            with pytest.raises(ValueError):
+                SetStackCfgRequest(**{field: bad})
+    # Clean values pass.
+    assert SetStackCfgRequest(sn="Stack-1").sn == "Stack-1"
 
 
 def test_delete_members_request_requires_non_empty() -> None:

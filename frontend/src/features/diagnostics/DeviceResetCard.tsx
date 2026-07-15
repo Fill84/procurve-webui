@@ -16,8 +16,10 @@
  * before issuing the reboot, so the operator can roll back once the switch
  * comes back up.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
 import { DangerConfirmDialog } from "@/components/ui/DangerConfirmDialog";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useIdentity } from "@/api/hooks/useIdentity";
 import { useDeviceReset } from "@/api/hooks/useDiagnostics";
 
@@ -58,7 +60,7 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
   };
 
   const errorMessage =
-    reset.error instanceof Error ? reset.error.message : null;
+    apiErrorMessage(reset.error);
 
   const ipReady = expectedIp.length > 0;
 
@@ -78,9 +80,8 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
   );
 
   const body = (
-    <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-      <p className="font-semibold">Factory reset</p>
-      <p className="mt-1">
+    <ErrorBanner title="Factory reset">
+      <p>
         This reboots the switch and restores factory defaults — including
         removing the management IP and authorized-managers list. All switched
         traffic will drop for the duration of the reboot.
@@ -89,7 +90,7 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
         A pre-write backup of the current running-config is taken automatically
         before the reset so you can roll back.
       </p>
-    </div>
+    </ErrorBanner>
   );
 
   return (
@@ -136,10 +137,7 @@ export function DeviceResetCard({ onReset }: DeviceResetCardProps) {
         busy={reset.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Reset failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Reset failed">{errorMessage}</ErrorBanner>
           ) : null
         }
       />

@@ -23,6 +23,14 @@ RUN adduser --system --group --no-create-home appuser \
     && mkdir -p /app/backups \
     && chown appuser:appuser /app/backups
 
+# Dependencies come from the committed, hash-verified lockfile so image
+# builds are reproducible and a PyPI-side compromise can't slip in via a
+# floating `>=` resolve. Regenerate with:
+#   cd backend && uv lock && uv export --no-dev --no-emit-project \
+#     --format requirements-txt -o requirements.lock
+COPY backend/requirements.lock ./backend/requirements.lock
+RUN pip install --no-deps --require-hashes -r backend/requirements.lock
+
 # Copy backend sources needed by `pip install`. pyproject.toml declares
 # `readme = "README.md"`, so the README must be present at install time.
 COPY backend/pyproject.toml ./backend/pyproject.toml
@@ -30,7 +38,9 @@ COPY backend/README.md ./backend/README.md
 COPY backend/procurve_client ./backend/procurve_client
 COPY backend/app ./backend/app
 
-RUN pip install /app/backend
+# --no-deps: everything is already pinned above; the project install must
+# not trigger a fresh (unpinned) resolution.
+RUN pip install --no-deps /app/backend
 
 # Pull in the built SPA from the first stage.
 COPY --from=frontend-build /app/frontend/dist /app/frontend/dist
@@ -44,6 +54,7 @@ USER appuser
 EXPOSE 8080
 
 # Healthcheck uses Python stdlib — avoids installing curl into the slim image.
+# It probes /api/v1/health/live, which never contacts the switch (read-safety).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD /app/healthcheck.sh
 

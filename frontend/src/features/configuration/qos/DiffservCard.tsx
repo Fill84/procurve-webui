@@ -4,7 +4,9 @@
  * Each row maps an inbound codepoint to a DSCP value the switch rewrites
  * to on ingress. Like the DSCP table, each edit is one PUT.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useQosDiffserv,
   useSetQosDiffserv,
@@ -43,7 +45,7 @@ export function DiffservCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -57,7 +59,7 @@ export function DiffservCard() {
       </div>
 
       {query.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner className="mb-3">
           <p className="font-medium">Failed to load DiffServ table</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -67,7 +69,7 @@ export function DiffservCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -155,10 +157,9 @@ export function DiffservCard() {
           )}
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Save failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Save failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}

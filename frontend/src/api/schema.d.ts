@@ -237,6 +237,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Liveness
+         * @description Process liveness only — used by the container HEALTHCHECK.
+         *
+         *     Deliberately switch-free: if this handler runs, the app is alive.
+         */
+        get: operations["get_liveness_api_v1_health_live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -1031,6 +1053,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vlans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Vlans
+         * @description Full per-VLAN metadata (name, type, tagged/untagged/forbid port sets).
+         */
+        get: operations["read_vlans_api_v1_vlans_get"];
+        put?: never;
+        /**
+         * Create Vlan
+         * @description Create a static VLAN. Switch-reported validation errors surface verbatim.
+         */
+        post: operations["create_vlan_api_v1_vlans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vlans/{vlan_id}/ports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Vlan Ports
+         * @description Per-port membership modes for one VLAN (0=Auto/No 1=Tagged 2=Untagged 3=Forbid).
+         */
+        get: operations["read_vlan_ports_api_v1_vlans__vlan_id__ports_get"];
+        /**
+         * Write Vlan Ports
+         * @description Apply per-port membership changes for one VLAN.
+         *
+         *     LOCKOUT RISK: removing the untagged membership of the port your own
+         *     client reaches the switch through cuts this UI off mid-request. The
+         *     route ``vlan_id`` is authoritative and overrides the body's copy.
+         */
+        put: operations["write_vlan_ports_api_v1_vlans__vlan_id__ports_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vlans/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Vlans
+         * @description Delete one or more VLANs.
+         *
+         *     LOCKOUT RISK: deleting the VLAN that carries management traffic (or the
+         *     primary VLAN) severs this UI's own path to the switch. The firmware
+         *     rejects some of these itself — its error message is surfaced verbatim.
+         */
+        post: operations["remove_vlans_api_v1_vlans_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vlans/{vlan_id}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Vlan Name
+         * @description Rename a VLAN. The path ``vlan_id`` is authoritative.
+         */
+        put: operations["write_vlan_name_api_v1_vlans__vlan_id__name_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1053,6 +1171,25 @@ export interface components {
         AckAlertsBody: {
             /** Events */
             events: components["schemas"]["AlertEventRef"][];
+        };
+        /**
+         * AddVlanBody
+         * @description Body for ``POST /api/v1/vlans``.
+         */
+        AddVlanBody: {
+            request: components["schemas"]["AddVlanRequest"];
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /**
+         * AddVlanRequest
+         * @description Arguments for `/cgi/addVLAN`.
+         */
+        AddVlanRequest: {
+            /** Vlan Id */
+            vlan_id: number;
+            /** Vlan Name */
+            vlan_name: string;
         };
         /**
          * AddWebManagerRequest
@@ -1379,14 +1516,40 @@ export interface components {
             /** Entries */
             entries?: components["schemas"]["CosVlanEntry"][];
         };
-        /** CreateBackupRequest */
+        /**
+         * CreateBackupRequest
+         * @description Public create endpoint: only "manual" is accepted. "pre-write" and
+         *     "scheduled" are provenance markers reserved for server-internal callers
+         *     of BackupStore.save — a client-supplied value could otherwise spoof the
+         *     audit trail of whether the autobackup safety net actually fired.
+         */
         CreateBackupRequest: {
             /**
              * Trigger
              * @default manual
-             * @enum {string}
+             * @constant
              */
-            trigger: "manual" | "pre-write" | "scheduled";
+            trigger: "manual";
+        };
+        /**
+         * DelVlanBody
+         * @description Body for ``POST /api/v1/vlans/delete``.
+         *
+         *     A dedicated action path instead of ``DELETE /vlans`` because the applet
+         *     (and the wire CGI) support multi-select delete, which needs a body.
+         */
+        DelVlanBody: {
+            request: components["schemas"]["DelVlanRequest"];
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /**
+         * DelVlanRequest
+         * @description Arguments for `/cgi/delVLAN` (duplicate-key VLAN_ID).
+         */
+        DelVlanRequest: {
+            /** Vlan Ids */
+            vlan_ids: number[];
         };
         /**
          * DeleteWebManagerRequest
@@ -1673,6 +1836,14 @@ export interface components {
             /** Sha256 */
             sha256: string;
         };
+        /** LivenessStatus */
+        LivenessStatus: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "ok";
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Username */
@@ -1682,8 +1853,6 @@ export interface components {
         };
         /** LoginResponse */
         LoginResponse: {
-            /** Session Id */
-            session_id: string;
             /**
              * Expires At
              * Format: date-time
@@ -1713,6 +1882,10 @@ export interface components {
         /**
          * PingRequest
          * @description Ping test. `destination` is an IPv4 address or hostname.
+         *
+         *     Bounds mirror the legacy applet's form limits: an unbounded
+         *     packet_count could pin the switch's single-threaded CGI in an
+         *     arbitrarily long ICMP run (load hazard on this hardware).
          */
         PingRequest: {
             /** Destination */
@@ -1858,6 +2031,16 @@ export interface components {
          */
         PortMode: 1 | 2 | 3 | 4 | 5 | 7 | 8 | 9 | 11;
         /**
+         * PortModeChange
+         * @description One (port_id, mode) pair for set{VLAN,GVRP}Port requests.
+         */
+        PortModeChange: {
+            /** Port Id */
+            port_id: number;
+            /** Mode */
+            mode: number;
+        };
+        /**
          * PortSecurityMode
          * @description Values from `<select name=mode>` on `perport_form1.html`.
          *
@@ -1996,6 +2179,16 @@ export interface components {
          */
         RSAKey: 1 | 2 | 3 | 4;
         /**
+         * RenVlanBody
+         * @description Body for ``PUT /api/v1/vlans/{vlan_id}/name``.
+         */
+        RenVlanBody: {
+            /** Vlan Name */
+            vlan_name: string;
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /**
          * ReplaceWebManagerRequest
          * @description `action=2` variant — modify the entry at `indeces[0]` in place.
          */
@@ -2033,6 +2226,14 @@ export interface components {
             applied: boolean;
             /** Raw Body */
             raw_body?: string | null;
+        };
+        /**
+         * RestoreRequest
+         * @description Restore confirmation. `confirm_switch_host` must equal settings.switch_host.
+         */
+        RestoreRequest: {
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
         };
         /**
          * SSLActionCode
@@ -2610,6 +2811,34 @@ export interface components {
             contact: string;
         };
         /**
+         * SetVlanPortsBody
+         * @description Body for ``PUT /api/v1/vlans/{vlan_id}/ports``.
+         *
+         *     ``changes`` should contain only the ports whose mode actually changed
+         *     (mirroring the applet's ``getChangedPortsID``) — the request model
+         *     enforces at least one entry.
+         */
+        SetVlanPortsBody: {
+            request: components["schemas"]["SetVlanPortsRequest"];
+            /** Confirm Switch Host */
+            confirm_switch_host: string;
+        };
+        /**
+         * SetVlanPortsRequest
+         * @description Arguments for `/cgi/setVLANPort`.
+         *
+         *     `changes` is an ordered list — the wire interleaves PORT/MODE pairs in
+         *     this order. Only ports whose mode actually changed should appear; the
+         *     applet calls `getChangedPortsID()` and the switch may reject
+         *     unnecessary updates.
+         */
+        SetVlanPortsRequest: {
+            /** Vlan Id */
+            vlan_id: number;
+            /** Changes */
+            changes: components["schemas"]["PortModeChange"][];
+        };
+        /**
          * SetWebManagerBody
          * @description Body for ``POST /api/v1/security/web-managers``.
          *
@@ -2708,6 +2937,102 @@ export interface components {
             ctx?: Record<string, never>;
         };
         /**
+         * Vlan
+         * @description A single VLAN as reported by `getVLANAll` (family=1 fields).
+         *
+         *     Port-list fields are preserved as raw wire strings. The applet converts
+         *     `|` to `,` only for display; the raw wire uses `|` between ranges (or
+         *     `,` — seen in the fixture because of trailing Dyn-range rendering).
+         *     The literal `None` string means "empty list".
+         */
+        Vlan: {
+            /** Vlan Id */
+            vlan_id: number;
+            /** Vlan Name */
+            vlan_name: string;
+            /** Vlan Type */
+            vlan_type: string;
+            /** Tagged Ports */
+            tagged_ports: string;
+            /** Gvrp Ports */
+            gvrp_ports: string;
+            /** Untagged Ports */
+            untagged_ports: string;
+            /** Forbid Ports */
+            forbid_ports: string;
+            /** Auto Ports */
+            auto_ports: string;
+        };
+        /**
+         * VlanList
+         * @description Parsed shape of `/cgi/getVLANAll`.
+         */
+        VlanList: {
+            /** Vlans */
+            vlans: components["schemas"]["Vlan"][];
+        };
+        /**
+         * VlanMembership
+         * @description One row of `getVLANPort` — the mode a port is in for one VLAN.
+         */
+        VlanMembership: {
+            /** Port Name */
+            port_name: string;
+            /** Port Id */
+            port_id: number;
+            mode: components["schemas"]["VlanPortMode"];
+        };
+        /**
+         * VlanMembershipList
+         * @description Parsed shape of `/cgi/getVLANPort?VLAN_ID=<id>`.
+         */
+        VlanMembershipList: {
+            /** Vlan Id */
+            vlan_id: number;
+            /** Gvrp Enable */
+            gvrp_enable: boolean;
+            /** Ports */
+            ports: components["schemas"]["VlanMembership"][];
+        };
+        /**
+         * VlanPortMode
+         * @description Per-port VLAN membership mode (getVLANPort / setVLANPort).
+         *
+         *     `AUTO` is labelled "Auto" when GVRP is ON and "No" when GVRP is OFF,
+         *     but the integer value is the same either way.
+         * @enum {integer}
+         */
+        VlanPortMode: 0 | 1 | 2 | 3;
+        /**
+         * VlanSummary
+         * @description A `(id, name)` pair as reported by `listVLANS`.
+         */
+        VlanSummary: {
+            /** Vlan Id */
+            vlan_id: number;
+            /** Vlan Name */
+            vlan_name: string;
+        };
+        /**
+         * VlanWriteAck
+         * @description Return shape for VLAN-subsystem write endpoints.
+         *
+         *     Most write CGIs emit `OK~<listVLANS refresh>` on success or an error
+         *     string on failure. The refresh payload is exposed as `vlans` when
+         *     present so the caller can avoid a follow-up round-trip.
+         */
+        VlanWriteAck: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Raw Body */
+            raw_body?: string | null;
+            /** Vlans */
+            vlans?: components["schemas"]["VlanSummary"][];
+        };
+        /**
          * WebAccessPage
          * @description Scraped projection of the device-passwords HTML form.
          *
@@ -2745,6 +3070,8 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+            /** Client Ip */
+            client_ip?: string | null;
         };
     };
     responses: never;
@@ -3049,6 +3376,26 @@ export interface operations {
             };
         };
     };
+    get_liveness_api_v1_health_live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LivenessStatus"];
+                };
+            };
+        };
+    };
     get_health_api_v1_health_get: {
         parameters: {
             query?: never;
@@ -3213,7 +3560,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -4485,6 +4836,193 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupportInfo"];
+                };
+            };
+        };
+    };
+    read_vlans_api_v1_vlans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VlanList"];
+                };
+            };
+        };
+    };
+    create_vlan_api_v1_vlans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddVlanBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VlanWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_vlan_ports_api_v1_vlans__vlan_id__ports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vlan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VlanMembershipList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_vlan_ports_api_v1_vlans__vlan_id__ports_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vlan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetVlanPortsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VlanWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_vlans_api_v1_vlans_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelVlanBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VlanWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_vlan_name_api_v1_vlans__vlan_id__name_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vlan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenVlanBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VlanWriteAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

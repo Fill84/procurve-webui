@@ -4,7 +4,9 @@
  * Lists IP addresses with their resolved DSCP / priority labels, lets the
  * operator delete a row or add a new one.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useQosUserPri,
   useSetQosUserPri,
@@ -70,7 +72,7 @@ export function UserPriCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -84,7 +86,7 @@ export function UserPriCard() {
       </div>
 
       {query.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner className="mb-3">
           <p className="font-medium">Failed to load device-priority entries</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -94,7 +96,7 @@ export function UserPriCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -231,10 +233,9 @@ export function UserPriCard() {
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Request failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Request failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}

@@ -10,6 +10,7 @@
  * as the system description and omit the clock row entirely. See the Task
  * 2.10 context note in the implementation plan for the field audit.
  */
+import { apiErrorMessage } from "@/api/client";
 import type { ReactNode } from "react";
 import { useIdentity } from "@/api/hooks/useIdentity";
 import { formatBytes, formatUptime } from "@/lib/format";
@@ -53,7 +54,7 @@ export function IdentityPage() {
         <div className="rounded-lg border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load identity</p>
           <p className="mt-1 text-sm opacity-80">
-            {error instanceof Error ? error.message : String(error)}
+            {apiErrorMessage(error)}
           </p>
           <button
             type="button"

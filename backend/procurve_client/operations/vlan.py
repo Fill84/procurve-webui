@@ -116,10 +116,14 @@ def _pair_off_sentinel(body: str) -> tuple[str, list[str]]:
 def _parse_vlan_summary_stream(tokens: list[str]) -> list[VlanSummary]:
     """Chunk a flat `(id, name, id, name, ...)` token stream into pairs.
 
-    Tolerates a trailing unpaired token (e.g. if the stream ends in a
-    lone `~` that we already stripped). The applet's Java consumer
-    (callURLlist) iterates in pairs regardless of line boundaries.
+    A lone trailing token means the response was cut off mid-stream —
+    raise instead of silently parsing a shorter valid list (the trailing
+    `~` empty token is already stripped by `parse_tilde_row`).
     """
+    if len(tokens) % 2:
+        raise ParseError(
+            f"truncated (id, name) pair stream: {len(tokens)} tokens"
+        )
     out: list[VlanSummary] = []
     for i in range(0, len(tokens) - 1, 2):
         raw_id = tokens[i].strip()
@@ -271,6 +275,11 @@ async def get_gvrp_ports(transport: ProcurveTransport) -> GvrpPortList:
     sentinel, rest = _pair_off_sentinel(r.text)
     gvrp_enable = sentinel.upper() == "ON"
 
+    if len(rest) % 3:
+        raise ParseError(
+            f"getGVRPPort: truncated triple stream ({len(rest)} tokens "
+            "after sentinel)"
+        )
     ports: list[GvrpPort] = []
     # Triples: (port_name, port_id, mode)
     for i in range(0, len(rest) - 2, 3):
@@ -306,6 +315,11 @@ async def get_vlan_ports(
     sentinel, rest = _pair_off_sentinel(r.text)
     gvrp_enable = sentinel.upper() == "ON"
 
+    if len(rest) % 3:
+        raise ParseError(
+            f"getVLANPort: truncated triple stream ({len(rest)} tokens "
+            "after sentinel)"
+        )
     ports: list[VlanMembership] = []
     for i in range(0, len(rest) - 2, 3):
         port_name = rest[i]

@@ -5,7 +5,9 @@
  * Not lockout-risky: per-port security changes are reversible via the
  * pre-write autobackup and do not affect management access. No danger dialog.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   usePerPort,
   useSetPerport,
@@ -77,7 +79,7 @@ export function PerPortSecurityCard() {
   };
 
   const errorMessage =
-    setPerport.error instanceof Error ? setPerport.error.message : null;
+    apiErrorMessage(setPerport.error);
 
   const rows = perPort.data?.rows ?? [];
 
@@ -93,16 +95,15 @@ export function PerPortSecurityCard() {
       </div>
 
       {perPort.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+        <ErrorBanner className="mb-3">
           Failed to fetch per-port state: {perPort.error.message}
-        </div>
+        </ErrorBanner>
       )}
 
       {errorMessage && (
-        <div className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          <p className="font-semibold">Update failed</p>
-          <p className="mt-1 break-all">{errorMessage}</p>
-        </div>
+        <ErrorBanner title="Update failed" className="mb-3">
+          {errorMessage}
+        </ErrorBanner>
       )}
 
       {lastResult && (

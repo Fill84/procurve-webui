@@ -75,12 +75,19 @@ export function RestoreDialog({
       : null;
 
   const handleConfirm = () => {
-    restore.mutate(backup.filename, {
-      onSuccess: () => {
-        onRestored(backup.filename);
-        onClose();
+    // Same contract as device-reset: the backend re-verifies this value
+    // against SWITCH_HOST server-side (require_host_confirmation), and takes
+    // a pre-restore snapshot of the live config before uploading.
+    if (!expectedIp) return;
+    restore.mutate(
+      { filename: backup.filename, confirmSwitchHost: expectedIp },
+      {
+        onSuccess: () => {
+          onRestored(backup.filename);
+          onClose();
+        },
       },
-    });
+    );
   };
 
   const body = (

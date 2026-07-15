@@ -17,8 +17,10 @@
  * Access (Operator) and Read-Write Access (Manager). We follow the same
  * grouping so muscle memory carries over.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
 import { DangerConfirmDialog } from "@/components/ui/DangerConfirmDialog";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useIdentity } from "@/api/hooks/useIdentity";
 import { useSetDevicePasswords } from "@/api/hooks/useSecurity";
 
@@ -56,18 +58,23 @@ export function DevicePasswordsCard() {
   // Local validation: confirm fields must match their primary; Manager
   // fields are required (Manager creds are the only path back into the
   // switch). Operator section is optional — empty fields are a no-op for
-  // that pair, mirroring the legacy applet's behaviour.
+  // that pair, mirroring the legacy applet's behaviour — but a PARTIAL
+  // pair is rejected (audit L8): a username with no password would create
+  // a passwordless read-only account on the switch.
   const operatorConfirmMismatch =
     form.operator_password !== form.operator_password_confirm;
   const managerConfirmMismatch =
     form.manager_password !== form.manager_password_confirm;
   const managerEmpty =
     form.manager_username.trim() === "" || form.manager_password === "";
+  const operatorPartial =
+    form.operator_username.trim() !== "" && form.operator_password === "";
 
   const canSubmit =
     !operatorConfirmMismatch &&
     !managerConfirmMismatch &&
     !managerEmpty &&
+    !operatorPartial &&
     !!expectedIp &&
     !setPasswords.isPending;
 
@@ -112,19 +119,16 @@ export function DevicePasswordsCard() {
   };
 
   const errorMessage =
-    setPasswords.error instanceof Error ? setPasswords.error.message : null;
+    apiErrorMessage(setPasswords.error);
 
   const dialogBody = (
     <div className="space-y-3">
-      <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-        <p className="font-semibold">Physical-recovery lockout risk</p>
-        <p className="mt-1">
-          A wrong Manager password — or a non-matching confirm — locks every
-          client out of this switch. There is no software path back: recovery
-          requires a physical factory-reset (clear button on the chassis).
-          Make sure you have console / SSH access ready before applying.
-        </p>
-      </div>
+      <ErrorBanner title="Physical-recovery lockout risk">
+        A wrong Manager password — or a non-matching confirm — locks every
+        client out of this switch. There is no software path back: recovery
+        requires a physical factory-reset (clear button on the chassis).
+        Make sure you have console / SSH access ready before applying.
+      </ErrorBanner>
       <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
         <p className="font-semibold">Cleartext-on-the-wire warning</p>
         <p className="mt-1">
@@ -169,14 +173,11 @@ export function DevicePasswordsCard() {
           </h4>
         </div>
 
-        <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          <p className="font-semibold">Physical-recovery lockout</p>
-          <p className="mt-1">
-            A wrong Manager password locks the switch. Recovery is the
-            physical reset button on the chassis — there is no software
-            override.
-          </p>
-        </div>
+        <ErrorBanner title="Physical-recovery lockout" className="mb-4">
+          A wrong Manager password locks the switch. Recovery is the
+          physical reset button on the chassis — there is no software
+          override.
+        </ErrorBanner>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Read-Only Access (Operator) */}
@@ -200,6 +201,11 @@ export function DevicePasswordsCard() {
                 value={form.operator_password}
                 onChange={(v) => update("operator_password", v)}
                 autoComplete="new-password"
+                error={
+                  operatorPartial
+                    ? "Required when an operator user name is set — a username with no password would allow passwordless read-only login."
+                    : undefined
+                }
               />
               <PwField
                 id="op-pw2"
@@ -295,10 +301,7 @@ export function DevicePasswordsCard() {
         busy={setPasswords.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-              <p className="font-semibold">Apply failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Apply failed">{errorMessage}</ErrorBanner>
           ) : null
         }
       />

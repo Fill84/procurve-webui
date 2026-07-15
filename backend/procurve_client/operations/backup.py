@@ -57,6 +57,31 @@ async def download_config(
     )
 
 
+def _sanity_check_payload(data: bytes) -> None:
+    """Reject payloads that cannot plausibly be a 2810 config file.
+
+    Restore is the highest-risk write in the system: an uploaded garbage
+    blob can leave the switch in an inconsistent state. Downloaded configs
+    (see research/protocol/backup/download_config.md) are ASCII text whose
+    first non-blank line starts with ``;`` (the
+    ``; J9021A Configuration Editor`` header), so anything binary or
+    headerless is refused before a single byte reaches the switch.
+    """
+    if not data.strip():
+        raise ProtocolError("refusing to upload an empty config payload")
+    if b"\x00" in data:
+        raise ProtocolError(
+            "refusing to upload config payload containing NUL bytes "
+            "(not a .pcc text config)"
+        )
+    if not data.lstrip().startswith(b";"):
+        raise ProtocolError(
+            "refusing to upload config payload without the leading ';' "
+            "config-editor header (see research/protocol/backup/"
+            "download_config.md); pass force=True to override"
+        )
+
+
 @WRITE
 async def upload_config(
     transport: ProcurveTransport,
@@ -64,6 +89,7 @@ async def upload_config(
     backup: ConfigBackup,
     configname: str = "Config",
     reboot_after: bool = False,
+    force: bool = False,
 ) -> None:
     """Upload a ConfigBackup to the switch (restore).
 
@@ -75,7 +101,21 @@ async def upload_config(
 
     On this switch the default `"Config"` name overwrites the active config.
     See research/protocol/backup/upload_config.md for the full contract.
+
+    Safety additions:
+      - the payload is sanity-checked before upload (must look like a .pcc
+        text config); pass ``force=True`` to skip the check;
+      - the response body is scanned for error markers. The firmware is
+        known to return HTTP 200 with an error page instead of an HTTP
+        error (see transport._check_status), and the research doc's success
+        criterion is "200 with a body that does NOT contain 'error'" —
+        so a suspicious body raises ProtocolError instead of silently
+        reporting success. This fails safe: a false positive means the
+        operator double-checks a restore that actually applied, rather
+        than trusting one that didn't.
     """
+    if not force:
+        _sanity_check_payload(backup.data)
     data: dict[str, str] = {
         UPLOAD_CONFIGNAME_FIELD: configname,
         UPLOAD_SUBMIT_FIELD: "Upload",
@@ -100,4 +140,10 @@ async def upload_config(
     if r.status_code != 200:
         raise ProtocolError(
             f"upload returned HTTP {r.status_code}: body={r.text[:200]!r}"
+        )
+    body_lower = r.text.lower()
+    if "error" in body_lower:
+        raise ProtocolError(
+            "upload response contains an error marker — the switch likely "
+            f"rejected the config: body={r.text[:200]!r}"
         )

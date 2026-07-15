@@ -128,9 +128,13 @@ async def get_memsinfo(transport: ProcurveTransport) -> GetMemsinfoResponse:
     # record whose last field is empty).
     if len(rest) % 4 == 3:
         rest = rest + [""]
+    if len(rest) % 4:
+        # Short by 2+ tokens — the response was cut off mid-group; raise
+        # rather than silently parsing a shorter valid member list.
+        raise ParseError(
+            f"get_memsinfo: truncated 4-token group stream ({len(rest)} tokens)"
+        )
     for i in range(0, len(rest), 4):
-        if i + 3 >= len(rest):
-            break
         raw_idx = rest[i]
         try:
             member_index = int(raw_idx)

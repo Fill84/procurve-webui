@@ -13,6 +13,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: "/", label: "Identity" },
   { to: "/status", label: "Status" },
   { to: "/configuration", label: "Configuration" },
+  { to: "/vlans", label: "VLANs" },
   { to: "/security", label: "Security" },
   { to: "/diagnostics", label: "Diagnostics" },
   { to: "/support", label: "Support" },

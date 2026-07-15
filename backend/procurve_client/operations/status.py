@@ -40,7 +40,7 @@ from procurve_client.models.port import (
     PortUsage,
     PortUsageList,
 )
-from procurve_client.parsing import parse_tilde_lines, parse_tilde_row
+from procurve_client.parsing import ensure_write_ok, parse_tilde_lines, parse_tilde_row
 from procurve_client.transport import ProcurveTransport
 
 _FFLOG_PATH = "/cgi/fflog"
@@ -372,30 +372,29 @@ async def get_alert_detail(
     )
 
 
-def _build_fflog_action_params(
+def _build_fflog_action_query(
     *,
     events: list[AlertEvent],
     action: str,
-) -> list[tuple[str, str]]:
-    """Build the wire query for /cgi/fflog ack/del.
+) -> str:
+    """Build the raw wire query for /cgi/fflog ack/del.
 
     Encoding:
-      * `indeces=<csv>` (literal comma — not %2C — per the applet)
+      * `indeces=<csv>` (literal comma — NOT %2C — per ack_alerts.md; the
+        firmware's own echo parser splits on the literal comma, so this is
+        assembled manually instead of via httpx params, which would emit
+        %2C and could mis-target every multi-event ack/delete)
       * `action=<ack|del>`
       * one `dt=<ts_centiseconds>` per event, in the same order as `indeces`.
 
-    Returns a list-of-tuples so httpx preserves repeated `dt=` params.
+    All values are digits/fixed tokens, so raw interpolation is URL-safe.
     """
     if not events:
         raise ValueError("events must be non-empty")
     csv = ",".join(e.row_id for e in events)
-    params: list[tuple[str, str]] = [
-        ("indeces", csv),
-        ("action", action),
-    ]
-    for e in events:
-        params.append(("dt", str(e.ts_centiseconds)))
-    return params
+    parts = [f"indeces={csv}", f"action={action}"]
+    parts.extend(f"dt={e.ts_centiseconds}" for e in events)
+    return "&".join(parts)
 
 
 @WRITE
@@ -414,8 +413,9 @@ async def ack_alerts(
     body and re-fetches the alert log. We mirror by returning a generic
     ConfigWriteAck with the raw body for debuggability.
     """
-    params = _build_fflog_action_params(events=events, action="ack")
-    r = await transport.get(_FFLOG_PATH, params=params)
+    query = _build_fflog_action_query(events=events, action="ack")
+    r = await transport.get(f"{_FFLOG_PATH}?{query}")
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)
 
 
@@ -429,6 +429,7 @@ async def delete_alerts(
 
     Bulk delete. Wire-identical to ack except for `action=del`.
     """
-    params = _build_fflog_action_params(events=events, action="del")
-    r = await transport.get(_FFLOG_PATH, params=params)
+    query = _build_fflog_action_query(events=events, action="del")
+    r = await transport.get(f"{_FFLOG_PATH}?{query}")
+    ensure_write_ok(r.status_code, r.text)
     return ConfigWriteAck(ok=True, raw_body=r.text or None)

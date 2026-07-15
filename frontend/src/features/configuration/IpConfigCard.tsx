@@ -15,8 +15,11 @@
  * (which returns the identity-page scrape). This mirrors how the
  * Security tab resolves ``confirm_switch_host``.
  */
-import { useEffect, useState } from "react";
+import { apiErrorMessage } from "@/api/client";
+import { useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
 import { DangerConfirmDialog } from "@/components/ui/DangerConfirmDialog";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useIdentity } from "@/api/hooks/useIdentity";
 import {
   useIpConfig,
@@ -57,13 +60,11 @@ export function IpConfigCard() {
   const [mode, setMode] = useState<IpMode>(MODE_MANUAL);
   const [gateway, setGateway] = useState("");
 
-  useEffect(() => {
-    if (query.data) {
-      setVlanId(query.data.vlan_id);
-      setMode(query.data.mode);
-      setGateway(query.data.gateway);
-    }
-  }, [query.data]);
+  useServerSync(query.data, (data) => {
+    setVlanId(data.vlan_id);
+    setMode(data.mode);
+    setGateway(data.gateway);
+  });
 
   const expectedIp = identity.data?.ip_address ?? "";
 
@@ -113,19 +114,16 @@ export function IpConfigCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   const body = (
     <div className="space-y-3">
-      <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-        <p className="font-semibold">Lockout risk</p>
-        <p className="mt-1">
-          Changing the management IP / VLAN / DHCP mode can disconnect you
-          immediately. Verify you have console or SSH access to the switch
-          before saving, and remember the new address — the web UI will not
-          follow you across an IP change.
-        </p>
-      </div>
+      <ErrorBanner title="Lockout risk">
+        Changing the management IP / VLAN / DHCP mode can disconnect you
+        immediately. Verify you have console or SSH access to the switch
+        before saving, and remember the new address — the web UI will not
+        follow you across an IP change.
+      </ErrorBanner>
       <div className="rounded border border-border bg-muted p-3 text-sm">
         <p className="font-semibold">Proposed</p>
         <dl className="mt-1 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-0.5">
@@ -175,7 +173,7 @@ export function IpConfigCard() {
         )}
 
         {query.error instanceof Error && (
-          <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+          <ErrorBanner>
             <p className="font-medium">Failed to load IP configuration</p>
             <p className="mt-1 break-all">{query.error.message}</p>
             <button
@@ -185,7 +183,7 @@ export function IpConfigCard() {
             >
               Retry
             </button>
-          </div>
+          </ErrorBanner>
         )}
 
         {query.data && !editing && (
@@ -356,10 +354,7 @@ export function IpConfigCard() {
         busy={mutation.isPending}
         error={
           errorMessage ? (
-            <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Apply failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Apply failed">{errorMessage}</ErrorBanner>
           ) : null
         }
       />

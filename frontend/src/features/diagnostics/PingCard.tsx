@@ -5,7 +5,9 @@
  * "Run ping", and we surface the switch's Successes/Failures counters.
  * The "Run" button is disabled while the mutation is in-flight.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState, type FormEvent } from "react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { usePing, type PingRequest } from "@/api/hooks/useDiagnostics";
 
 const DEFAULT_COUNT = 10;
@@ -30,7 +32,7 @@ export function PingCard() {
 
   const result = ping.data;
   const errorMessage =
-    ping.error instanceof Error ? ping.error.message : null;
+    apiErrorMessage(ping.error);
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -83,10 +85,9 @@ export function PingCard() {
       </form>
 
       {errorMessage && (
-        <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-          <p className="font-semibold">Ping failed</p>
-          <p className="mt-1 break-all">{errorMessage}</p>
-        </div>
+        <ErrorBanner title="Ping failed" className="mt-3">
+          {errorMessage}
+        </ErrorBanner>
       )}
 
       {result && !errorMessage && (

@@ -9,7 +9,9 @@
  * ``row_index = codepoint + 1`` (1..64); ``priority_8021p = 255`` means
  * "No Override".
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useQosDscp,
   useSetQosDscp,
@@ -64,7 +66,7 @@ export function DscpTableCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -83,7 +85,7 @@ export function DscpTableCard() {
       </p>
 
       {query.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner className="mb-3">
           <p className="font-medium">Failed to load DSCP table</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -93,7 +95,7 @@ export function DscpTableCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -185,10 +187,9 @@ export function DscpTableCard() {
           )}
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Save failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Save failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}

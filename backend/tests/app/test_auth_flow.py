@@ -57,7 +57,10 @@ def test_login_with_blank_creds_succeeds_when_switch_accepts_blank(
     resp = client.post("/api/v1/auth/login", json={"username": "", "password": ""})
     assert resp.status_code == 200, resp.text
     body = resp.json()
-    assert "session_id" in body
+    # The raw session_id is deliberately NOT echoed in the body — the signed
+    # cookie is the only credential surface.
+    assert "session_id" not in body
+    assert "expires_at" in body
     assert "expires_at" in body
     assert route.called
     # Cookie set
@@ -123,3 +126,39 @@ def test_session_expires_after_ttl(
     # After TTL — expired.
     monkeypatch.setattr(auth_module, "_now", lambda: t0 + timedelta(hours=9))
     assert client.get("/api/v1/auth/whoami").status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Login backoff — protects credentials AND the switch (every attempt is a
+# live probe against fragile hardware).
+# ---------------------------------------------------------------------------
+
+
+@respx.mock
+def test_login_throttled_after_repeated_failures(client: TestClient) -> None:
+    route = _mock_probe_unauthorized()
+    for _ in range(3):
+        r = client.post("/api/v1/auth/login", json={"username": "u", "password": "x"})
+        assert r.status_code == 401
+    # Fourth attempt: refused BEFORE any switch I/O.
+    r = client.post("/api/v1/auth/login", json={"username": "u", "password": "x"})
+    assert r.status_code == 429
+    assert r.json()["error"] == "throttled"
+    assert "Retry-After" in r.headers
+    assert route.call_count == 3  # the throttled attempt never probed the switch
+
+
+@respx.mock
+def test_login_success_resets_failure_count(client: TestClient) -> None:
+    bad = _mock_probe_unauthorized()
+    for _ in range(2):
+        r = client.post("/api/v1/auth/login", json={"username": "u", "password": "x"})
+        assert r.status_code == 401
+    bad.mock(return_value=Response(200, text="<html>ok</html>"))
+    r = client.post("/api/v1/auth/login", json={"username": "u", "password": "good"})
+    assert r.status_code == 200
+    # Two fresh failures after a success: still under the threshold.
+    bad.mock(return_value=Response(401, text="unauthorized"))
+    for _ in range(2):
+        r = client.post("/api/v1/auth/login", json={"username": "u", "password": "x"})
+        assert r.status_code == 401

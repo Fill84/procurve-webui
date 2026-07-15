@@ -14,10 +14,50 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from procurve_client.errors import OperationError, ParseError
+from procurve_client.errors import OperationError, ParseError, ProtocolError
 
 _FIRMWARE_RE = re.compile(r"Created on release #(?P<fw>[A-Z0-9.]+)")
 _HOSTNAME_RE = re.compile(r'^hostname\s+"(?P<name>[^"]*)"', re.MULTILINE)
+
+
+def ensure_write_ok(status_code: int, body: str) -> None:
+    """Shared post-write response check for endpoints with unverified bodies.
+
+    Many configuration/status write CGIs have response shapes that were never
+    captured live, so operations used to return ``ok=True`` unconditionally —
+    meaning a rejected write was reported to the operator as success. This
+    check is deliberately conservative (no false failures on unknown-but-fine
+    bodies): it raises only on
+
+    * a non-200 status (`ProtocolError`), or
+    * a body that *starts* with the applet's ``error~`` sentinel or an
+      ``error:`` token (`OperationError`) — the convention the VLAN/stacking
+      subsystems already parse.
+
+    Callers still return ``ok=True`` afterwards; the difference is that the
+    two known failure signatures now surface instead of vanishing.
+    """
+    if status_code != 200:
+        raise ProtocolError(
+            f"switch write returned HTTP {status_code}: body={body[:200]!r}"
+        )
+    text = body.strip()
+    lowered = text.lower()
+    if lowered.startswith("error~") or lowered.startswith("error:"):
+        raise OperationError(text[:200])
+
+
+def parse_int(raw: str, *, context: str) -> int:
+    """``int()`` for wire tokens that raises typed `ParseError`, not ValueError.
+
+    Use for every integer conversion of switch-originated text so that a
+    garbage body surfaces as a handled protocol error instead of a raw
+    ValueError → generic 500.
+    """
+    try:
+        return int(raw.strip())
+    except ValueError as exc:
+        raise ParseError(f"{context}: expected integer, got {raw!r}") from exc
 
 
 def parse_tilde_row(line: str) -> tuple[str, ...]:

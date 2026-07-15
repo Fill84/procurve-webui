@@ -9,7 +9,10 @@
  * has enough fields (name + admin + mode + flow) that an inline row gets
  * cramped, and the hpSwitchPortFastEtherMode select has 9 options.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useEffect, useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   usePortForm,
   usePortsConfig,
@@ -56,7 +59,7 @@ export function PortConfigTable() {
       </div>
 
       {ports.error instanceof Error && (
-        <div className="mb-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner className="mb-3">
           <p className="font-medium">Failed to load port config</p>
           <p className="mt-1 break-all">{ports.error.message}</p>
           <button
@@ -66,7 +69,7 @@ export function PortConfigTable() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {lastResult && (
@@ -170,15 +173,13 @@ function EditPortDialog({
   const [mode, setMode] = useState<PortMode>(5);
   const [flowControl, setFlowControl] = useState(false);
 
-  // Seed local state once the form loads.
-  useEffect(() => {
-    if (form.data) {
-      setName(form.data.port_name);
-      setAdminEnabled(form.data.admin_enabled);
-      setMode(form.data.mode);
-      setFlowControl(form.data.flow_control_enabled);
-    }
-  }, [form.data]);
+  // Seed local state once the form loads (render-phase sync).
+  useServerSync(form.data, (data) => {
+    setName(data.port_name);
+    setAdminEnabled(data.admin_enabled);
+    setMode(data.mode);
+    setFlowControl(data.flow_control_enabled);
+  });
 
   // Esc-to-close (only when not busy).
   useEffect(() => {
@@ -191,6 +192,13 @@ function EditPortDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [mutation.isPending, onClose]);
 
+  // The backend rejects flow-control=true with a half-duplex mode; disable
+  // the checkbox rather than relying on a server 422 for UX. The submitted
+  // value MUST be the same one the checkbox displays (effectiveFlow) — the
+  // raw flowControl state can be stale-true while the UI shows forced-off.
+  const flowControlForbidden = HDX_MODES.has(mode);
+  const effectiveFlow = flowControlForbidden ? false : flowControl;
+
   const handleSave = () => {
     const request: SetPortConfigRequest = {
       // `ports` is re-pinned by the backend from the URL; we still send
@@ -199,7 +207,7 @@ function EditPortDialog({
       name: name.trim(),
       admin_enabled: adminEnabled,
       mode,
-      flow_control_enabled: flowControl,
+      flow_control_enabled: effectiveFlow,
     };
     mutation.mutate(
       { port, body: { request } },
@@ -215,13 +223,8 @@ function EditPortDialog({
     );
   };
 
-  // The backend rejects flow-control=true with a half-duplex mode; disable
-  // the checkbox rather than relying on a server 422 for UX.
-  const flowControlForbidden = HDX_MODES.has(mode);
-  const effectiveFlow = flowControlForbidden ? false : flowControl;
-
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   const canSave =
     !form.isLoading &&
@@ -258,10 +261,10 @@ function EditPortDialog({
         )}
 
         {form.error instanceof Error && (
-          <div className="mt-4 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+          <ErrorBanner className="mt-4">
             <p className="font-medium">Failed to load port form</p>
             <p className="mt-1 break-all">{form.error.message}</p>
-          </div>
+          </ErrorBanner>
         )}
 
         {form.data && (
@@ -336,10 +339,9 @@ function EditPortDialog({
         )}
 
         {errorMessage && (
-          <div className="mt-4 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-            <p className="font-semibold">Save failed</p>
-            <p className="mt-1 break-all">{errorMessage}</p>
-          </div>
+          <ErrorBanner title="Save failed" className="mt-4">
+            {errorMessage}
+          </ErrorBanner>
         )}
 
         <div className="mt-5 flex justify-end gap-2">

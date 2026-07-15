@@ -10,7 +10,10 @@
  * feature-set endpoints to PUT to, but the single-VLAN deployment this
  * switch runs today always uses `/cgi/feature_set`).
  */
-import { useEffect, useState } from "react";
+import { apiErrorMessage } from "@/api/client";
+import { useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useDeviceFeatures,
   useSetDeviceFeatures,
@@ -25,15 +28,13 @@ export function DeviceFeaturesCard() {
   const [stp, setStp] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (query.data) {
-      // Default to False when the switch returned null ("Invalid OID"
-      // sentinel on multi-VLAN variants) so the UI shows a deterministic
-      // checkbox state.
-      setIgmp(query.data.igmp ?? false);
-      setStp(query.data.spanning_tree ?? false);
-    }
-  }, [query.data]);
+  useServerSync(query.data, (data) => {
+    // Default to False when the switch returned null ("Invalid OID"
+    // sentinel on multi-VLAN variants) so the UI shows a deterministic
+    // checkbox state.
+    setIgmp(data.igmp ?? false);
+    setStp(data.spanning_tree ?? false);
+  });
 
   const dirty =
     !!query.data &&
@@ -64,7 +65,7 @@ export function DeviceFeaturesCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
   const canSave = !mutation.isPending && dirty;
 
   return (
@@ -79,7 +80,7 @@ export function DeviceFeaturesCard() {
       </div>
 
       {query.error instanceof Error && (
-        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner>
           <p className="font-medium">Failed to load device features</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -89,7 +90,7 @@ export function DeviceFeaturesCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -166,10 +167,9 @@ export function DeviceFeaturesCard() {
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Save failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Save failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}

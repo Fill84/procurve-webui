@@ -71,3 +71,61 @@ async def test_get_attaches_auth_headers_when_basic():
         await t.get("/home.html")
     assert route.called
     assert route.calls.last.request.headers["Authorization"].startswith("Basic ")
+
+
+# ---------------------------------------------------------------------------
+# Switch-safety: requests to one host must never run in parallel — this
+# switch has crashed under stacked probing, so the transport serializes
+# process-wide via a per-host semaphore (plus httpx.Limits on each client).
+# ---------------------------------------------------------------------------
+
+
+@respx.mock
+async def test_concurrent_requests_serialize_per_host():
+    import asyncio
+
+    in_flight = 0
+    max_in_flight = 0
+
+    async def slow_responder(request):  # noqa: ANN001
+        nonlocal in_flight, max_in_flight
+        in_flight += 1
+        max_in_flight = max(max_in_flight, in_flight)
+        await asyncio.sleep(0.01)
+        in_flight -= 1
+        return Response(200, text="ok")
+
+    respx.get("http://192.0.2.3/home.html").mock(side_effect=slow_responder)
+    async with ProcurveTransport(host="192.0.2.3") as t:
+        await asyncio.gather(*(t.get("/home.html") for _ in range(5)))
+    assert max_in_flight == 1
+
+
+@respx.mock
+async def test_serialization_spans_multiple_transports_same_host():
+    """Two sessions (two transports) to the same switch still serialize."""
+    import asyncio
+
+    in_flight = 0
+    max_in_flight = 0
+
+    async def slow_responder(request):  # noqa: ANN001
+        nonlocal in_flight, max_in_flight
+        in_flight += 1
+        max_in_flight = max(max_in_flight, in_flight)
+        await asyncio.sleep(0.01)
+        in_flight -= 1
+        return Response(200, text="ok")
+
+    respx.get("http://192.0.2.3/home.html").mock(side_effect=slow_responder)
+    async with (
+        ProcurveTransport(host="192.0.2.3") as t1,
+        ProcurveTransport(host="192.0.2.3") as t2,
+    ):
+        await asyncio.gather(
+            t1.get("/home.html"),
+            t2.get("/home.html"),
+            t1.get("/home.html"),
+            t2.get("/home.html"),
+        )
+    assert max_in_flight == 1

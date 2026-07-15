@@ -16,11 +16,37 @@ otherwise.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
+
+# Vite emits content-hashed filenames under assets/ — a changed file always
+# gets a new URL, so the old URL may be cached forever.
+_IMMUTABLE = "public, max-age=31536000, immutable"
+# index.html references the current hashed bundles by name; browsers must
+# revalidate it so a deploy is picked up on the next navigation.
+_REVALIDATE = "no-cache"
+# Unhashed dist-root files (favicon.svg, robots.txt): cache briefly.
+_SHORT = "public, max-age=3600"
+
+
+class HashedAssetFiles(StaticFiles):
+    """StaticFiles that serves Vite's content-hashed bundles as immutable."""
+
+    def file_response(
+        self,
+        full_path: str | os.PathLike[str],
+        stat_result: os.stat_result,
+        scope: Scope,
+        status_code: int = 200,
+    ) -> Response:
+        response = super().file_response(full_path, stat_result, scope, status_code)
+        response.headers["Cache-Control"] = _IMMUTABLE
+        return response
 
 
 def mount_static(app: FastAPI, dist_dir: Path) -> None:
@@ -46,7 +72,7 @@ def mount_static(app: FastAPI, dist_dir: Path) -> None:
     # Serve hashed assets under /assets with long-cache headers.
     app.mount(
         "/assets",
-        StaticFiles(directory=dist_dir / "assets"),
+        HashedAssetFiles(directory=dist_dir / "assets"),
         name="assets",
     )
 
@@ -65,5 +91,9 @@ def mount_static(app: FastAPI, dist_dir: Path) -> None:
                 pass
             else:
                 if candidate.is_file():
-                    return FileResponse(candidate)
-        return FileResponse(dist_dir / "index.html")
+                    return FileResponse(
+                        candidate, headers={"Cache-Control": _SHORT}
+                    )
+        return FileResponse(
+            dist_dir / "index.html", headers={"Cache-Control": _REVALIDATE}
+        )

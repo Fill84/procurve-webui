@@ -45,19 +45,29 @@ export function useDeviceStatus() {
   });
 }
 
-export function usePortStatus() {
+interface PollOptions {
+  /**
+   * Override the default poll cadence (ms), or `false` to disable polling.
+   * Pages that already receive the same data another way (e.g. the port
+   * detail page's WebSocket stream) should slow these down — every tick is
+   * a scrape of a fragile switch CGI (read-safety rule).
+   */
+  refetchInterval?: number | false;
+}
+
+export function usePortStatus(options?: PollOptions) {
   return useQuery<PortStatusList>({
     queryKey: ["status", "ports"],
     queryFn: () => apiGet<PortStatusList>("/api/v1/status/ports"),
-    refetchInterval: 5_000,
+    refetchInterval: options?.refetchInterval ?? 5_000,
   });
 }
 
-export function usePortCounters() {
+export function usePortCounters(options?: PollOptions) {
   return useQuery<PortCountersList>({
     queryKey: ["status", "counters"],
     queryFn: () => apiGet<PortCountersList>("/api/v1/status/counters"),
-    refetchInterval: 10_000,
+    refetchInterval: options?.refetchInterval ?? 10_000,
   });
 }
 

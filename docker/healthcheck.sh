@@ -1,15 +1,22 @@
 #!/bin/sh
-# Liveness probe — hits /api/v1/health via the stdlib urllib (no curl dependency).
-# The health endpoint returns 200 when the switch is reachable and 503 otherwise.
-# We treat 503 as "container is alive, switch is unreachable" — that is a config
-# problem, not a container problem — so both 200 and 503 count as healthy here.
+# Container liveness probe — hits /api/v1/health/live via the stdlib urllib
+# (no curl dependency).
+#
+# IMPORTANT (switch read-safety): this MUST stay on the /live endpoint, which
+# never contacts the switch. The old probe went to /api/v1/health, which used
+# to open a fresh connection to the physical switch on every call — a 24/7
+# background probe against hardware that has crashed under repeated probing.
+# Switch reachability is a config concern, not a container-health concern.
+#
+# Honors the same PORT override entrypoint.sh passes to uvicorn.
 exec python -c "
-import sys, urllib.request
+import os, sys, urllib.request
+port = os.environ.get('PORT', '8080')
 try:
-    urllib.request.urlopen('http://127.0.0.1:8080/api/v1/health', timeout=3).read()
+    urllib.request.urlopen(
+        f'http://127.0.0.1:{port}/api/v1/health/live', timeout=3
+    ).read()
     sys.exit(0)
-except urllib.error.HTTPError as e:
-    sys.exit(0 if e.code == 503 else 1)
 except Exception:
     sys.exit(1)
 "

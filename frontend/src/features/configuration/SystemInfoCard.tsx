@@ -10,7 +10,10 @@
  * read-only row so the operator has a one-glance confirmation of which
  * switch they're editing.
  */
-import { useEffect, useState } from "react";
+import { apiErrorMessage } from "@/api/client";
+import { useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useSetSystemInfo,
   useSystemInfo,
@@ -32,14 +35,12 @@ export function SystemInfoCard() {
   const [contact, setContact] = useState("");
   const [lastResult, setLastResult] = useState<string | null>(null);
 
-  // Seed local form state from the fetched page the first time it arrives.
-  useEffect(() => {
-    if (query.data) {
-      setName(query.data.name);
-      setLocation(query.data.location);
-      setContact(query.data.contact);
-    }
-  }, [query.data]);
+  // Seed local form state whenever a fresh page arrives (render-phase sync).
+  useServerSync(query.data, (data) => {
+    setName(data.name);
+    setLocation(data.location);
+    setContact(data.contact);
+  });
 
   const handleSave = () => {
     setLastResult(null);
@@ -62,7 +63,7 @@ export function SystemInfoCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   const dirty =
     !!query.data &&
@@ -95,7 +96,7 @@ export function SystemInfoCard() {
       )}
 
       {query.error instanceof Error && (
-        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner>
           <p className="font-medium">Failed to load system info</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -105,7 +106,7 @@ export function SystemInfoCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -203,10 +204,9 @@ export function SystemInfoCard() {
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Save failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Save failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}

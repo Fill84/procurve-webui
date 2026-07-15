@@ -5,7 +5,9 @@
  * be a MAC address (either dash-separated like `00-1D-B3-B7-0E-00` or
  * colon-separated like `00:1D:B3:B7:0E:00`).
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState, type FormEvent } from "react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useLinkTest,
   type LinkTestRequest,
@@ -33,7 +35,7 @@ export function LinkTestCard() {
 
   const result = linkTest.data;
   const errorMessage =
-    linkTest.error instanceof Error ? linkTest.error.message : null;
+    apiErrorMessage(linkTest.error);
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -86,10 +88,9 @@ export function LinkTestCard() {
       </form>
 
       {errorMessage && (
-        <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-          <p className="font-semibold">Link test failed</p>
-          <p className="mt-1 break-all">{errorMessage}</p>
-        </div>
+        <ErrorBanner title="Link test failed" className="mt-3">
+          {errorMessage}
+        </ErrorBanner>
       )}
 
       {result && !errorMessage && (

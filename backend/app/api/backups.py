@@ -9,15 +9,27 @@ Endpoints:
   POST   /api/v1/backups/{filename}/restore    — upload to switch (gated by READ_ONLY)
   DELETE /api/v1/backups/{filename}            — remove from store
 
-Write safety: the restore endpoint checks `settings.read_only` *before*
-delegating to `upload_config`. When read_only is True (the default), we
-return 403 with `{"error": "read_only", ...}` and do NOT invoke the write
-operation. The lower-level `@WRITE` guard in procurve_client is a belt-and-
-suspenders backstop.
+Write safety: restore is the most destructive write in the app (it replaces
+the entire active config), so it gets the FULL safety pattern used by
+device-reset:
+
+  1. `settings.read_only` gate *before* any switch I/O — 403 with
+     `{"error": "read_only", ...}` when True (the default).
+  2. `require_host_confirmation` — the caller must send the exact
+     SWITCH_HOST in `confirm_switch_host`, same as device-reset.
+  3. `write_with_autobackup` — the CURRENT live config is snapshotted as a
+     `trigger="pre-write"` backup before the upload, so a wrong or stale
+     restore always leaves a rollback point. The saved snapshot's filename
+     is returned in the response as `pre_restore_backup`.
+
+The lower-level `@WRITE` guard in procurve_client is a belt-and-suspenders
+backstop, and `upload_config` itself now rejects suspicious payloads and
+error-page responses (see procurve_client/operations/backup.py).
 """
 from __future__ import annotations
 
 import difflib
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -32,6 +44,7 @@ from app.backup_store import (
 )
 from app.deps import get_app_settings, get_backup_store, get_transport
 from app.settings import Settings
+from app.write_safety import require_host_confirmation, write_with_autobackup
 from procurve_client.operations.backup import download_config, upload_config
 from procurve_client.transport import ProcurveTransport
 
@@ -39,7 +52,12 @@ router = APIRouter(prefix="/api/v1/backups", tags=["backups"])
 
 
 class CreateBackupRequest(BaseModel):
-    trigger: Trigger = "manual"
+    """Public create endpoint: only "manual" is accepted. "pre-write" and
+    "scheduled" are provenance markers reserved for server-internal callers
+    of BackupStore.save — a client-supplied value could otherwise spoof the
+    audit trail of whether the autobackup safety net actually fired."""
+
+    trigger: Literal["manual"] = "manual"
 
 
 class LiveShaResponse(BaseModel):
@@ -133,16 +151,24 @@ async def diff_backup(
     return PlainTextResponse("".join(diff_lines), media_type="text/plain; charset=utf-8")
 
 
+class RestoreRequest(BaseModel):
+    """Restore confirmation. `confirm_switch_host` must equal settings.switch_host."""
+
+    confirm_switch_host: str
+
+
 @router.post("/{filename}/restore")
 async def restore_backup(
     filename: str,
+    body: RestoreRequest,
     store: BackupStore = Depends(get_backup_store),  # noqa: B008
     transport: ProcurveTransport = Depends(get_transport),  # noqa: B008
     settings: Settings = Depends(get_app_settings),  # noqa: B008
 ) -> Response:
-    # Safety: settings.read_only gate runs BEFORE we even load the backup so we
-    # cannot accidentally touch the switch. The @WRITE decorator on
-    # upload_config is a backstop for the same condition via env.
+    # Safety gate order (all BEFORE any switch write):
+    #   read_only -> host confirmation -> load backup -> pre-write snapshot
+    # The read_only check keeps its flat JSON shape (the UI matches on
+    # body.error === "read_only" to render the env-var hint).
     if settings.read_only:
         return JSONResponse(
             status_code=403,
@@ -154,6 +180,7 @@ async def restore_backup(
                 ),
             },
         )
+    require_host_confirmation(body.confirm_switch_host, settings)
     try:
         backup = store.load(filename)
     except InvalidBackupName as exc:
@@ -162,10 +189,25 @@ async def restore_backup(
         raise HTTPException(status_code=500, detail="backup metadata corrupt") from exc
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="backup not found") from exc
-    await upload_config(transport, backup=backup)
+
+    pre_restore: list[BackupMeta] = []
+    await write_with_autobackup(
+        settings=settings,
+        store=store,
+        transport=transport,
+        write=lambda: upload_config(transport, backup=backup),
+        on_backup=pre_restore.append,
+    )
     return JSONResponse(
         status_code=200,
-        content={"status": "restored", "filename": filename, "sha256": backup.sha256},
+        content={
+            "status": "restored",
+            "filename": filename,
+            "sha256": backup.sha256,
+            # Rollback point: the live config as it was immediately before
+            # this restore, saved as a trigger="pre-write" backup.
+            "pre_restore_backup": pre_restore[0].filename if pre_restore else None,
+        },
     )
 
 

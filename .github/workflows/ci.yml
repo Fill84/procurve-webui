@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install (locked runtime deps + dev tools)
+        run: |
+          pip install --no-deps --require-hashes -r requirements.lock
+          pip install -e ".[dev]"
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Typecheck (mypy --strict)
+        run: mypy app procurve_client
+      # SAFETY: the live/roundtrip markers talk to real switch hardware and
+      # must NEVER run in CI. Keep the marker filter in sync with
+      # backend/pyproject.toml.
+      - name: Tests (no live hardware)
+        run: pytest -m "not live and not roundtrip" -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install (lockfile only)
+        run: npm ci
+      - name: Lint (eslint, zero-error gate)
+        run: npm run lint
+      - name: Tests (vitest)
+        run: npm test
+      - name: Typecheck + build
+        run: npm run build
+
+  # The frontend's schema.d.ts is generated from the backend's OpenAPI
+  # schema. This job regenerates it and fails when a backend API change was
+  # committed without `npm run gen:api` — the drift class the generated
+  # types exist to prevent.
+  api-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install backend (locked)
+        run: |
+          pip install --no-deps --require-hashes -r backend/requirements.lock
+          pip install --no-deps -e backend
+      - name: Install frontend (lockfile only)
+        working-directory: frontend
+        run: npm ci
+      - name: Regenerate OpenAPI types
+        working-directory: frontend
+        run: |
+          python scripts/dump-openapi.py
+          npx openapi-typescript openapi.json -o src/api/schema.d.ts
+      - name: Fail on drift
+        run: git diff --exit-code -- frontend/src/api/schema.d.ts

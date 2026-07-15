@@ -9,6 +9,7 @@
  * everything they'd need to open a support case: the right URL plus the
  * identifiers HPE will ask for.
  */
+import { apiErrorMessage } from "@/api/client";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useIdentity } from "@/api/hooks/useIdentity";
@@ -39,7 +40,7 @@ export function SupportPage() {
         <div className="rounded-lg border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-red-900 dark:text-red-300">
           <p className="font-medium">Failed to load support info</p>
           <p className="mt-1 text-sm opacity-80">
-            {error instanceof Error ? error.message : String(error)}
+            {apiErrorMessage(error)}
           </p>
           <button
             type="button"

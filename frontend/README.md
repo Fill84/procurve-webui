@@ -1,73 +1,38 @@
-# React + TypeScript + Vite
+# procurve-webui frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + TypeScript SPA for the ProCurve 2810-24G web UI. Served in
+production by the FastAPI backend from `dist/`; talks to the API same-origin
+(`/api/v1/*`, WebSocket at `/ws/port-traffic`).
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node 22 LTS
+- The backend (for `gen:api` and for the dev proxy target)
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Script | What it does |
+|---|---|
+| `npm run dev` | Vite dev server on :5173, proxying `/api` + `/ws` to :8080 |
+| `npm run build` | Route codegen → `tsc -b` → production bundle in `dist/` |
+| `npm run lint` | ESLint (zero errors is the CI gate) |
+| `npm run typecheck` | `tsc -b --noEmit` |
+| `npm test` | vitest (jsdom + Testing Library) |
+| `npm run gen:api` | Regenerate `openapi.json` + `src/api/schema.d.ts` from the backend |
+| `npm run gen:routes` | Regenerate `src/routeTree.gen.ts` (also runs inside `build`) |
 
-## Expanding the ESLint configuration
+## Things that are not obvious
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **`src/api/schema.d.ts` is generated.** After any backend model/API
+  change, run `npm run gen:api` (needs the backend venv importable, or a
+  backend running on :8080 as fallback) and commit both generated files.
+- **`.npmrc` pins `legacy-peer-deps=true`** so openapi-typescript@7
+  (peer: typescript@^5) coexists with typescript@~6; `ignore-scripts=true`
+  blocks install-time lifecycle scripts (supply-chain hardening — the
+  May-2026 TanStack npm compromise executed via a lifecycle script).
+- **Switch read-safety shapes this code.** Poll intervals are deliberate,
+  interval polling pauses in hidden tabs (React Query default), and the
+  live-traffic WebSocket closes on `visibilitychange`. Don't "optimize"
+  cadences upward — see CONTRIBUTING.md at the repo root.
+- **Visual identity is monochrome** — color is functional only (LEDs,
+  alert severities, danger actions).

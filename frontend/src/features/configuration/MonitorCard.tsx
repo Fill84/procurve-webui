@@ -16,27 +16,17 @@
  * is cheap and the Configuration tab already loads it elsewhere, so the
  * extra query is free once it's cached.
  */
-import { useEffect, useState } from "react";
+import { apiErrorMessage } from "@/api/client";
+import { useState } from "react";
+import { useServerSync } from "@/lib/useServerSync";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   useBobPorts,
   useMonitor,
   useSetMonitor,
   type SetMonitorRequest,
 } from "@/api/hooks/useConfiguration";
-
-function maskToPorts(mask: number): number[] {
-  const out: number[] = [];
-  for (let p = 1; p <= 64; p++) {
-    if (mask & (1 << (p - 1))) out.push(p);
-  }
-  return out;
-}
-
-function portsToMask(ports: number[]): number {
-  let mask = 0;
-  for (const p of ports) mask |= 1 << (p - 1);
-  return mask;
-}
+import { portsToMask } from "./portMask";
 
 export function MonitorCard() {
   const query = useMonitor();
@@ -48,18 +38,15 @@ export function MonitorCard() {
   const [sourcePorts, setSourcePorts] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (query.data) {
-      setEnabled(query.data.enabled);
-      setDestPort(
-        query.data.selected_dest_port ??
-          (query.data.candidate_dest_ports?.[0] ?? null),
-      );
-      // Monitor read doesn't expose the current source mask — leave empty
-      // and let the operator pick sources when enabling.
-      setSourcePorts(new Set());
-    }
-  }, [query.data]);
+  useServerSync(query.data, (data) => {
+    setEnabled(data.enabled);
+    setDestPort(
+      data.selected_dest_port ?? (data.candidate_dest_ports?.[0] ?? null),
+    );
+    // Monitor read doesn't expose the current source mask — leave empty
+    // and let the operator pick sources when enabling.
+    setSourcePorts(new Set());
+  });
 
   const destCandidates = query.data?.candidate_dest_ports ?? [];
   const allPorts = (bob.data?.ports ?? []).map((p) => p.port);
@@ -102,7 +89,7 @@ export function MonitorCard() {
   };
 
   const errorMessage =
-    mutation.error instanceof Error ? mutation.error.message : null;
+    apiErrorMessage(mutation.error);
 
   const saveDisabled =
     mutation.isPending ||
@@ -120,7 +107,7 @@ export function MonitorCard() {
       </div>
 
       {query.error instanceof Error && (
-        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
+        <ErrorBanner>
           <p className="font-medium">Failed to load monitor config</p>
           <p className="mt-1 break-all">{query.error.message}</p>
           <button
@@ -130,7 +117,7 @@ export function MonitorCard() {
           >
             Retry
           </button>
-        </div>
+        </ErrorBanner>
       )}
 
       {query.data && (
@@ -224,17 +211,12 @@ export function MonitorCard() {
           </div>
 
           {errorMessage && (
-            <div className="mt-3 rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-300">
-              <p className="font-semibold">Save failed</p>
-              <p className="mt-1 break-all">{errorMessage}</p>
-            </div>
+            <ErrorBanner title="Save failed" className="mt-3">
+              {errorMessage}
+            </ErrorBanner>
           )}
         </>
       )}
     </section>
   );
 }
-
-// Export for testability (keeps tree-shaking happy if a future unit test
-// imports the pure helpers).
-export { maskToPorts, portsToMask };

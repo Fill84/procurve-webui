@@ -19,4 +19,14 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // TanStack Router file-based routes MUST export the `Route` value (and
+    // the root route its context type) alongside their components — that is
+    // the framework contract, so the Fast Refresh purity rule can't apply
+    // here. The router plugin handles HMR for route files itself.
+    files: ['src/routes/**/*.{ts,tsx}', 'src/routeTree.gen.ts'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])
