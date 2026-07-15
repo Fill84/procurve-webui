@@ -1,0 +1,28 @@
+<html>
+<Script>
+	function submitAdd() {
+	    parent.cosu1.document.ip.action.value = "Add";
+	    parent.cosu1.document.ip.submit();
+	}
+	function submitReplace() {
+	    parent.cosu1.document.ip.action.value = "Replace";
+	    parent.cosu1.document.ip.submit();
+	}
+	function submitDelete() {
+	    parent.cosu1.document.ip.action.value = "Delete";
+	    parent.cosu1.document.ip.submit();
+	}
+</Script>
+<body bgcolor=white >
+<center>
+<font face="helvetica" size=2 >
+<form name=ipbut action="../cgi/cosuserf">
+<input type=hidden name="action">
+<input type=button value=Add onClick="submitAdd();">
+<input type="button" value=Replace onClick="submitReplace();">
+<input type="button" value=Delete onClick="submitDelete();">
+</font>
+</center>
+</form>
+</body>
+</html>

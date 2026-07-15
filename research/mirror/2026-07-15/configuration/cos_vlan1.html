@@ -1,0 +1,92 @@
+<html>
+<head>
+</head>
+<Script>
+    function setDefPrior() {
+      if (document.vlanpr.dscp.value != 255) {
+         parent.vlan2.location = "cos_vlan2.html";
+      }
+    }
+</Script>
+
+<body bgcolor=white >
+
+<center>
+<font face="helvetica" size=3 >
+<table cellspacing=4  >
+<tr valign="bottom">
+<form name=vlanpr target=wrkpg action=../cgi/cosvlanf>
+<th align=left> DSCP Policy:</th>
+ </font><td align=right><select name=dscp onChange="setDefPrior();">
+            <option value=255 selected>Disabled
+            <option value=0>000000
+            <option value=1>000001
+            <option value=2>000010
+            <option value=3>000011
+            <option value=4>000100
+            <option value=5>000101
+            <option value=6>000110
+            <option value=7>000111
+            <option value=8>001000
+            <option value=9>001001
+            <option value=10>001010
+            <option value=11>001011
+            <option value=12>001100
+            <option value=13>001101
+            <option value=14>001110
+            <option value=15>001111
+            <option value=16>010000
+            <option value=17>010001
+            <option value=18>010010
+            <option value=19>010011
+            <option value=20>010100
+            <option value=21>010101
+            <option value=22>010110
+            <option value=23>010111
+            <option value=24>011000
+            <option value=25>011001
+            <option value=26>011010
+            <option value=27>011011
+            <option value=28>011100
+            <option value=29>011101
+            <option value=30>011110
+            <option value=31>011111
+            <option value=32>100000
+            <option value=33>100001
+            <option value=34>100010
+            <option value=35>100011
+            <option value=36>100100
+            <option value=37>100101
+            <option value=38>100110
+            <option value=39>100111
+            <option value=40>101000
+            <option value=41>101001
+            <option value=42>101010
+            <option value=43>101011
+            <option value=44>101100
+            <option value=45>101101
+            <option value=46>101110
+            <option value=47>101111
+            <option value=48>110000
+            <option value=49>110001
+            <option value=50>110010
+            <option value=51>110011
+            <option value=52>110100
+            <option value=53>110101
+            <option value=54>110110
+            <option value=55>110111
+            <option value=56>111000
+            <option value=57>111001
+            <option value=58>111010
+            <option value=59>111011
+            <option value=60>111100
+            <option value=61>111101
+            <option value=62>111110
+            <option value=63>111111</SELECT></td>
+</tr>
+</font>
+</table>
+</center>
+</form>
+</body>
+</html>

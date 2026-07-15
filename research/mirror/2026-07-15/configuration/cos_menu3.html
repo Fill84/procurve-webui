@@ -1,0 +1,22 @@
+<html>
+<script>
+  function loadCorrectPage() {
+	if( == 1) 
+	  parent.coswork.document.location = "cos_proto.html?dm=" + Math.random();
+	else if( == 2) 
+	  parent.coswork.document.location = "cos_userf.html?dm=" + Math.random();
+	else if( == 3) 
+	  parent.coswork.document.location = "cos_vlanf.html?dm=" + Math.random();
+	else if( == 4) 
+	  parent.coswork.document.location = "cos_tos.html?dm=" + Math.random();
+  	else if( == 5)
+	  parent.coswork.document.location = "cos_dscpt.html?dm=" + Math.random();
+  	else if( == 6)
+	  parent.coswork.document.location = "cos_tosds.html?dm=" + Math.random();
+  	else if( == 7)
+	  parent.coswork.document.location = "cos_appf.html?dm=" + Math.random();
+  }
+</script>
+<body bgcolor=white onLoad="loadCorrectPage();">
+</body>
+</html>

@@ -12,13 +12,18 @@
 `<param name=onlyOneSelection value="1">`).
 Sub-tab key: `qos` / `ippr` (Device Priority).
 
-> **⚠ Ground-truth gap (audit F2, 2026-07-15):** this doc cites one or more
-> `cos_*.html` mirror pages that are **not present** in
-> `research/mirror/2026-04-23/configuration/` (only `cos_mainf.html` and
-> `cos_menu.html` were captured; the per-subtab QoS pages were never
-> mirrored and are not in git history). HTML-derived claims below are
-> therefore unverifiable in-repo. Treat the wire contract as
-> **experimental** until the QoS pages are re-mirrored or live-captured.
+> **Re-mirrored 2026-07-15 (closes audit F2):** the QoS sub-pages are now
+> captured in `research/mirror/2026-07-15/configuration/` (22 pages,
+> including `cos_app1/5/5a.html` which no doc had cited). Verified against
+> the live HTML: CGI endpoint paths, submitted-form field names, and every
+> `<select>` value domain (dscp 0-63, 802.1p 0-7, `255` sentinel where
+> offered, apply-policy 1-3, app id 0-58, ToS mode 1-3) match this doc and
+> the implementation. Still open: the multi-frame submit orchestration —
+> the plain HTML form for cosappf/cosuserf/cosvlanf carries only a subset
+> of the documented params (sibling frames hold the rest in unsubmitted
+> forms, e.g. both pickers in `cos_app5(.a).html` are named `pr`); the
+> applet merged them at submit time (GenericList `params`/`indeces`
+> mechanism). Response bodies remain uncaptured.
 
 ## HTTP contract
 

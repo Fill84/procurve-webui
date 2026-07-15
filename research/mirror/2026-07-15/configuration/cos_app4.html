@@ -1,0 +1,31 @@
+<html>
+<Script>
+    function newMode() {
+        if (document.fap.ap.value == 3) {
+        	parent.app5.location = "cos_app5.html";
+        }
+        else if (document.fap.ap.value == 2) {
+        	parent.app5.location = "cos_app5a.html";
+        }
+        else
+        	parent.app5.document.location = "../blank.html";
+    }
+</Script>
+
+<body bgcolor=white onLoad="newMode();">
+<center>
+<form name=fap>
+<table cellspacing=4 width="100%">
+<td align=right>
+	<font face="helvetica" size=3><b>Apply Policy: </b></font>
+	<font face="helvetica" size=2>
+	<select name=ap onChange="newMode();">
+	<option value=1 selected>No Override
+	<option value=2>802.1P
+	<option value=3>DSCP
+</select></td></tr>
+</table>
+</font>
+</center>
+</body>
+</html>

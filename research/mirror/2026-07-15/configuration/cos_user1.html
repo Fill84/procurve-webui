@@ -1,0 +1,54 @@
+<html>
+<head>
+</head>
+<Script>
+    function newMode() {    // Adjusts ip2 depending upon current mode
+        if (document.ip.ap.value == 2) {
+        	parent.cosu2.location = "cos_user2.html";
+        }
+        else if (document.ip.ap.value == 3) {
+        	parent.cosu2.location = "cos_user2a.html";
+        }
+        else
+        	parent.cosu2.document.write("<html></html>");
+    }
+</Script>
+
+<body bgcolor=white onLoad="newMode();">
+<table cellspacing=4 width="100%" height="75%" border=0 >
+<tr><td colspan=4 height=50>
+<center>
+<font face="helvetica" size=3 >
+<b>Device Priorities</b><p><p>
+</font>
+</center>
+</td></tr>
+<tr><td colspan=4>
+<applet code=GenericList.class name=addrlist archive=agent.jar codebase=../classes width=100% height=50%>
+        <param name=dataURL value="../cgi/cosuser">
+        <param name=titles value="Device Address~DSCP Policy~802.1p Priority">
+        <param name=columns value="100~250~250">
+        <param name=params  value=".~.~.~.">
+        <param name=onlyOneSelection value="1">
+</applet>
+</td></tr>
+<center>
+<form name=ip target=wrkpg action="../cgi/cosuserf">
+<input type=hidden name="action">
+
+<tr valign="bottom">
+<td align=center height=50>
+<font face="helvetica" size=3>
+<b>IP Address: </b></font><font face="helvetica" size=2><input type=text name=addr size=16 value=""></font>
+<font face="helvetica" size=3>
+<b>Policy: </b></font><font face="helvetica" size=2><select name=ap onChange="newMode();">
+<option value=1 selected>No Override
+<option value=2>802.1P
+<option value=3>DSCP
+</select></tr>
+</font>
+</table>
+</center>
+</form>
+</body>
+</html>

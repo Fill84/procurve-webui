@@ -1,0 +1,50 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>
+      COS Config Page.
+    </title>
+<!-- Changed by: Jon A. LaRosa,  3-Apr-2000 -->
+<script>
+      function initForm() {
+          document.cos1.hpSwitchCosTosConfigMode.options[1 - 1].selected = true;
+      }
+
+      function cosSubmit() {
+         if(document.cos1.hpSwitchCosTosConfigMode.selectedIndex == 2) 
+         {
+
+         }
+         return document.cos1.submit();
+
+      }
+</script>
+  </head>
+
+<body bgcolor=white onLoad=initForm()>
+
+<FORM name=cos1 action=../cgi/costos>
+<center>
+<font face="helvetica" size=3 >
+<b>Type of Service</b>
+</font>
+<p><p><p>
+<font face="helvetica" size=2 >
+Type of Service:
+<select name=hpSwitchCosTosConfigMode>
+<option value=1>Disabled
+<option value=2>IP Precedence
+<option value=3>Differential Services
+</select><p>
+</td></tr>
+
+</table>
+<input type="hidden" name="indeces" value="0">
+<input type="button" value="Apply Changes" onClick="cosSubmit();">
+<input type="button" value="Clear Changes" onClick="initForm();">
+</font>
+</center>
+</form>
+
+</body>
+</html>

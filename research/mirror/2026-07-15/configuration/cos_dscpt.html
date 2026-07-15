@@ -1,0 +1,39 @@
+<html>
+<head>
+</head>
+
+<body bgcolor=white >
+<center>
+<font face="helvetica" size=3 >
+<b>DSCP Policy Table</b><p><p>
+</font>
+</center>
+<applet code=GenericList.class name=prlist archive=agent.jar codebase=../classes width=100% height=50%>
+        <param name=dataURL value="../cgi/dscptable_get">
+        <param name=titles value="DSCP Codepoint~802.1p Priority">
+        <param name=columns value="130~290">
+        <param name=params  value="cp~pr">
+        <param name=onlyOneSelection value="1">
+</applet>
+<center>
+<font face="helvetica" size=2 >
+<form name=dscppr target=wrkpg action=../cgi/dscptable_set>
+<table cellspacing=4>
+<tr><th align=left>Priority:</th>
+<td align=right><select name=pr>
+<option value=255 selected>No Override
+<option value=1>1-Low Priority
+<option value=2>2
+<option value=0>0-Normal Priority
+<option value=3>3
+<option value=4>4
+<option value=5>5
+<option value=6>6
+<option value=7>7-Highest Priority</select></td>
+<td><input type=submit value="Modify"></td></tr>
+</table>
+</font>
+</center>
+</form>
+</body>
+</html>

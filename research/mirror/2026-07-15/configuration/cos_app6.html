@@ -1,0 +1,36 @@
+<html>
+<Script>
+   function submitAdd() {
+	  parent.app3.document.fapp3.action.value = "Add";
+	  checkSettings();
+	  parent.app3.document.fapp3.submit();
+   }
+   function submitReplace() {
+      parent.app3.document.fapp3.action.value = "Replace";
+      checkSettings();
+	  parent.app3.document.fapp3.submit();
+   }
+   function submitDelete() {
+      parent.app3.document.fapp3.action.value = "Delete";
+      parent.app3.document.fapp3.submit();
+   }
+   function checkSettings() {
+	  if
+		 (parent.app3.fapp3.app.options[parent.app3.fapp3.app.selectedIndex].value != 0) 
+	  {
+		 parent.app3.fapp3.dir.value = 0;
+	  }
+   }
+</Script>
+<body bgcolor=white >
+<center>
+<font face="helvetica" size=2 >
+<form name=fbut action="../cgi/cosappf">
+	<input type="button" value="Add" onClick="submitAdd();">
+	<input type="button" value="Replace" onClick="submitReplace();">
+	<input type="button" value="Delete" onClick="submitDelete();">
+</font>
+</center>
+</form>
+</body>
+</html>

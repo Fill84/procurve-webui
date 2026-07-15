@@ -37,7 +37,9 @@ Sub-tab key: `monitor` (menu.html:45).
   | portCopySourceMask | hex-pair string | when `portCopyStatus=4` | Source-port mask computed by `parent.mpmf.document.list.getPortMask()` (monitor1.html:75) — implemented in `research/decompiled/MonitorList.java:10-54`. One 32-bit word per 32 ports; **port 1 = MSB** (`1 << (32 - n)`, MonitorList.java:36); rendered as zero-padded **lowercase hex byte pairs separated by single spaces** (MonitorList.java:40-52). Ports 1+2 → `c0 00 00 00`; on the wire the spaces are form-encoded as `+`: `portCopySourceMask=c0+00+00+00`. |
 
 - **Request body:** none (GET).
-- **Response body:** **not live-tested.**
+- **Response body:** live-captured 2026-07-15 — HTTP 200 with a full HTML
+  page (the navAid-tabbed configuration shell), no `error~`/`error:`
+  sentinel. `ensure_write_ok` semantics hold.
 - **Success indicator:** HTTP 200.
 - **Error indicators:** Non-200 HTTP; or alert `"Monitor Port can not
   be same as Mirror Port"` (monitor1.html:80-83) — client-side
@@ -113,15 +115,21 @@ class SetMonitorResponse(BaseModel):
 - **Two forms, one endpoint.** The JS chooses between `mpset0`
   (status=2) and `mpset1` (status=4) at apply time. A Python
   client collapses to one function that emits either shape.
-- **Bitmask semantics — RESOLVED (2026-07-15).** An earlier revision of
-  this doc guessed "integer bitmask, bit 0 = port 1" and flagged it
-  needs-live-capture, but the algorithm is fully present in
-  `research/decompiled/MonitorList.java` (`getPortMask`, lines 10-54):
+- **Bitmask semantics — RESOLVED and LIVE-VERIFIED (2026-07-15).** An
+  earlier revision of this doc guessed "integer bitmask, bit 0 = port 1"
+  and flagged it needs-live-capture, but the algorithm is fully present
+  in `research/decompiled/MonitorList.java` (`getPortMask`, lines 10-54):
   per-32-port words, port 1 = MSB of its word, formatted as lowercase
   zero-padded hex byte pairs joined by spaces. The audit (F1) found the
   first implementation sent a decimal LSB-first integer — both format
   and bit order wrong; fixed to the legacy encoding, mirrored by unit
-  tests in `tests/operations/test_configuration_monitor.py`. Still not
-  live-captured, but now byte-faithful to the decompiled source.
+  tests in `tests/operations/test_configuration_monitor.py`.
+  **Live verification (2026-07-15, verified pre-write backup taken):**
+  `portCopyStatus=4&portCopyDest=11&portCopySourceMask=c0+00+00+00`
+  latched exactly `mirror-port 11` + `interface 1-2 / monitor` in the
+  switch config (snapshot kept locally in `research/backups/2026-07-15/`;
+  backups are gitignored) — the switch decoded the mask MSB-first as
+  ports 1+2, confirming the encoding end-to-end. `portCopyStatus=2` cleanly removed it; post-test
+  config SHA matched the pre-test baseline byte-for-byte.
 - **No CGI read.** Scraping monitor1.html is the only way to read
   the current state.

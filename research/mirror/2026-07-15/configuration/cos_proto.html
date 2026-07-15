@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <title>
+      COS Config Page.
+    </title>
+<!-- Changed by: Jon A. LaRosa,  9-Jun-2000 -->
+  </head>
+<Script>
+  function protoWarning() {
+      var vlanCount = 1 ;
+      if(vlanCount > 100) {
+          alert("This operation may take awhile.");
+      }
+      return true;
+  }
+</script>
+<body bgcolor=white>
+
+<center>
+<font face="helvetica" size=3 >
+<b>Class of Service Protocol Configuration</b>
+</font>
+<font face="helvetica" size=2 >
+<p><p>
+<FORM name=cos1 action="../cgi/cosproto" onSubmit="return protoWarning();">
+<table>
+<tr><th align=left>Protocol</th><th align=center>Priority</th></tr>
+
+</table>
+<input type="Submit" name="Apply" value="Apply Changes">
+<input type="Reset" name="Reset" value="Clear Changes">
+</form>
+</font>
+</center>
+</body>
+</html>
